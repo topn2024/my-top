@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>验证清理按钮 - TOP_N</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        h2 {
+            color: #666;
+            margin-top: 30px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4CAF50;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            transition: all 0.3s;
+        }
+        button:hover {
+            opacity: 0.8;
+            transform: translateY(-2px);
+        }
+        .btn-success { background-color: #10b981; }
+        .btn-danger { background-color: #ef4444; }
+        .btn-warning { background-color: #f59e0b; }
+        .btn-secondary { background-color: #6b7280; }
+        .btn-primary { background-color: #3b82f6; }
+
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+        .status.success {
+            background: #d1fae5;
+            border-color: #10b981;
+            color: #065f46;
+        }
+        .status.error {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+        .status.info {
+            background: #dbeafe;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f9fafb;
+            border-left: 3px solid #3b82f6;
+        }
+        .checklist li.done {
+            background: #d1fae5;
+            border-left-color: #10b981;
+        }
+        .checklist li.done::before {
+            content: "✓ ";
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            color: #dc2626;
+        }
+
+        pre {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 清理按钮验证页面</h1>
+
+        <div class="status info">
+            <strong>说明：</strong>这个页面用于验证清理任务按钮的功能是否正常。
+        </div>
+
+        <h2>1. 测试按钮显示</h2>
+        <p>以下是清理任务的按钮（应该和发布页面一样）：</p>
+        <div class="button-group">
+            <button class="btn-success">🗑️ 清理成功任务</button>
+            <button class="btn-danger">🗑️ 清理失败任务</button>
+            <button class="btn-warning">🗑️ 清理全部已完成</button>
+            <button class="btn-secondary">🔄 刷新临时文章标题</button>
+        </div>
+
+        <h2>2. 排查清单</h2>
+        <ul class="checklist">
+            <li id="check-html">检查 publish.html 文件中是否包含清理按钮代码</li>
+            <li id="check-js">检查 publish_history.js 文件中是否包含清理函数</li>
+            <li id="check-api">检查后端 /task/clear API 是否存在</li>
+            <li id="check-blueprint">检查 task_api 蓝图是否已注册</li>
+        </ul>
+
+        <h2>3. 可能的问题和解决方案</h2>
+
+        <h3>问题1: 浏览器缓存</h3>
+        <div class="status info">
+            <strong>解决方法：</strong>
+            <ul>
+                <li>按 <code>Ctrl + Shift + R</code> (Windows/Linux) 或 <code>Cmd + Shift + R</code> (Mac) 强制刷新</li>
+                <li>或者清空浏览器缓存后重新访问</li>
+            </ul>
+        </div>
+
+        <h3>问题2: CSS样式冲突</h3>
+        <div class="status info">
+            <strong>检查方法：</strong>
+            <ol>
+                <li>按 F12 打开开发者工具</li>
+                <li>切换到 Elements 标签</li>
+                <li>搜索 "清理成功任务"</li>
+                <li>检查元素是否存在，以及是否有 <code>display: none</code> 等隐藏样式</li>
+            </ol>
+        </div>
+
+        <h3>问题3: JavaScript加载失败</h3>
+        <div class="status info">
+            <strong>检查方法：</strong>
+            <ol>
+                <li>按 F12 打开开发者工具</li>
+                <li>切换到 Console 标签</li>
+                <li>查看是否有JavaScript错误（红色文字）</li>
+                <li>在Console中输入: <code>publishHistoryManager</code>，按回车</li>
+                <li>如果显示对象信息则正常，如果显示 undefined 则说明JS未加载</li>
+            </ol>
+        </div>
+
+        <h3>问题4: 服务器代码未更新</h3>
+        <div class="status info">
+            <strong>解决方法：</strong>
+            <ol>
+                <li>确认文件已保存</li>
+                <li>重启Flask服务器</li>
+                <li>重新访问页面</li>
+            </ol>
+        </div>
+
+        <h2>4. 手动验证步骤</h2>
+
+        <h3>步骤1: 检查HTML源代码</h3>
+        <p>在发布页面按 <code>Ctrl + U</code> 查看源代码，搜索 "清理成功任务"，应该能找到按钮代码。</p>
+
+        <h3>步骤2: 检查开发者工具</h3>
+        <pre>
+// 在浏览器Console中运行以下命令：
+
+// 1. 检查 publishHistoryManager 对象是否存在
+console.log(publishHistoryManager);
+
+// 2. 测试清理函数是否存在
+console.log(typeof publishHistoryManager.clearSuccessTasks);
+console.log(typeof publishHistoryManager.clearFailedTasks);
+console.log(typeof publishHistoryManager.clearCompletedTasks);
+
+// 3. 查找清理按钮
+document.querySelectorAll('button').forEach(btn => {
+    if (btn.textContent.includes('清理')) {
+        console.log('找到清理按钮:', btn.textContent);
+    }
+});
+        </pre>
+
+        <h3>步骤3: 测试API接口</h3>
+        <p>在浏览器Console中运行：</p>
+        <pre>
+// 测试清理API是否可用
+fetch('/task/clear', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({status_filter: ['test']})
+})
+.then(r => r.json())
+.then(data => console.log('API响应:', data))
+.catch(e => console.error('API错误:', e));
+        </pre>
+
+        <h2>5. 快速修复命令</h2>
+        <p>如果以上都不行，在服务器上运行：</p>
+        <pre>
+# 1. 检查文件是否存在
+ls -la D:/work/code/TOP_N/templates/publish.html
+ls -la D:/work/code/TOP_N/static/publish_history.js
+
+# 2. 重启Flask服务
+# 找到进程
+ps aux | grep "app_factory\|app_with_upload"
+
+# 杀死进程
+kill -9 [进程ID]
+
+# 重新启动
+cd D:/work/code/TOP_N
+python backend/app_factory.py
+        </pre>
+
+        <h2>6. 临时测试</h2>
+        <p>点击下面的按钮测试清理功能（需要先登录）：</p>
+        <div class="button-group">
+            <button class="btn-primary" onclick="testClearAPI()">测试清理API</button>
+            <button class="btn-secondary" onclick="openPublishPage()">打开发布页面</button>
+        </div>
+
+        <div id="test-result"></div>
+    </div>
+
+    <script>
+        // 测试清理API
+        async function testClearAPI() {
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.innerHTML = '<div class="status info">正在测试API...</div>';
+
+            try {
+                const response = await fetch('/task/clear', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        status_filter: ['success']  // 测试清理成功的任务
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="status success">
+                            <strong>✓ API测试成功！</strong><br>
+                            删除了 ${data.deleted_count} 个任务<br>
+                            消息: ${data.message}
+                        </div>
+                    `;
+                    markCheckDone('check-api');
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="status error">
+                            <strong>✗ API返回错误</strong><br>
+                            ${data.error || data.message || '未知错误'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">
+                        <strong>✗ API请求失败</strong><br>
+                        ${error.message}<br>
+                        <small>可能是未登录或后端API未启动</small>
+                    </div>
+                `;
+            }
+        }
+
+        // 打开发布页面
+        function openPublishPage() {
+            window.open('/publish', '_blank');
+        }
+
+        // 标记检查项完成
+        function markCheckDone(id) {
+            const item = document.getElementById(id);
+            if (item) {
+                item.classList.add('done');
+            }
+        }
+
+        // 页面加载时的自动检查
+        window.addEventListener('load', () => {
+            // 检查publish_history.js是否加载
+            if (typeof publishHistoryManager !== 'undefined') {
+                markCheckDone('check-js');
+            }
+        });
+    </script>
+</body>
+</html>

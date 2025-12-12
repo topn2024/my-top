@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>月栖科技 - 全球领先的AI智能体研发商</title>
+    <link rel="stylesheet" href="/static/home_style.css">
+    <link rel="stylesheet" href="/static/user_display.css">
+    <!-- Lucide Icons -->
+    <!-- Lucide icons removed for performance -->
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <span class="logo-text">月栖科技</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link active">首页</a></li>
+                <li><a href="#about" class="nav-link">关于我们</a></li>
+                <li><a href="#services" class="nav-link">核心业务</a></li>
+                <li><a href="#products" class="nav-link">产品服务</a></li>
+                <li><a href="#contact" class="nav-link">联系我们</a></li>
+                <li><a href="/platform" class="nav-link-btn">TOP_N 推广平台</a></li>
+                <li><div id="user-info-display"></div></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主视觉区域 -->
+    <section id="home" class="hero">
+        <div class="hero-background">
+            <div class="animated-bg"></div>
+        </div>
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <span class="gradient-text">AI智能体</span><br>
+                重新定义人机协作
+            </h1>
+            <p class="hero-subtitle">
+                月栖科技专注于类人智能体研发，推动人工智能从"工具"向"协作伙伴"进化
+            </p>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <div class="stat-number">500+</div>
+                    <div class="stat-label">智能体上线</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">10+</div>
+                    <div class="stat-label">语言支持</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">全球化</div>
+                    <div class="stat-label">技术服务</div>
+                </div>
+            </div>
+            <div class="hero-cta">
+                <a href="#products" class="btn btn-primary">探索产品</a>
+                <a href="#contact" class="btn btn-secondary">联系我们</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 关于我们 -->
+    <section id="about" class="section about-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">公司定位</h2>
+                <p class="section-subtitle">全球领先的AI智能体研发商与场景化解决方案服务商</p>
+            </div>
+            <div class="about-content">
+                <div class="about-text">
+                    <h3>我们的使命</h3>
+                    <p>
+                        月栖科技专注于<strong>类人智能体（Human-like AI Agent）</strong>的研发与产业化。
+                        我们通过融合大语言模型、多模态感知、情感计算与伦理安全技术，为企业与个人用户
+                        提供可定制、可交互、可信赖的智能体产品及服务。
+                    </p>
+                    <div class="vision-box">
+                        <h4>愿景</h4>
+                        <p>推动人工智能从"工具"向"协作伙伴"进化</p>
+                    </div>
+                </div>
+                <div class="about-visual">
+                    <div class="tech-grid">
+                        <div class="tech-card">
+                            <svg class="tech-icon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            <h4>大语言模型</h4>
+                            <p>LLM驱动的智能决策</p>
+                        </div>
+                        <div class="tech-card">
+                            <svg class="tech-icon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            <h4>多模态感知</h4>
+                            <p>视觉、语音、文字交互</p>
+                        </div>
+                        <div class="tech-card">
+                            <svg class="tech-icon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                            <h4>情感计算</h4>
+                            <p>理解人类情感需求</p>
+                        </div>
+                        <div class="tech-card">
+                            <svg class="tech-icon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                            <h4>伦理安全</h4>
+                            <p>可信赖的AI系统</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 核心业务 -->
+    <section id="services" class="section services-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">核心业务板块</h2>
+                <p class="section-subtitle">全栈技术 × 行业解决方案 × 平台生态</p>
+            </div>
+            <div class="services-grid">
+                <!-- 智能体研发 -->
+                <div class="service-card">
+                    <svg class="service-icon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6m-8-7h6m6 0h6"></path><circle cx="12" cy="12" r="10"></circle></svg>
+                    <h3>智能体研发与定制</h3>
+                    <div class="service-content">
+                        <h4>全栈技术开发</h4>
+                        <ul>
+                            <li>基于大模型（LLM）的智能体框架</li>
+                            <li>多模态交互（文字、语音、视觉）</li>
+                            <li>动态决策与持续学习</li>
+                            <li>自主决策能力</li>
+                        </ul>
+                        <h4>核心技术方向</h4>
+                        <ul>
+                            <li>自然语言处理（NLP）</li>
+                            <li>计算机视觉（CV）</li>
+                            <li>知识图谱</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 行业解决方案 -->
+                <div class="service-card">
+                    <svg class="service-icon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    <h3>行业解决方案</h3>
+                    <div class="service-content">
+                        <div class="industry-item">
+                            <h4>政务领域</h4>
+                            <p>智能政务助手、政策解读、政策匹配、政策导办、智能党务助手</p>
+                        </div>
+                        <div class="industry-item">
+                            <h4>金融领域</h4>
+                            <p>企业新闻风险评估、客户交互机器人</p>
+                        </div>
+                        <div class="industry-item">
+                            <h4>教育领域</h4>
+                            <p>德国议会政策研究助手、中华文明标识知识库、习总书记治国理政政策分析助手</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 平台与生态 -->
+                <div class="service-card">
+                    <svg class="service-icon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                    <h3>平台与生态服务</h3>
+                    <div class="service-content">
+                        <h4>开放API接口</h4>
+                        <p>兼容第三方系统（网站、机器人等）</p>
+
+                        <h4>全球化支持</h4>
+                        <p>多语言模型适配，覆盖中、英、日、韩等10+语言</p>
+
+                        <h4>模型服务</h4>
+                        <p>支持业界主流模型的对接服务</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 技术优势 -->
+    <section class="section advantage-section">
+        <div class="container">
+            <div class="advantage-banner">
+                <h2>技术优势</h2>
+                <p class="advantage-highlight">
+                    <span class="highlight-text">大厂的技术 · 小公司的价格</span>
+                </p>
+                <p class="advantage-desc">
+                    已完成<strong>数百个agent</strong>的开发并成功上线
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 产品服务 - TOP_N平台 -->
+    <section id="products" class="section products-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">产品服务</h2>
+                <p class="section-subtitle">智能化推广解决方案</p>
+            </div>
+            <div class="product-showcase">
+                <div class="product-card featured">
+                    <div class="product-badge">明星产品</div>
+                    <h3>TOP_N 推广平台</h3>
+                    <p class="product-desc">
+                        基于AI智能体技术的企业推广平台，让您的公司在大模型推荐中排名靠前
+                    </p>
+                    <div class="product-features">
+                        <div class="feature-item">
+                            <span class="feature-icon">✨</span>
+                            <span>AI智能分析</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">📝</span>
+                            <span>自动生成文章</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">🚀</span>
+                            <span>一键发布推广</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">📊</span>
+                            <span>数据分析报告</span>
+                        </div>
+                    </div>
+                    <a href="/platform" class="btn btn-primary btn-large">立即体验</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 联系我们 -->
+    <section id="contact" class="section contact-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">联系我们</h2>
+                <p class="section-subtitle">期待与您开启智能体时代的合作</p>
+            </div>
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <svg class="contact-icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                        <div class="contact-details">
+                            <h4>官网</h4>
+                            <a href="https://www.yueqi.ai" target="_blank">www.yueqi.ai</a>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <svg class="contact-icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                        <div class="contact-details">
+                            <h4>商务合作</h4>
+                            <p>17377896@qq.com</p>
+                            <p>+86-15366449095</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <svg class="contact-icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                        <div class="contact-details">
+                            <h4>技术咨询</h4>
+                            <p>17377896@qq.com</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <svg class="contact-icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        <div class="contact-details">
+                            <h4>总部地址</h4>
+                            <p>深圳市南山区粤海街道科技园社区</p>
+                            <p>科智西路5号科苑西25栋</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="contact-form">
+                    <h3>发送咨询</h3>
+                    <form id="inquiry-form">
+                        <input type="text" placeholder="您的姓名" required>
+                        <input type="email" placeholder="您的邮箱" required>
+                        <input type="tel" placeholder="联系电话" required>
+                        <textarea placeholder="咨询内容" rows="5" required></textarea>
+                        <button type="submit" class="btn btn-primary">提交咨询</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 服务能力 -->
+    <section class="section capability-section">
+        <div class="container">
+            <div class="capability-banner">
+                <h3>服务能力</h3>
+                <div class="capability-items">
+                    <div class="capability-item">
+                        <span class="capability-label">标准项目</span>
+                        <span class="capability-value">2-4周</span>
+                    </div>
+                    <div class="capability-item">
+                        <span class="capability-label">定制开发</span>
+                        <span class="capability-value">3-6个月</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="logo">
+                        <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                        <span class="logo-text">月栖科技</span>
+                    </div>
+                    <p>让AI智能体成为每个人的协作伙伴</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>产品</h4>
+                        <ul>
+                            <li><a href="/platform">TOP_N平台</a></li>
+                            <li><a href="#services">智能体定制</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>公司</h4>
+                        <ul>
+                            <li><a href="#about">关于我们</a></li>
+                            <li><a href="#contact">联系我们</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4>资源</h4>
+                        <ul>
+                            <li><a href="#">技术文档</a></li>
+                            <li><a href="#">API文档</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 月栖科技 YueQi.AI - 专注AI智能体研发</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/user_display.js"></script>
+    <script src="/static/home.js"></script>
+    <script>
+        // 为home.html定义登录点击处理函数
+        function handleLoginClick() {
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

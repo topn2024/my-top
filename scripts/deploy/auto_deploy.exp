@@ -1,0 +1,82 @@
+#!/usr/bin/expect -f
+# Expect 自动化部署脚本
+
+set timeout 30
+set server "39.105.12.124"
+set user "u_topn"
+set password "TopN@2024"
+set deploy_dir "/home/u_topn/TOP_N"
+
+puts "=========================================="
+puts "  自动部署 TOP_N 平台到服务器"
+puts "=========================================="
+puts ""
+
+# 1. 上传 app_with_upload.py
+puts "【1】上传 backend/app_with_upload.py..."
+spawn scp -o StrictHostKeyChecking=no backend/app_with_upload.py ${user}@${server}:${deploy_dir}/backend/
+expect {
+    "password:" {
+        send "${password}\r"
+        expect eof
+    }
+}
+puts "✓ app_with_upload.py 上传完成"
+
+# 2. 上传 requirements.txt
+puts "【2】上传 requirements.txt..."
+spawn scp -o StrictHostKeyChecking=no requirements.txt ${user}@${server}:${deploy_dir}/
+expect {
+    "password:" {
+        send "${password}\r"
+        expect eof
+    }
+}
+puts "✓ requirements.txt 上传完成"
+
+# 3. 执行远程命令
+puts ""
+puts "【3】在服务器上安装依赖并重启服务..."
+spawn ssh -o StrictHostKeyChecking=no ${user}@${server}
+expect {
+    "password:" {
+        send "${password}\r"
+        expect "$ "
+
+        send "cd ${deploy_dir}\r"
+        expect "$ "
+
+        send "source venv/bin/activate\r"
+        expect "$ "
+
+        send "pip install -r requirements.txt --upgrade\r"
+        expect "$ "
+
+        send "sudo systemctl restart topn\r"
+        expect {
+            "password" {
+                send "${password}\r"
+                expect "$ "
+            }
+            "$ " {}
+        }
+
+        sleep 3
+
+        send "sudo systemctl status topn --no-pager | head -20\r"
+        expect "$ "
+
+        send "sudo journalctl -u topn -n 30 --no-pager\r"
+        expect "$ "
+
+        send "exit\r"
+    }
+}
+
+puts ""
+puts "=========================================="
+puts "  ✓ 部署完成！"
+puts "=========================================="
+puts ""
+puts "访问地址: http://39.105.12.124:8080"
+puts ""

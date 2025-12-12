@@ -1,0 +1,61 @@
+========================================
+知乎自动登录功能 - 简易部署说明
+========================================
+
+📦 需要上传的文件:
+1. zhihu_auto_post_enhanced.py (新增文件)
+2. app_with_upload.py (已修改)
+
+🔗 服务器信息:
+  地址: 39.105.12.124
+  用户: lihanya  
+  密码: @WSX2wsx
+  路径: /root/TOP_N/backend
+
+📝 部署步骤:
+
+1. 连接服务器
+   ssh lihanya@39.105.12.124
+
+2. 进入目录并备份
+   cd /root/TOP_N/backend
+   cp app_with_upload.py app_with_upload.py.backup
+
+3. 上传文件 (使用 WinSCP 或其他工具)
+   - D:\work\code\TOP_N\backend\zhihu_auto_post_enhanced.py
+     → /root/TOP_N/backend/zhihu_auto_post_enhanced.py
+   
+   - D:\work\code\TOP_N\backend\app_with_upload.py
+     → /root/TOP_N/backend/app_with_upload.py
+
+4. 验证文件
+   ls -lh zhihu_auto_post_enhanced.py app_with_upload.py
+   grep "from zhihu_auto_post_enhanced import" app_with_upload.py
+   grep "password=password," app_with_upload.py
+
+5. 重启服务
+   # 查找进程
+   ps aux | grep app_with_upload.py | grep -v grep
+   
+   # 停止进程 (替换 <PID>)
+   kill <PID>
+   
+   # 启动新服务
+   cd /root/TOP_N/backend
+   nohup python3 app_with_upload.py > logs/app.log 2>&1 &
+
+6. 验证服务
+   ps aux | grep app_with_upload.py | grep -v grep
+   netstat -tuln | grep 3001
+   tail -20 logs/app.log
+
+✅ 完成标志:
+  - Flask进程正在运行
+  - 端口3001正在监听
+  - 日志无错误信息
+
+📚 详细文档:
+  - backend/DEPLOYMENT_GUIDE.md
+  - docs/知乎自动登录功能实现说明.md
+
+========================================

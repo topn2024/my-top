@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分析生成 - TOP_N 推广平台</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 TOP_N 推广平台</h1>
+            <p class="subtitle">让您的公司在大模型推荐中排名靠前</p>
+        </header>
+
+        <main>
+            <!-- 步骤指示器 -->
+            <div class="steps">
+                <div class="step active" id="step1">
+                    <div class="step-number">1</div>
+                    <div class="step-title">输入信息</div>
+                </div>
+                <div class="step active" id="step2">
+                    <div class="step-number">2</div>
+                    <div class="step-title">分析生成</div>
+                </div>
+                <div class="step" id="step3">
+                    <div class="step-number">3</div>
+                    <div class="step-title">发布推广</div>
+                </div>
+            </div>
+
+            <!-- 分析结果 -->
+            <section id="analysis-section" class="section active">
+                <h2>📊 智能分析结果</h2>
+                <div id="analysis-result" class="result-box"></div>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="WorkflowNav.goToInput()">返回修改</button>
+                    <button class="btn btn-primary" id="generate-btn">生成推广文章</button>
+                </div>
+            </section>
+
+            <!-- 加载动画 -->
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p id="loading-text">正在处理中...</p>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2024 TOP_N Platform - 让您的品牌在AI时代脱颖而出</p>
+        </footer>
+    </div>
+
+    <script src="/static/state.js"></script>
+    <script src="/static/analysis.js"></script>
+</body>
+</html>

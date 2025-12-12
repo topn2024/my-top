@@ -1,0 +1,7 @@
+flask==2.0.3
+flask-cors==3.0.10
+openai
+requests
+gunicorn
+PyPDF2
+python-docx

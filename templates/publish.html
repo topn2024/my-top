@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发布推广 - TOP_N 推广平台</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h1>🚀 TOP_N 推广平台</h1>
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <div id="user-info" style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #666; font-size: 14px;">👤</span>
+                        <span id="username" style="color: #333; font-size: 14px; font-weight: 500;">加载中...</span>
+                    </div>
+                    <a href="/" class="home-link" style="text-decoration: none; color: #4CAF50; font-size: 16px; padding: 8px 16px; border: 2px solid #4CAF50; border-radius: 4px; transition: all 0.3s;">
+                        ← 返回首页
+                    </a>
+                </div>
+            </div>
+            <p class="subtitle">让您的公司在大模型推荐中排名靠前</p>
+        </header>
+
+        <main>
+            <!-- 步骤指示器 -->
+            <div class="steps">
+                <div class="step active" id="step1">
+                    <div class="step-number">1</div>
+                    <div class="step-title">输入信息</div>
+                </div>
+                <div class="step active" id="step2">
+                    <div class="step-number">2</div>
+                    <div class="step-title">分析生成</div>
+                </div>
+                <div class="step active" id="step3">
+                    <div class="step-number">3</div>
+                    <div class="step-title">发布推广</div>
+                </div>
+            </div>
+
+            <!-- 发布选择 -->
+            <section id="publish-section" class="section active">
+                <h2>🌐 发布推广文章</h2>
+
+                <!-- 文章选择 -->
+                <div class="publish-selection">
+                    <h3>选择要发布的文章</h3>
+                    <div id="article-selection"></div>
+                </div>
+
+                <!-- 平台选择 -->
+                <div class="platform-selection">
+                    <h3>选择发布平台</h3>
+                    <div id="platform-list">
+                        <div class="platform-item">
+                            <input type="checkbox" id="platform-zhihu" value="知乎" checked>
+                            <label for="platform-zhihu">
+                                <strong>知乎</strong>
+                                <span class="platform-desc">专业的知识分享平台</span>
+                            </label>
+                        </div>
+                        <div class="platform-item">
+                            <input type="checkbox" id="platform-csdn" value="CSDN">
+                            <label for="platform-csdn">
+                                <strong>CSDN</strong>
+                                <span class="platform-desc">技术开发者社区</span>
+                            </label>
+                        </div>
+                        <div class="platform-item">
+                            <input type="checkbox" id="platform-juejin" value="掘金">
+                            <label for="platform-juejin">
+                                <strong>掘金</strong>
+                                <span class="platform-desc">技术分享社区</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 发布历史 -->
+                <div class="publish-history">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;">发布历史</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="publishHistoryManager.clearSuccessTasks()" class="btn btn-success" style="padding: 8px 16px; font-size: 14px; background-color: #10b981;">
+                                🗑️ 清理成功任务
+                            </button>
+                            <button onclick="publishHistoryManager.clearFailedTasks()" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px; background-color: #ef4444;">
+                                🗑️ 清理失败任务
+                            </button>
+                            <button onclick="publishHistoryManager.clearCompletedTasks()" class="btn btn-warning" style="padding: 8px 16px; font-size: 14px; background-color: #f59e0b;">
+                                🗑️ 清理全部已完成
+                            </button>
+                            <button onclick="publishHistoryManager.updateTempTitles()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;">
+                                🔄 刷新临时文章标题
+                            </button>
+                        </div>
+                    </div>
+                    <div id="history-stats"></div>
+                    <div id="history-container"></div>
+                    <div id="pagination-container"></div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="WorkflowNav.goToArticles()">返回文章</button>
+                    <button class="btn btn-primary" onclick="startPublish()">开始发布</button>
+                    <button class="btn btn-secondary" onclick="WorkflowNav.startOver()">重新开始</button>
+                </div>
+            </section>
+
+            <!-- 加载动画 -->
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p id="loading-text">正在处理中...</p>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2024 TOP_N Platform - 让您的品牌在AI时代脱颖而出</p>
+        </footer>
+    </div>
+
+    <script src="/static/state.js?v=20240115"></script>
+    <script src="/static/publish_history.js?v=20240115"></script>
+    <script src="/static/publish.js?v=20240115"></script>
+</body>
+</html>
