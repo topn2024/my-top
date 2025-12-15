@@ -53,8 +53,14 @@ class FileService:
         Returns:
             bool: 是否允许该文件类型
         """
-        return '.' in filename and \
-               filename.rsplit('.', 1)[1].lower() in self.allowed_extensions
+        if not filename or '.' not in filename:
+            return False
+
+        parts = filename.rsplit('.', 1)
+        if len(parts) < 2:
+            return False
+
+        return parts[1].lower() in self.allowed_extensions
 
     def validate_file(self, file) -> Tuple[bool, str]:
         """
@@ -125,7 +131,12 @@ class FileService:
             logger.error(f"File not found: {filepath}")
             return None
 
-        ext = filepath.rsplit('.', 1)[1].lower()
+        # 安全获取文件扩展名
+        parts = filepath.rsplit('.', 1)
+        if len(parts) < 2:
+            logger.error(f"File has no extension: {filepath}")
+            return None
+        ext = parts[1].lower()
 
         try:
             if ext in ['txt', 'md']:
