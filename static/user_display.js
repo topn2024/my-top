@@ -92,6 +92,12 @@ class UserDisplay {
                             <span>🚀</span> 推广平台
                         </a>
                         <div class="user-menu-divider"></div>
+                        ${isAdmin ? `
+                        <a href="/admin" class="user-menu-item">
+                            <span>🎛️</span> 管理控制台
+                        </a>
+                        <div class="user-menu-divider"></div>
+                        ` : ''}
                         <button class="user-menu-item" onclick="userDisplay.logout()">
                             <span>🚪</span> 退出登录
                         </button>

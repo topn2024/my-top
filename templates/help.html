@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帮助中心 - TOP_N AI营销推广平台</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/page-header.css') }}">
+    <style>
+        /* 帮助中心专用样式 */
+        .help-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .help-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .help-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .help-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .help-content {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .help-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .help-sidebar {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .help-sidebar h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .help-nav {
+            list-style: none;
+            padding: 0;
+        }
+
+        .help-nav li {
+            margin-bottom: 8px;
+        }
+
+        .help-nav a {
+            display: block;
+            padding: 10px 15px;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .help-nav a:hover,
+        .help-nav a.active {
+            background: white;
+            color: #667eea;
+            border-left-color: #667eea;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .help-main {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .help-section {
+            margin-bottom: 40px;
+        }
+
+        .help-section h2 {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .help-section h3 {
+            color: #34495e;
+            font-size: 1.3rem;
+            margin: 25px 0 15px 0;
+        }
+
+        .help-section h4 {
+            color: #2c3e50;
+            font-size: 1.1rem;
+            margin: 20px 0 10px 0;
+        }
+
+        .help-section p {
+            line-height: 1.7;
+            color: #4a5568;
+            margin-bottom: 15px;
+        }
+
+        .help-section ul, .help-section ol {
+            padding-left: 25px;
+            margin-bottom: 15px;
+        }
+
+        .help-section li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+
+        .alert-info {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            color: #0d47a1;
+        }
+
+        .alert-warning {
+            background: #fff3e0;
+            border: 1px solid #ffcc02;
+            color: #e65100;
+        }
+
+        .alert-success {
+            background: #e8f5e8;
+            border: 1px solid #c3e6c3;
+            color: #1b5e20;
+        }
+
+        .step-guide {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .feature-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .feature-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .back-to-top.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .back-to-top:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        .contact-support {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .contact-support h3 {
+            margin-bottom: 15px;
+        }
+
+        .contact-support button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .contact-support button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="help-container">
+        <!-- 页面头部 -->
+        <div class="help-header">
+            <h1>📚 帮助中心</h1>
+            <p>欢迎使用TOP_N AI营销推广平台，这里为您提供详细的使用指南和常见问题解答</p>
+        </div>
+
+        <!-- 主要内容区域 -->
+        <div class="help-content">
+            <!-- 侧边导航 -->
+            <aside class="help-sidebar">
+                <h3>快速导航</h3>
+                <ul class="help-nav">
+                    <li><a href="#getting-started" class="nav-link">🚀 快速开始</a></li>
+                    <li><a href="#features" class="nav-link">✨ 功能介绍</a></li>
+                    <li><a href="#user-guide" class="nav-link">📖 使用指南</a></li>
+                    <li><a href="#templates" class="nav-link">📝 模板系统</a></li>
+                    <li><a href="#accounts" class="nav-link">🔐 账号管理</a></li>
+                    <li><a href="#publishing" class="nav-link">📤 发布管理</a></li>
+                    <li><a href="#faq" class="nav-link">❓ 常见问题</a></li>
+                    <li><a href="#troubleshooting" class="nav-link">🔧 故障排查</a></li>
+                    <li><a href="#api" class="nav-link">🔌 API文档</a></li>
+                </ul>
+            </aside>
+
+            <!-- 主要内容 -->
+            <main class="help-main">
+                <!-- 快速开始 -->
+                <section id="getting-started" class="help-section">
+                    <h2>🚀 快速开始</h2>
+
+                    <h3>什么是TOP_N平台？</h3>
+                    <p>TOP_N是一个智能营销推广平台，帮助您的企业在各大主流大模型推荐中获得更好的排名和曝光度。我们使用先进的AI技术，为您生成专业的推广内容。</p>
+
+                    <div class="step-guide">
+                        <h4>开始使用的4个简单步骤：</h4>
+                        <ol style="margin-top: 15px;">
+                            <li><span class="step-number">1</span> 注册账号并登录系统</li>
+                            <li><span class="step-number">2</span> 输入您的企业/产品信息</li>
+                            <li><span class="step-number">3</span> 选择模板并生成推广文章</li>
+                            <li><span class="step-number">4</span> 配置发布账号并自动发布</li>
+                        </ol>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>💡 提示：</strong>首次使用建议先阅读<a href="#user-guide">使用指南</a>，了解每个功能模块的详细操作方法。
+                    </div>
+                </section>
+
+                <!-- 功能介绍 -->
+                <section id="features" class="help-section">
+                    <h2>✨ 功能介绍</h2>
+
+                    <div class="feature-card">
+                        <h4>🤖 智能分析</h4>
+                        <p>使用阿里云千问大模型深度分析您的企业信息，从多个维度进行全面评估：</p>
+                        <ul>
+                            <li>行业定位分析</li>
+                            <li>核心优势识别</li>
+                            <li>目标用户画像</li>
+                            <li>技术特点提炼</li>
+                            <li>市场前景预测</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>📝 批量生成</h4>
+                        <p>一键生成多篇不同角度的推广文章，每篇文章800-1500字，适合各大平台发布要求。</p>
+                        <ul>
+                            <li>支持1-5篇文章批量生成</li>
+                            <li>不同角度和风格的内容</li>
+                            <li>SEO优化的文章结构</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>🌐 多平台支持</h4>
+                        <p>支持主流社交媒体和内容平台的自动发布：</p>
+                        <ul>
+                            <li>知乎 - 专业问答社区</li>
+                            <li>CSDN - 技术开发者社区</li>
+                            <li>掘金 - 技术内容分享</li>
+                            <li>更多平台持续添加中...</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>🔐 安全管理</h4>
+                        <p>完善的账号安全和数据保护机制：</p>
+                        <ul>
+                            <li>密码加密存储</li>
+                            <li>Session安全管理</li>
+                            <li>操作日志记录</li>
+                            <li>权限分级控制</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- 使用指南 -->
+                <section id="user-guide" class="help-section">
+                    <h2>📖 使用指南</h2>
+
+                    <h3>1. 注册和登录</h3>
+                    <p>访问系统首页，点击右上角的"登录/注册"按钮：</p>
+                    <ol>
+                        <li>填写用户名、邮箱和密码进行注册</li>
+                        <li>使用已有账号直接登录</li>
+                        <li>系统会自动保存您的登录状态</li>
+                    </ol>
+
+                    <h3>2. 企业信息输入</h3>
+                    <p>登录后进入主界面，填写您的企业信息：</p>
+                    <ul>
+                        <li><strong>企业/产品名称：</strong>准确的名称有助于AI生成更精准的内容</li>
+                        <li><strong>业务领域：</strong>选择或输入所属行业</li>
+                        <li><strong>核心优势：</strong>详细描述您的产品特色和竞争优势</li>
+                        <li><strong>补充资料：</strong>可选上传PDF、Word或TXT文件作为参考</li>
+                    </ul>
+
+                    <div class="alert alert-warning">
+                        <strong>⚠️ 注意：</strong>上传的文件大小不能超过10MB，支持格式包括txt、pdf、doc、docx、md。
+                    </div>
+
+                    <h3>3. AI智能分析</h3>
+                    <p>点击"开始分析"按钮，系统将：</p>
+                    <ol>
+                        <li>自动分析您输入的企业信息</li>
+                        <li>识别关键业务要素和优势</li>
+                        <li>生成详细的分析报告</li>
+                        <li>推荐合适的推广策略</li>
+                    </ol>
+
+                    <h3>4. 文章生成</h3>
+                    <p>基于分析结果生成推广文章：</p>
+                    <ul>
+                        <li>选择需要生成的文章数量（1-5篇）</li>
+                        <li>选择合适的提示词模板（可选）</li>
+                        <li>点击"生成文章"开始创作</li>
+                        <li>等待AI完成内容生成（约10-30秒/篇）</li>
+                    </ul>
+
+                    <h3>5. 账号配置</h3>
+                    <p>在"账号管理"页面配置各平台账号：</p>
+                    <ol>
+                        <li>点击"添加账号"按钮</li>
+                        <li>选择平台类型（知乎、CSDN等）</li>
+                        <li>输入账号用户名和密码</li>
+                        <li>系统自动加密存储账号信息</li>
+                    </ol>
+                </section>
+
+                <!-- 模板系统 -->
+                <section id="templates" class="help-section">
+                    <h2>📝 模板系统</h2>
+
+                    <h3>什么是提示词模板？</h3>
+                    <p>提示词模板是预设的AI对话框架，包含系统提示词和用户模板，用于生成特定风格和内容的推广文章。</p>
+
+                    <h3>模板类型</h3>
+                    <div class="feature-card">
+                        <h4>行业模板</h4>
+                        <ul>
+                            <li>科技行业模板 - 适合技术公司和产品</li>
+                            <li>金融行业模板 - 适合金融机构和服务</li>
+                            <li>教育行业模板 - 适合在线教育和培训</li>
+                            <li>零售行业模板 - 适合电商和实体店</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>平台模板</h4>
+                        <ul>
+                            <li>知乎模板 - 专业问答风格</li>
+                            <li>CSDN模板 - 技术分享风格</li>
+                            <li>掘金模板 - 深度分析风格</li>
+                        </ul>
+                    </div>
+
+                    <h3>如何使用模板？</h3>
+                    <ol>
+                        <li>在文章生成页面选择"使用模板"</li>
+                        <li>从模板库中选择合适的模板</li>
+                        <li>系统自动应用模板进行内容生成</li>
+                        <li>可以在生成后进一步编辑和优化</li>
+                    </ol>
+
+                    <h3>模板管理</h3>
+                    <p>管理员可以在模板管理页面：</p>
+                    <ul>
+                        <li>创建新的提示词模板</li>
+                        <li>编辑现有模板内容</li>
+                        <li>设置模板分类和标签</li>
+                        <li>查看模板使用统计</li>
+                    </ul>
+                </section>
+
+                <!-- 账号管理 -->
+                <section id="accounts" class="help-section">
+                    <h2>🔐 账号管理</h2>
+
+                    <h3>添加发布账号</h3>
+                    <div class="step-guide">
+                        <ol>
+                            <li>进入"账号管理"页面</li>
+                            <li>点击"添加新账号"按钮</li>
+                            <li>选择平台类型</li>
+                            <li>填写登录信息</li>
+                            <li>测试连接并保存</li>
+                        </ol>
+                    </div>
+
+                    <h3>支持的平台</h3>
+                    <ul>
+                        <li><strong>知乎：</strong>支持用户名密码登录和Cookie登录</li>
+                        <li><strong>CSDN：</strong>支持多种登录方式</li>
+                        <li><strong>掘金：</strong>支持账号密码登录</li>
+                    </ul>
+
+                    <div class="alert alert-info">
+                        <strong>💡 安全提示：</strong>所有账号密码都经过AES加密存储，确保您的账号安全。
+                    </div>
+
+                    <h3>Cookie登录</h3>
+                    <p>对于某些平台，支持使用Cookie进行登录：</p>
+                    <ul>
+                        <li>获取平台登录后的Cookie</li>
+                        <li>将Cookie粘贴到指定输入框</li>
+                        <li>系统自动验证Cookie有效性</li>
+                        <li>保存后可用于自动发布</li>
+                    </ul>
+                </section>
+
+                <!-- 发布管理 -->
+                <section id="publishing" class="help-section">
+                    <h2>📤 发布管理</h2>
+
+                    <h3>单篇发布</h3>
+                    <p>选择已生成的文章进行发布：</p>
+                    <ol>
+                        <li>在文章列表中选择目标文章</li>
+                        <li>选择发布平台</li>
+                        <li>设置发布参数（标题、标签等）</li>
+                        <li>点击"发布"按钮</li>
+                        <li>查看发布结果和状态</li>
+                    </ol>
+
+                    <h3>批量发布</h3>
+                    <p>支持多篇文章批量发布：</p>
+                    <ul>
+                        <li>选择多篇文章（最多5篇）</li>
+                        <li>选择目标平台</li>
+                        <li>系统自动设置发布间隔</li>
+                        <li>监控批量发布进度</li>
+                    </ul>
+
+                    <h3>发布历史</h3>
+                    <p>在"发布历史"页面可以：</p>
+                    <ul>
+                        <li>查看所有发布记录</li>
+                        <li>筛选特定平台的发布记录</li>
+                        <li>查看发布状态和结果</li>
+                        <li>重新发布失败的内容</li>
+                    </ul>
+
+                    <div class="alert alert-success">
+                        <strong>✅ 发布建议：</strong>建议在不同平台发布不同角度的文章，避免内容重复，提高推广效果。
+                    </div>
+                </section>
+
+                <!-- 常见问题 -->
+                <section id="faq" class="help-section">
+                    <h2>❓ 常见问题</h2>
+
+                    <h3>Q1: AI生成的内容质量如何保证？</h3>
+                    <p><strong>A：</strong>我们使用先进的AI模型（智谱AI GLM-4和千问AI），结合专业的提示词模板，确保生成的内容专业、准确、有吸引力。同时支持人工审核和编辑。</p>
+
+                    <h3>Q2: 生成一篇文章需要多长时间？</h3>
+                    <p><strong>A：</strong>通常需要10-30秒/篇，具体时间取决于文章长度和AI响应速度。系统支持并发生成，多篇文章会并行处理。</p>
+
+                    <h3>Q3: 支持哪些文件格式上传？</h3>
+                    <p><strong>A：</strong>目前支持txt、pdf、doc、docx、md格式的文件，文件大小不超过10MB。</p>
+
+                    <h3>Q4: 如何保证账号安全？</h3>
+                    <p><strong>A：</strong>所有敏感信息都经过AES-256加密存储，传输过程使用HTTPS加密。我们还实施多重安全机制保护您的数据。</p>
+
+                    <h3>Q5: 发布失败怎么办？</h3>
+                    <p><strong>A：</strong>首先检查网络连接和账号状态，然后可以尝试重新发布。如果持续失败，建议联系技术支持。</p>
+
+                    <h3>Q6: 可以自定义提示词模板吗？</h3>
+                    <p><strong>A：</strong>管理员用户可以在模板管理页面创建和编辑自定义模板，普通用户可以选择合适的模板使用。</p>
+
+                    <h3>Q7: 是否支持API调用？</h3>
+                    <p><strong>A：</strong>是的，我们提供完整的REST API，支持程序化调用所有功能。详见API文档部分。</p>
+                </section>
+
+                <!-- 故障排查 -->
+                <section id="troubleshooting" class="help-section">
+                    <h2>🔧 故障排查</h2>
+
+                    <h3>登录问题</h3>
+                    <div class="alert alert-warning">
+                        <strong>问题：</strong>无法登录系统
+                    </div>
+                    <p><strong>解决方案：</strong></p>
+                    <ul>
+                        <li>检查用户名和密码是否正确</li>
+                        <li>清除浏览器缓存和Cookie</li>
+                        <li>尝试使用其他浏览器</li>
+                        <li>联系管理员重置密码</li>
+                    </ul>
+
+                    <h3>AI分析问题</h3>
+                    <div class="alert alert-warning">
+                        <strong>问题：</strong>AI分析失败或响应缓慢
+                    </div>
+                    <p><strong>解决方案：</strong></p>
+                    <ul>
+                        <li>检查网络连接状态</li>
+                        <li>简化输入的企业信息</li>
+                        <li>等待片刻后重试</li>
+                        <li>检查API配额是否充足</li>
+                    </ul>
+
+                    <h3>文件上传问题</h3>
+                    <div class="alert alert-warning">
+                        <strong>问题：</strong>文件上传失败
+                    </div>
+                    <p><strong>解决方案：</strong></p>
+                    <ul>
+                        <li>检查文件格式是否支持</li>
+                        <li>确认文件大小不超过10MB</li>
+                        <li>检查文件是否损坏</li>
+                        <li>尝试压缩后重新上传</li>
+                    </ul>
+
+                    <h3>发布问题</h3>
+                    <div class="alert alert-warning">
+                        <strong>问题：</strong>文章发布失败
+                    </div>
+                    <p><strong>解决方案：</strong></p>
+                    <ul>
+                        <li>验证平台账号信息</li>
+                        <li>检查账号是否被限制</li>
+                        <li>确认网络连接正常</li>
+                        <li>检查文章内容是否符合平台规范</li>
+                    </ul>
+                </section>
+
+                <!-- API文档 -->
+                <section id="api" class="help-section">
+                    <h2>🔌 API文档</h2>
+
+                    <h3>基础信息</h3>
+                    <ul>
+                        <li><strong>Base URL：</strong>http://39.105.12.124:8080</li>
+                        <li><strong>认证方式：</strong>Session Cookie</li>
+                        <li><strong>数据格式：</strong>JSON</li>
+                        <li><strong>字符编码：</strong>UTF-8</li>
+                    </ul>
+
+                    <h3>主要API端点</h3>
+
+                    <h4>用户认证</h4>
+                    <div class="code-block">
+POST /api/auth/login
+Content-Type: application/json
+
+{
+    "username": "your_username",
+    "password": "your_password"
+}
+                    </div>
+
+                    <h4>AI分析</h4>
+                    <div class="code-block">
+POST /api/analysis/analyze
+Content-Type: application/json
+
+{
+    "company_name": "公司名称",
+    "company_desc": "公司描述",
+    "business_area": "业务领域",
+    "core_advantages": "核心优势"
+}
+                    </div>
+
+                    <h4>文章生成</h4>
+                    <div class="code-block">
+POST /api/article/generate
+Content-Type: application/json
+
+{
+    "analysis_data": {...},
+    "count": 3,
+    "template_id": 1
+}
+                    </div>
+
+                    <h4>模板查询</h4>
+                    <div class="code-block">
+GET /api/prompt-templates/templates
+GET /api/prompt-templates/templates/:id
+GET /api/prompt-templates/stats
+                    </div>
+
+                    <h4>账号管理</h4>
+                    <div class="code-block">
+GET /api/accounts/list
+POST /api/accounts/add
+PUT /api/accounts/:id
+DELETE /api/accounts/:id
+                    </div>
+
+                    <h3>响应格式</h3>
+                    <div class="code-block">
+{
+    "success": true,
+    "data": {...},
+    "message": "操作成功",
+    "timestamp": "2025-12-15T10:30:00Z"
+}
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>📖 详细API文档：</strong>获取完整的API文档，请联系技术支持或访问开发者中心。
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <!-- 联系支持 -->
+        <div class="contact-support">
+            <h3>💬 需要更多帮助？</h3>
+            <p>我们的技术支持团队随时为您提供协助</p>
+            <button onclick="showContactModal()">联系技术支持</button>
+        </div>
+    </div>
+
+    <!-- 返回顶部按钮 -->
+    <div class="back-to-top" id="backToTop">↑</div>
+
+    <!-- 联系支持模态框 -->
+    <div id="contactModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
+            <h3>联系技术支持</h3>
+            <p>请选择联系方式：</p>
+            <ul>
+                <li>📧 邮箱：support@topn.com</li>
+                <li>💬 在线客服：工作日 9:00-18:00</li>
+                <li>📱 QQ群：123456789</li>
+                <li>🔗 GitHub：https://github.com/topn2024/TOP_N/issues</li>
+            </ul>
+            <button onclick="hideContactModal()" style="margin-top: 20px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        // 导航高亮
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('.help-section');
+
+            // 滚动监听
+            function updateActiveNav() {
+                let currentSection = '';
+
+                sections.forEach(section => {
+                    const rect = section.getBoundingClientRect();
+                    if (rect.top <= 100 && rect.bottom >= 100) {
+                        currentSection = section.id;
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + currentSection) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', updateActiveNav);
+            updateActiveNav();
+
+            // 平滑滚动
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection) {
+                        targetSection.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        });
+
+        // 返回顶部
+        const backToTop = document.getElementById('backToTop');
+
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                backToTop.classList.add('show');
+            } else {
+                backToTop.classList.remove('show');
+            }
+        });
+
+        backToTop.addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        // 联系支持模态框
+        function showContactModal() {
+            document.getElementById('contactModal').style.display = 'block';
+        }
+
+        function hideContactModal() {
+            document.getElementById('contactModal').style.display = 'none';
+        }
+
+        // 点击模态框外部关闭
+        document.getElementById('contactModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideContactModal();
+            }
+        });
+    </script>
+</body>
+</html>

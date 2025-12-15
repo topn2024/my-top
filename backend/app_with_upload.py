@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+from functools import wraps
 import openai
 import os
 import json
@@ -12,6 +13,41 @@ import requests
 # 导入数据库和认证模块
 from models import User, Workflow, Article, PlatformAccount, PublishHistory, get_db_session
 from auth import hash_password, verify_password, create_user, authenticate_user, login_required, get_current_user
+
+# 管理员权限装饰器
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # 检查用户是否已登录
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': '请先登录'}), 401
+
+        # 检查用户是否为管理员
+        # 支持两种方式：用户名admin或者user.role=admin
+        try:
+            # 从session获取用户信息
+            auth_response = requests.get('/api/auth/me', cookies=request.cookies)
+            if auth_response.status_code == 200:
+                auth_data = auth_response.json()
+                if auth_data.success and auth_data.user:
+                    username = auth_data.user.username
+                    user_role = getattr(auth_data.user, 'role', 'user')
+
+                    # 如果是管理员用户名或者是admin角色
+                    if username == 'admin' or user_role == 'admin':
+                        return f(*args, **kwargs)
+                    # 否则检查其他管理员权限
+                    elif username in ['administrator', 'superuser', 'root'] or user_role in ['administrator', 'superuser', 'root']:
+                        return f(*args, **kwargs)
+
+            # 404未授权或其他错误
+            return jsonify({'success': False, 'message': '需要管理员权限'}), 403
+
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'权限检查失败: {str(e)}'}), 500
+
+    return decorated_function
+    return decorated_function
 from encryption import encrypt_password, decrypt_password
 from database import get_db_context
 
@@ -786,6 +822,49 @@ def get_ai_models():
 def login_page():
     """登录页面"""
     return render_template('login.html')
+
+
+@app.route('/help')
+def help_center():
+    """帮助中心页面"""
+    return render_template('help.html')
+
+
+@app.route('/admin')
+def admin_dashboard():
+    """企业级管理控制台 - 仅管理员"""
+    # 检查用户登录状态
+    if not session.get('username'):
+        return jsonify({'success': False, 'message': '请先登录'}), 401
+
+    # 获取用户信息进行权限验证
+    user_id = session.get('user_id')
+    username = session.get('username', '')
+
+    # 如果有用户ID，验证用户角色
+    if user_id and username:
+        try:
+            db = get_db_session()
+            user = db.query(User).filter_by(id=user_id, is_active=True).first()
+
+            if user and user.username.lower() in ['admin', 'administrator', 'superuser', 'root']:
+                return render_template('admin_dashboard.html')
+            elif user:
+                return jsonify({'success': False, 'message': '权限不足'}), 403
+
+        except Exception as e:
+            print(f"权限检查错误: {str(e)}")
+            # 如果数据库查询失败，使用简单用户名检查作为后备
+            if username.lower() in ['admin', 'administrator', 'superuser', 'root']:
+                return render_template('admin_dashboard.html')
+            else:
+                return jsonify({'success': False, 'message': '权限不足'}), 403
+
+    # 默认检查用户名（后备方案）
+    if username and username.lower() in ['admin', 'administrator', 'superuser', 'root']:
+        return render_template('admin_dashboard.html')
+
+    return jsonify({'success': False, 'message': '权限不足'}), 403
 
 @app.route('/api/auth/register', methods=['POST'])
 @log_api_request("用户注册")

@@ -40,14 +40,27 @@ def register():
         user, error = create_user(username, email, password, full_name)
 
         if user:
+            # 注册成功后自动登录
+            session['user_id'] = user.id
+            session['username'] = user.username
+            session.permanent = True
+
             logger.info(f'User registered: {username}')
+
+            # 获取用户角色
+            role = getattr(user, 'role', 'user')
+
             return jsonify({
                 'success': True,
                 'message': '注册成功',
                 'user': {
                     'id': user.id,
                     'username': user.username,
-                    'email': user.email
+                    'email': user.email,
+                    'role': role,
+                    'full_name': getattr(user, 'full_name', ''),
+                    'is_active': getattr(user, 'is_active', True),
+                    'created_at': user.created_at.isoformat() if hasattr(user, 'created_at') else None
                 }
             })
         else:
@@ -74,18 +87,28 @@ def login():
         user = authenticate_user(username, password)
 
         if user:
-            # 设置session
+            # 设置完整的session信息
             session['user_id'] = user.id
+            session['username'] = user.username  # 添加username到session
             session.permanent = True
 
             logger.info(f'User logged in: {username}')
+
+            # 获取用户角色
+            role = getattr(user, 'role', 'user')
+
             return jsonify({
                 'success': True,
                 'message': '登录成功',
                 'user': {
                     'id': user.id,
                     'username': user.username,
-                    'email': user.email
+                    'email': user.email,
+                    'role': role,
+                    'full_name': getattr(user, 'full_name', ''),
+                    'is_active': getattr(user, 'is_active', True),
+                    'created_at': user.created_at.isoformat() if hasattr(user, 'created_at') else None,
+                    'last_login': user.last_login.isoformat() if hasattr(user, 'last_login') else None
                 }
             })
         else:

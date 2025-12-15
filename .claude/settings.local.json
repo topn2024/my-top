@@ -50,7 +50,20 @@
       "Bash(tree:*)",
       "Bash(grep:*)",
       "Bash(paste:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git fetch origin)",
+      "Bash(venvScriptspython.exe app_with_upload.py)",
+      "Bash(./venv/Scripts/python.exe app_with_upload.py)",
+      "Bash(for file in backend/services/platform_style_service.py backend/services/prompt_combination_service.py backend/services/prompt_template_service.py)",
+      "Bash(do)",
+      "Bash(if grep -q \"@log_service_call\" \"$file\")",
+      "Bash(! grep -q \"from logger_config import log_service_call\" \"$file\")",
+      "Bash(then)",
+      "Bash(echo:*)",
+      "Bash(\"./venv/Scripts/python.exe\" test_blueprints_app.py)",
+      "Bash(iconv:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

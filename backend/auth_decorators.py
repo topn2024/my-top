@@ -84,8 +84,20 @@ def admin_required(f):
                 }), 401
             return redirect(url_for('auth.login_page'))
 
+        # 检查用户是否为管理员（支持多种判断方式）
         role = getattr(user, 'role', 'user')
-        if role != ROLE_ADMIN:
+        username = getattr(user, 'username', '')
+
+        # 管理员判断条件：
+        # 1. role 字段为 admin
+        # 2. 用户名为 admin/administrator/superuser/root
+        is_admin = (
+            role == ROLE_ADMIN or
+            role in ['administrator', 'superuser', 'root'] or
+            username.lower() in ['admin', 'administrator', 'superuser', 'root']
+        )
+
+        if not is_admin:
             if request.is_json or request.path.startswith('/api/'):
                 return jsonify({
                     'success': False,

@@ -16,6 +16,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import SessionLocal
 from models_prompt_v2 import ArticlePrompt
 
+try:
+    from logger_config import log_service_call
+except ImportError:
+    # 如果没有 log_service_call，创建一个空装饰器
+    def log_service_call(name):
+        def decorator(func):
+            return func
+        return decorator
+
 
 class ArticlePromptService:
     """文章生成提示词服务类"""

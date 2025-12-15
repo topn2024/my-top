@@ -52,6 +52,12 @@ def login_page():
     return render_template('login.html')
 
 
+@pages_bp.route('/help')
+def help_center():
+    """帮助中心页面 - 公开访问"""
+    return render_template('help.html')
+
+
 @pages_bp.route('/templates')
 @admin_required
 def templates():
@@ -71,3 +77,10 @@ def template_guide():
 def prompts_v2():
     """提示词管理系统V2 - 仅管理员"""
     return render_template('prompt_management_v2.html')
+
+
+@pages_bp.route('/admin')
+@admin_required
+def admin_dashboard():
+    """企业级管理控制台 - 仅管理员"""
+    return render_template('admin_dashboard.html')

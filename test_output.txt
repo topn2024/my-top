@@ -1,0 +1,209 @@
+2025-12-15 13:09:29,135 - root - INFO - [app_factory.py:104] - 日志配置完成: 控制台输出 + D:\code\TOP_N\logs\all.log
+2025-12-15 13:09:30,869 - root - INFO - [app_factory.py:144] - Blueprints registered successfully
+2025-12-15 13:09:30,873 - root - INFO - [app_factory.py:104] - 日志配置完成: 控制台输出 + D:\code\TOP_N\logs\all.log
+2025-12-15 13:09:30,977 - root - INFO - [app_factory.py:144] - Blueprints registered successfully
+============================================================
+测试 Blueprints 架构应用（服务器版本）
+============================================================
+
+测试 1: 用户登录
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:167] - ╔════════════════════════════════════════════════════════════════════════════════╗
+2025-12-15 13:09:31,000 - blueprints.auth - INFO - [logger_config.py:167] - ╔════════════════════════════════════════════════════════════════════════════════╗
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:168] - ║ 【请求开始】用户登录
+2025-12-15 13:09:31,003 - blueprints.auth - INFO - [logger_config.py:168] - ║ 【请求开始】用户登录
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:169] - ║ RequestID: 424fef77 | User: anonymous
+2025-12-15 13:09:31,003 - blueprints.auth - INFO - [logger_config.py:169] - ║ RequestID: 424fef77 | User: anonymous
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:170] - ║ Endpoint: POST /api/auth/login
+2025-12-15 13:09:31,003 - blueprints.auth - INFO - [logger_config.py:170] - ║ Endpoint: POST /api/auth/login
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:177] - ║ 请求数据: {
+  "password": "***HIDDEN***",
+  "username": "admin"
+}
+2025-12-15 13:09:31,004 - blueprints.auth - INFO - [logger_config.py:177] - ║ 请求数据: {
+  "password": "***HIDDEN***",
+  "username": "admin"
+}
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:183] - ║ 开始执行业务逻辑...
+2025-12-15 13:09:31,004 - blueprints.auth - INFO - [logger_config.py:183] - ║ 开始执行业务逻辑...
+2025-12-15 13:09:31 - blueprints.auth - INFO - [auth.py:95] - User logged in: admin
+2025-12-15 13:09:31,374 - blueprints.auth - INFO - [auth.py:95] - User logged in: admin
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:212] - ║ 执行完成: 耗时 0.370s | 状态码 200
+2025-12-15 13:09:31,374 - blueprints.auth - INFO - [logger_config.py:212] - ║ 执行完成: 耗时 0.370s | 状态码 200
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:214] - ║ 响应信息: success=True
+2025-12-15 13:09:31,375 - blueprints.auth - INFO - [logger_config.py:214] - ║ 响应信息: success=True
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:215] - ╚════════════════════════════════════════════════════════════════════════════════╝
+2025-12-15 13:09:31,375 - blueprints.auth - INFO - [logger_config.py:215] - ╚════════════════════════════════════════════════════════════════════════════════╝
+--- Logging error ---
+Traceback (most recent call last):
+  File "D:\Python3.13.1\Lib\logging\__init__.py", line 1153, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'gbk' codec can't encode character '\u2713' in position 72: illegal multibyte sequence
+Call stack:
+  File "D:\code\TOP_N\test_blueprints_app.py", line 102, in <module>
+    test_server_app()
+  File "D:\code\TOP_N\test_blueprints_app.py", line 28, in test_server_app
+    login_response = client.post(
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 1167, in post
+    return self.open(*args, **kw)
+  File "D:\Python3.13.1\Lib\site-packages\flask\testing.py", line 232, in open
+    response = super().open(
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 1116, in open
+    response_parts = self.run_wsgi_app(request.environ, buffered=buffered)
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 988, in run_wsgi_app
+    rv = run_wsgi_app(self.application, environ, buffered=buffered)
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 1264, in run_wsgi_app
+    app_rv = app(environ, start_response)
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 2213, in __call__
+    return self.wsgi_app(environ, start_response)
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+  File "D:\code\TOP_N\backend\logger_config.py", line 221, in wrapper
+    func_logger.info(f"\u2713 [{operation}] 成功完成 (RequestID: {request_id})")
+Message: '\u2713 [用户登录] 成功完成 (RequestID: 424fef77)'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "D:\Python3.13.1\Lib\logging\__init__.py", line 1153, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'gbk' codec can't encode character '\u2713' in position 76: illegal multibyte sequence
+Call stack:
+  File "D:\code\TOP_N\test_blueprints_app.py", line 102, in <module>
+    test_server_app()
+  File "D:\code\TOP_N\test_blueprints_app.py", line 28, in test_server_app
+    login_response = client.post(
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 1167, in post
+    return self.open(*args, **kw)
+  File "D:\Python3.13.1\Lib\site-packages\flask\testing.py", line 232, in open
+    response = super().open(
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 1116, in open
+    response_parts = self.run_wsgi_app(request.environ, buffered=buffered)
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 988, in run_wsgi_app
+    rv = run_wsgi_app(self.application, environ, buffered=buffered)
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 1264, in run_wsgi_app
+    app_rv = app(environ, start_response)
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 2213, in __call__
+    return self.wsgi_app(environ, start_response)
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+  File "D:\code\TOP_N\backend\logger_config.py", line 221, in wrapper
+    func_logger.info(f"\u2713 [{operation}] 成功完成 (RequestID: {request_id})")
+Message: '\u2713 [用户登录] 成功完成 (RequestID: 424fef77)'
+Arguments: ()
+  状态码: 200
+  登录成功: True
+  用户信息: {'created_at': '2025-12-13T14:43:39', 'email': 'admin@topn.com', 'full_name': 'System Administrator', 'id': 1, 'is_active': True, 'last_login': '2025-12-15T13:09:31.352362', 'role': 'admin', 'username': 'admin'}
+
+测试 2: 获取当前用户信息
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:167] - ╔════════════════════════════════════════════════════════════════════════════════╗
+2025-12-15 13:09:31,390 - blueprints.auth - INFO - [logger_config.py:167] - ╔════════════════════════════════════════════════════════════════════════════════╗
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:168] - ║ 【请求开始】获取当前用户信息
+2025-12-15 13:09:31,391 - blueprints.auth - INFO - [logger_config.py:168] - ║ 【请求开始】获取当前用户信息
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:169] - ║ RequestID: a5a8286b | User: 1
+2025-12-15 13:09:31,391 - blueprints.auth - INFO - [logger_config.py:169] - ║ RequestID: a5a8286b | User: 1
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:170] - ║ Endpoint: GET /api/auth/me
+2025-12-15 13:09:31,392 - blueprints.auth - INFO - [logger_config.py:170] - ║ Endpoint: GET /api/auth/me
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:183] - ║ 开始执行业务逻辑...
+2025-12-15 13:09:31,392 - blueprints.auth - INFO - [logger_config.py:183] - ║ 开始执行业务逻辑...
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:212] - ║ 执行完成: 耗时 0.009s | 状态码 200
+2025-12-15 13:09:31,400 - blueprints.auth - INFO - [logger_config.py:212] - ║ 执行完成: 耗时 0.009s | 状态码 200
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:214] - ║ 响应信息: success=True
+2025-12-15 13:09:31,401 - blueprints.auth - INFO - [logger_config.py:214] - ║ 响应信息: success=True
+2025-12-15 13:09:31 - blueprints.auth - INFO - [logger_config.py:215] - ╚════════════════════════════════════════════════════════════════════════════════╝
+2025-12-15 13:09:31,401 - blueprints.auth - INFO - [logger_config.py:215] - ╚════════════════════════════════════════════════════════════════════════════════╝
+--- Logging error ---
+Traceback (most recent call last):
+  File "D:\Python3.13.1\Lib\logging\__init__.py", line 1153, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'gbk' codec can't encode character '\u2713' in position 72: illegal multibyte sequence
+Call stack:
+  File "D:\code\TOP_N\test_blueprints_app.py", line 102, in <module>
+    test_server_app()
+  File "D:\code\TOP_N\test_blueprints_app.py", line 50, in test_server_app
+    me_response = client.get('/api/auth/me')
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 1162, in get
+    return self.open(*args, **kw)
+  File "D:\Python3.13.1\Lib\site-packages\flask\testing.py", line 232, in open
+    response = super().open(
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 1116, in open
+    response_parts = self.run_wsgi_app(request.environ, buffered=buffered)
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 988, in run_wsgi_app
+    rv = run_wsgi_app(self.application, environ, buffered=buffered)
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 1264, in run_wsgi_app
+    app_rv = app(environ, start_response)
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 2213, in __call__
+    return self.wsgi_app(environ, start_response)
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+  File "D:\code\TOP_N\backend\auth_decorators.py", line 70, in decorated_function
+    return f(*args, **kwargs)
+  File "D:\code\TOP_N\backend\logger_config.py", line 221, in wrapper
+    func_logger.info(f"\u2713 [{operation}] 成功完成 (RequestID: {request_id})")
+Message: '\u2713 [获取当前用户信息] 成功完成 (RequestID: a5a8286b)'
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "D:\Python3.13.1\Lib\logging\__init__.py", line 1153, in emit
+    stream.write(msg + self.terminator)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'gbk' codec can't encode character '\u2713' in position 76: illegal multibyte sequence
+Call stack:
+  File "D:\code\TOP_N\test_blueprints_app.py", line 102, in <module>
+    test_server_app()
+  File "D:\code\TOP_N\test_blueprints_app.py", line 50, in test_server_app
+    me_response = client.get('/api/auth/me')
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 1162, in get
+    return self.open(*args, **kw)
+  File "D:\Python3.13.1\Lib\site-packages\flask\testing.py", line 232, in open
+    response = super().open(
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 1116, in open
+    response_parts = self.run_wsgi_app(request.environ, buffered=buffered)
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 988, in run_wsgi_app
+    rv = run_wsgi_app(self.application, environ, buffered=buffered)
+  File "D:\Python3.13.1\Lib\site-packages\werkzeug\test.py", line 1264, in run_wsgi_app
+    app_rv = app(environ, start_response)
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 2213, in __call__
+    return self.wsgi_app(environ, start_response)
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "D:\Python3.13.1\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+  File "D:\code\TOP_N\backend\auth_decorators.py", line 70, in decorated_function
+    return f(*args, **kwargs)
+  File "D:\code\TOP_N\backend\logger_config.py", line 221, in wrapper
+    func_logger.info(f"\u2713 [{operation}] 成功完成 (RequestID: {request_id})")
+Message: '\u2713 [获取当前用户信息] 成功完成 (RequestID: a5a8286b)'
+Arguments: ()
+  状态码: 200
+  成功: True
+  用户名: admin
+  角色: admin
+
+测试 3: 访问管理控制台
+  状态码: 200
+  [OK] 管理控制台访问成功
+  [OK] 页面内容正确
+
+测试 4: 访问模板管理页面
+  状态码: 200
+  [OK] 模板管理页面访问成功
+
+============================================================
+测试完成
+============================================================

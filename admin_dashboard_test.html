@@ -1,0 +1,2251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理控制台 - TOP_N 企业级管理平台</title>
+    <link rel="stylesheet" href="/static/css/design-system.css">
+    <link rel="stylesheet" href="/static/css/page-header.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 管理控制台专用样式 */
+        .admin-dashboard {
+            display: flex;
+            min-height: 100vh;
+            background: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .admin-sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+            color: white;
+            padding: 20px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .admin-sidebar-header {
+            padding: 0 20px 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+
+        .admin-sidebar-header h2 {
+            font-size: 1.5rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-sidebar-header .subtitle {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .admin-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .admin-nav-item {
+            margin-bottom: 2px;
+        }
+
+        .admin-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .admin-nav-link:hover,
+        .admin-nav-link.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-left-color: #3b82f6;
+        }
+
+        .admin-nav-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .admin-nav-badge {
+            background: #ef4444;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: auto;
+        }
+
+        .admin-main {
+            flex: 1;
+            margin-left: 280px;
+            padding: 20px;
+        }
+
+        .admin-header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-header-left h1 {
+            font-size: 2rem;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .admin-header-left p {
+            color: #64748b;
+            margin: 5px 0 0 0;
+        }
+
+        .admin-header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .admin-btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .admin-btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .admin-btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .admin-btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .admin-btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .admin-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .admin-stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .admin-stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+        }
+
+        .admin-stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .admin-stat-title {
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .admin-stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .admin-stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .admin-stat-change {
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .admin-stat-change.positive {
+            color: #10b981;
+        }
+
+        .admin-stat-change.negative {
+            color: #ef4444;
+        }
+
+        .admin-content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 1200px) {
+            .admin-content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .admin-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .admin-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .admin-card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .admin-card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .admin-card-action {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .admin-card-action:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .admin-table th {
+            background: #f8fafc;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.85rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .admin-table td {
+            padding: 16px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.9rem;
+        }
+
+        .admin-table tr:hover td {
+            background: #f8fafc;
+        }
+
+        .admin-status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .admin-status-online {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .admin-status-offline {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .admin-status-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .admin-alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .admin-alert-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+        }
+
+        .admin-alert-warning {
+            background: #fffbeb;
+            border: 1px solid #fde047;
+            color: #a16207;
+        }
+
+        .admin-alert-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+        }
+
+        .admin-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        .admin-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .admin-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            color: #64748b;
+        }
+
+        .admin-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .admin-empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .admin-empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .quick-action-card {
+            background: #f8fafc;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quick-action-card:hover {
+            border-color: #3b82f6;
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+
+        .quick-action-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+
+        .quick-action-title {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .quick-action-desc {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+                z-index: 1000;
+            }
+
+            .admin-sidebar.open {
+                transform: translateX(0);
+            }
+
+            .admin-main {
+                margin-left: 0;
+            }
+
+            .admin-stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-dashboard">
+        <!-- 侧边导航栏 -->
+        <aside class="admin-sidebar" id="adminSidebar">
+            <div class="admin-sidebar-header">
+                <h2>
+                    <span>🎛️</span>
+                    管理控制台
+                </h2>
+                <div class="subtitle">TOP_N 企业级管理平台</div>
+            </div>
+
+            <nav>
+                <ul class="admin-nav">
+                    <li class="admin-nav-item">
+                        <a href="#overview" class="admin-nav-link active" data-section="overview">
+                            <span class="admin-nav-icon">📊</span>
+                            <span>概览面板</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#users" class="admin-nav-link" data-section="users">
+                            <span class="admin-nav-icon">👥</span>
+                            <span>用户管理</span>
+                            <span class="admin-nav-badge" id="userCount">0</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#workflows" class="admin-nav-link" data-section="workflows">
+                            <span class="admin-nav-icon">⚙️</span>
+                            <span>工作流管理</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#publishing" class="admin-nav-link" data-section="publishing">
+                            <span class="admin-nav-icon">📤</span>
+                            <span>发布管理</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#analytics" class="admin-nav-link" data-section="analytics">
+                            <span class="admin-nav-icon">📈</span>
+                            <span>数据分析</span>
+                            <span class="admin-nav-badge" id="analyticsCount">0</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#content-analysis" class="admin-nav-link" data-section="content-analysis">
+                            <span class="admin-nav-icon">📄</span>
+                            <span>内容分析</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#user-behavior" class="admin-nav-link" data-section="user-behavior">
+                            <span class="admin-nav-icon">👤</span>
+                            <span>用户行为</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#publishing-performance" class="admin-nav-link" data-section="publishing-performance">
+                            <span class="admin-nav-icon">📤</span>
+                            <span>发布效果</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#system" class="admin-nav-link" data-section="system">
+                            <span class="admin-nav-icon">🔧</span>
+                            <span>系统设置</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#logs" class="admin-nav-link" data-section="logs">
+                            <span class="admin-nav-icon">📋</span>
+                            <span>日志监控</span>
+                        </a>
+                    </li>
+                    <li class="admin-nav-item">
+                        <a href="#security" class="admin-nav-link" data-section="security">
+                            <span class="admin-nav-icon">🔐</span>
+                            <span>安全中心</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- 主要内容区域 -->
+        <main class="admin-main">
+            <!-- 页面头部 -->
+            <div class="admin-header">
+                <div class="admin-header-left">
+                    <h1>管理控制台</h1>
+                    <p>系统运行时间: <span id="systemUptime">0天 0小时 0分钟</span></p>
+                </div>
+                <div class="admin-header-actions">
+                    <!-- 用户信息显示 -->
+                    <div id="user-info-display"></div>
+                    <button class="admin-btn admin-btn-secondary" onclick="refreshDashboard()">
+                        🔄 刷新
+                    </button>
+                    <button class="admin-btn admin-btn-primary" onclick="exportReport()">
+                        📊 导出报表
+                    </button>
+                </div>
+            </div>
+
+            <!-- 概览面板 -->
+            <div id="overview" class="admin-section active">
+                <!-- 统计卡片 -->
+                <div class="admin-stats-grid">
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-header">
+                            <div class="admin-stat-title">总用户数</div>
+                            <div class="admin-stat-icon" style="background: #dbeafe; color: #1e40af;">👥</div>
+                        </div>
+                        <div class="admin-stat-value" id="totalUsers">0</div>
+                        <div class="admin-stat-change positive">
+                            <span>↑</span> 12.5%
+                        </div>
+                    </div>
+
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-header">
+                            <div class="admin-stat-title">活跃用户</div>
+                            <div class="admin-stat-icon" style="background: #dcfce7; color: #166534;">⚡</div>
+                        </div>
+                        <div class="admin-stat-value" id="activeUsers">0</div>
+                        <div class="admin-stat-change positive">
+                            <span>↑</span> 8.3%
+                        </div>
+                    </div>
+
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-header">
+                            <div class="admin-stat-title">今日文章生成</div>
+                            <div class="admin-stat-icon" style="background: #fef3c7; color: #a16207;">📝</div>
+                        </div>
+                        <div class="admin-stat-value" id="todayArticles">0</div>
+                        <div class="admin-stat-change positive">
+                            <span>↑</span> 23.1%
+                        </div>
+                    </div>
+
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-header">
+                            <div class="admin-stat-title">今日发布成功</div>
+                            <div class="admin-stat-icon" style="background: #ede9fe; color: #7c3aed;">📤</div>
+                        </div>
+                        <div class="admin-stat-value" id="todayPublishes">0</div>
+                        <div class="admin-stat-change negative">
+                            <span>↓</span> 3.2%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 图表和列表 -->
+                <div class="admin-content-grid">
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">文章生成趋势</h3>
+                            <div class="admin-card-actions">
+                                <button class="admin-card-action" onclick="changeChartPeriod('week')">周</button>
+                                <button class="admin-card-action" onclick="changeChartPeriod('month')">月</button>
+                                <button class="admin-card-action" onclick="changeChartPeriod('year')">年</button>
+                            </div>
+                        </div>
+                        <canvas id="articleChart" width="400" height="200"></canvas>
+                    </div>
+
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">系统状态</h3>
+                            <div class="admin-card-actions">
+                                <button class="admin-card-action" onclick="refreshSystemStatus()">刷新</button>
+                            </div>
+                        </div>
+                        <div class="admin-loading" id="systemStatusLoading">
+                            <div class="admin-spinner"></div>
+                        </div>
+                        <div id="systemStatusContent" style="display: none;">
+                            <!-- 系统状态将在这里显示 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快速操作 -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">快速操作</h3>
+                    </div>
+                    <div class="quick-actions">
+                        <div class="quick-action-card" onclick="createTemplate()">
+                            <div class="quick-action-icon">📝</div>
+                            <div class="quick-action-title">创建模板</div>
+                            <div class="quick-action-desc">添加新的提示词模板</div>
+                        </div>
+                        <div class="quick-action-card" onclick="manageUsers()">
+                            <div class="quick-action-icon">👥</div>
+                            <div class="quick-action-title">用户管理</div>
+                            <div class="quick-action-desc">管理系统用户</div>
+                        </div>
+                        <div class="quick-action-card" onclick="viewLogs()">
+                            <div class="quick-action-icon">📋</div>
+                            <div class="quick-action-title">查看日志</div>
+                            <div class="quick-action-desc">系统运行日志</div>
+                        </div>
+                        <div class="quick-action-card" onclick="systemSettings()">
+                            <div class="quick-action-icon">⚙️</div>
+                            <div class="quick-action-title">系统设置</div>
+                            <div class="quick-action-desc">配置系统参数</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户管理 -->
+            <div id="users" class="admin-section" style="display: none;">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">用户列表</h3>
+                        <div class="admin-card-actions">
+                            <button class="admin-card-action" onclick="addUser()">添加用户</button>
+                            <button class="admin-card-action" onclick="exportUsers()">导出</button>
+                        </div>
+                    </div>
+                    <div class="admin-loading" id="usersLoading">
+                        <div class="admin-spinner"></div>
+                    </div>
+                    <div id="usersContent" style="display: none;">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>用户名</th>
+                                    <th>邮箱</th>
+                                    <th>角色</th>
+                                    <th>注册时间</th>
+                                    <th>最后登录</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <!-- 用户数据将在这里显示 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 模板管理 -->
+            <div id="templates" class="admin-section" style="display: none;">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">📝 模板管理系统</h3>
+                        <div class="admin-card-actions">
+                            <button class="admin-card-action" onclick="window.open('/templates', '_blank')">打开模板管理</button>
+                            <button class="admin-card-action" onclick="refreshTemplatesData()">刷新数据</button>
+                        </div>
+                    </div>
+
+                    <!-- 模板统计卡片 -->
+                    <div class="admin-stats-grid" style="margin-bottom: 20px;">
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">总模板数</div>
+                                <div class="admin-stat-icon" style="background: #dbeafe; color: #1e40af;">📝</div>
+                            </div>
+                            <div class="admin-stat-value" id="totalTemplates">0</div>
+                            <div class="admin-stat-change positive">
+                                <span>↑</span> 15.2%
+                            </div>
+                        </div>
+
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">活跃模板</div>
+                                <div class="admin-stat-icon" style="background: #dcfce7; color: #166534;">⚡</div>
+                            </div>
+                            <div class="admin-stat-value" id="activeTemplates">0</div>
+                            <div class="admin-stat-change positive">
+                                <span>↑</span> 8.7%
+                            </div>
+                        </div>
+
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">今日使用</div>
+                                <div class="admin-stat-icon" style="background: #f3e8ff; color: #1e40af;">📊</div>
+                            </div>
+                            <div class="admin-stat-value" id="todayTemplateUsage">0</div>
+                            <div class="admin-stat-change positive">
+                                <span>↑</span> 22.3%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 快速操作 -->
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">快速操作</h3>
+                        </div>
+                        <div class="quick-actions">
+                            <div class="quick-action-card" onclick="window.open('/templates', '_blank')">
+                                <div class="quick-action-icon">📝</div>
+                                <div class="quick-action-title">创建模板</div>
+                                <div class="quick-action-desc">添加新的提示词模板</div>
+                            </div>
+                            <div class="quick-action-card" onclick="window.open('/templates', '_blank')">
+                                <div class="quick-action-icon">📂</div>
+                                <div class="quick-action-title">导入模板</div>
+                                <div class="quick-action-desc">批量导入模板数据</div>
+                            </div>
+                            <div class="quick-action-card" onclick="window.open('/prompt_guide.html', '_blank')">
+                                <div class="quick-action-icon">📖</div>
+                                <div class="quick-action-title">使用指南</div>
+                                <div class="quick-action-desc">查看模板使用文档</div>
+                            </div>
+                            <div class="quick-action-card" onclick="exportTemplates()">
+                                <div class="quick-action-icon">📤</div>
+                                <div class="quick-action-title">导出模板</div>
+                                <div class="quick-action-desc">导出所有模板数据</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 最近模板活动 -->
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">最近模板活动</h3>
+                            <div class="admin-card-actions">
+                                <button class="admin-card-action" onclick="refreshTemplateActivity()">刷新</button>
+                            </div>
+                        </div>
+                        <div class="admin-loading" id="templateActivityLoading">
+                            <div class="admin-spinner"></div>
+                        </div>
+                        <div id="templateActivityContent" style="display: none;">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>模板名称</th>
+                                        <th>操作类型</th>
+                                        <th>操作人</th>
+                                        <th>操作时间</th>
+                                        <th>状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="templateActivityTableBody">
+                                    <!-- 模板活动数据将在这里显示 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="admin-loading" id="templatesLoading" style="display: none;">
+                        <div class="admin-spinner"></div>
+                    </div>
+                    <div id="templatesContent" style="display: none;">
+                        <p style="text-align: center; padding: 20px; color: #64748b;">
+                            完整的模板管理功能请访问
+                            <a href="/templates" target="_blank" style="color: #3b82f6; font-weight: 600;">专用模板管理页面</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 其他部分占位符 -->
+            <div id="workflows" class="admin-section" style="display: none;">
+                <div class="admin-empty-state">
+                    <div class="admin-empty-state-icon">⚙️</div>
+                    <h3>工作流管理</h3>
+                    <p>工作流管理功能正在开发中...</p>
+                </div>
+            </div>
+
+            <div id="publishing" class="admin-section" style="display: none;">
+                <div class="admin-empty-state">
+                    <div class="admin-empty-state-icon">📤</div>
+                    <h3>发布管理</h3>
+                    <p>发布管理功能正在开发中...</p>
+                </div>
+            </div>
+
+            <div id="analytics" class="admin-section" style="display: none;">
+                <div class="admin-empty-state">
+                    <div class="admin-empty-state-icon">📈</div>
+                    <h3>数据分析</h3>
+                    <p>数据分析功能正在开发中...</p>
+                </div>
+            </div>
+
+            <div id="system" class="admin-section" style="display: none;">
+                <div class="admin-empty-state">
+                    <div class="admin-empty-state-icon">🔧</div>
+                    <h3>系统设置</h3>
+                    <p>系统设置功能正在开发中...</p>
+                </div>
+            </div>
+
+            <div id="logs" class="admin-section" style="display: none;">
+                <div class="admin-empty-state">
+                    <div class="admin-empty-state-icon">📋</div>
+                    <h3>日志监控</h3>
+                    <p>日志监控功能正在开发中...</p>
+                </div>
+            </div>
+
+            <!-- 数据分析 -->
+            <div id="analytics" class="admin-section" style="display: none;">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">📈 数据分析概览</h3>
+                        <div class="admin-card-actions">
+                            <button class="admin-card-action" onclick="changeAnalysisPeriod('day')">今日</button>
+                            <button class="admin-card-action" onclick="changeAnalysisPeriod('week')">本周</button>
+                            <button class="admin-card-action" onclick="changeAnalysisPeriod('month')">本月</button>
+                            <button class="admin-card-action" onclick="exportAnalytics()">导出</button>
+                        </div>
+                    </div>
+
+                    <!-- 分析统计卡片 -->
+                    <div class="admin-stats-grid">
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">今日访问量</div>
+                                <div class="admin-stat-icon" style="background: #dbeafe; color: #1e40af;">👥</div>
+                            </div>
+                            <div class="admin-stat-value" id="todayVisits">0</div>
+                            <div class="admin-stat-change positive">
+                                <span>↑</span> 15.3%
+                            </div>
+                        </div>
+
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">文章生成数</div>
+                                <div class="admin-stat-icon" style="background: #fbbf24; color: #f59e0b;">📝</div>
+                            </div>
+                            <div class="admin-stat-value" id="todayArticleGeneration">0</div>
+                            <div class="admin-stat-change positive">
+                                <span>↑</span> 22.7%
+                            </div>
+                        </div>
+
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">发布成功率</div>
+                                <div class="admin-stat-icon" style="background: #dcfce7; color: #166534;">📤</div>
+                            </div>
+                            <div class="admin-stat-value" id="publishSuccessRate">0%</div>
+                            <div class="admin-stat-change positive">
+                                <span>↑</span> 5.2%
+                            </div>
+                        </div>
+
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">平均响应时间</div>
+                                <div class="admin-stat-icon" style="background: #f3e8ff; color: #1e40af;">⚡</div>
+                            </div>
+                            <div class="admin-stat-value" id="avgResponseTime">0ms</div>
+                            <div class="admin-stat-change positive">
+                                <span>↓</span> 8.1%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 分析图表区域 -->
+                    <div class="admin-content-grid">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3 class="admin-card-title">访问量趋势</h3>
+                                <div class="admin-card-actions">
+                                    <button class="admin-card-action" onclick="changeAnalysisChart('visits')">访问量</button>
+                                    <button class="admin-card-action" onclick="changeAnalysisChart('usage')">使用量</button>
+                                </div>
+                            </div>
+                            <div class="admin-loading" id="analysisLoading">
+                                <div class="admin-spinner"></div>
+                            </div>
+                            <div id="analysisContent" style="display: none;">
+                                <canvas id="analysisChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3 class="admin-card-title">热门内容</h3>
+                                <div class="admin-card-actions">
+                                    <button class="admin-card-action" onclick="refreshHotContent()">刷新</button>
+                                </div>
+                            </div>
+                            <div class="admin-loading" id="hotContentLoading">
+                                <div class="admin-spinner"></div>
+                            </div>
+                            <div id="hotContentContent" style="display: none;">
+                                <!-- 热门内容将在这里显示 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 内容分析 -->
+            <div id="content-analysis" class="admin-section" style="display: none;">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">📄 内容分析</h3>
+                        <div class="admin-card-actions">
+                            <button class="admin-card-action" onclick="changeContentPeriod('week')">本周</button>
+                            <button class="admin-card-action" onclick="changeContentPeriod('month')">本月</button>
+                        </div>
+                    </div>
+
+                    <!-- 内容统计 -->
+                    <div class="admin-stats-grid">
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">总生成内容</div>
+                                <div class="admin-stat-icon" style="background: #e0e7ff; color: #1e40af;">📄</div>
+                            </div>
+                            <div class="admin-stat-value" id="totalContentGenerated">0</div>
+                            <div class="admin-stat-change positive">
+                                <span>↑</span> 18.5%
+                            </div>
+                        </div>
+
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">发布内容数</div>
+                                <div class="admin-stat-icon" style="background: #fef3c7; color: #a16207;">📤</div>
+                            </div>
+                            <div class="admin-stat-value" id="publishedContent">0</div>
+                            <div class="admin-stat-change positive">
+                                <span>↑</span> 12.3%
+                            </div>
+                        </div>
+
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">内容质量评分</div>
+                                <div class="admin-stat-icon" style="background: #fbbf24; color: #f59e0b;">⭐</div>
+                            </div>
+                            <div class="admin-stat-value" id="contentQualityScore">0.0</div>
+                            <div class="admin-stat-change positive">
+                                <span>↑</span> 6.8%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 内容趋势图表 -->
+                    <div class="admin-content-grid">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3 class="admin-card-title">内容生成趋势</h3>
+                            </div>
+                            <div class="admin-loading" id="contentLoading">
+                                <div class="admin-spinner"></div>
+                            </div>
+                            <div id="contentContent" style="display: none;">
+                                <canvas id="contentChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户行为分析 -->
+            <div id="user-behavior" class="admin-section" style="display: none;">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">👤 用户行为分析</h3>
+                        <div class="admin-card-actions">
+                            <button class="admin-card-action" onclick="changeUserBehaviorPeriod('week')">本周</button>
+                            <button class="admin-card-action" onclick="changeUserBehaviorPeriod('month')">本月</button>
+                        </div>
+                    </div>
+
+                    <!-- 用户行为统计 -->
+                    <div class="admin-stats-grid">
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">活跃用户</div>
+                                <div class="admin-stat-icon" style="background: #dcfce7; color: #166534;">⚡</div>
+                            </div>
+                            <div class="admin-stat-value" id="activeUsersCount">0</div>
+                            <div class="admin-stat-change positive">
+                                <span>↑</span> 8.5%
+                            </div>
+                        </div>
+
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">新用户注册</div>
+                                <div class="admin-stat-icon" style="background: #22c55e; color: #16a34a;">📝</div>
+                            </div>
+                            <div class="admin-stat-value" id="newUserRegistrations">0</div>
+                            <div class="admin-stat-change positive">
+                                <span>↑</span> 3.2%
+                            </div>
+                        </div>
+
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">用户留存率</div>
+                                <div class="admin-stat-icon" style="background: #a78bfa; color: #7c3aed;">💎</div>
+                            </div>
+                            <div class="admin-stat-value" id="userRetentionRate">0%</div>
+                            <div class="admin-stat-change positive">
+                                <span>↑</span> 2.1%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 用户行为表格 -->
+                    <div class="admin-content-grid">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3 class="admin-card-title">用户活动记录</h3>
+                                <div class="admin-card-actions">
+                                    <button class="admin-card-action" onclick="refreshUserActivity()">刷新</button>
+                                    <button class="admin-card-action" onclick="exportUserActivity()">导出</button>
+                                </div>
+                            </div>
+                            <div class="admin-loading" id="userActivityLoading">
+                                <div class="admin-spinner"></div>
+                            </div>
+                            <div id="userActivityContent" style="display: none;">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>用户</th>
+                                            <th>操作</th>
+                                            <th>页面</th>
+                                            <th>时间</th>
+                                            <th>IP地址</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="userActivityTableBody">
+                                        <!-- 用户活动数据将在这里显示 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 发布效果分析 -->
+            <div id="publishing-performance" class="admin-section" style="display: none;">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">📤 发布效果分析</h3>
+                        <div class="admin-card-actions">
+                            <button class="admin-card-action" onclick="changePublishingPeriod('week')">本周</button>
+                            <button class="admin-card-action" onclick="changePublishingPeriod('month')">本月</button>
+                        </div>
+                    </div>
+
+                    <!-- 发布统计 -->
+                    <div class="admin-stats-grid">
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">总发布次数</div>
+                                <div class="admin-stat-icon" style="background: #ddd6fe; color: #475569;">📤</div>
+                            </div>
+                            <div class="admin-stat-value" id="totalPublishAttempts">0</div>
+                            <div class="admin-stat-change positive">
+                                <span>↑</span> 25.6%
+                            </div>
+                        </div>
+
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">成功发布</div>
+                                <div class="admin-stat-icon" style="background: #10b981; color: #059669;">✅</div>
+                            </div>
+                            <div class="admin-stat-value" id="successfulPublishes">0</div>
+                            <div class="admin-stat-change positive">
+                                <span>↑</span> 18.9%
+                            </div>
+                        </div>
+
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">失败发布</div>
+                                <div class="admin-stat-icon" style="background: #ef4444; color: #991b1b;">❌</div>
+                            </div>
+                            <div class="admin-stat-value" id="failedPublishes">0</div>
+                            <div class="admin-stat-change negative">
+                                <span>↓</span> 12.3%
+                            </div>
+                        </div>
+
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">平均发布时间</div>
+                                <div class="admin-stat-icon" style="background: #06b6d4; color: #1e40af;">⏱</div>
+                            </div>
+                            <div class="admin-stat-value" id="avgPublishTime">0s</div>
+                            <div class="admin-stat-change positive">
+                                <span>↓</span> 15.7%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 发布趋势图表 -->
+                    <div class="admin-content-grid">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3 class="admin-card-title">发布趋势分析</h3>
+                            </div>
+                            <div class="admin-loading" id="publishingLoading">
+                                <div class="admin-spinner"></div>
+                            </div>
+                            <div id="publishingContent" style="display: none;">
+                                <canvas id="publishingChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="security" class="admin-section" style="display: none;">
+                <div class="admin-empty-state">
+                    <div class="admin-empty-state-icon">🔐</div>
+                    <h3>安全中心</h3>
+                    <p>安全中心功能已集成到数据分析模块</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 管理控制台JavaScript
+        let currentSection = 'overview';
+        let articleChart = null;
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            setupNavigation();
+            startAutoRefresh();
+        });
+
+        // 初始化仪表板
+        function initializeDashboard() {
+            loadDashboardData();
+            initializeChart();
+            updateSystemUptime();
+        }
+
+        // 设置导航
+        function setupNavigation() {
+            const navLinks = document.querySelectorAll('.admin-nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const section = this.dataset.section;
+                    switchSection(section);
+                });
+            });
+        }
+
+        // 切换部分
+        function switchSection(section) {
+            // 更新导航状态
+            document.querySelectorAll('.admin-nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.querySelector(`[data-section="${section}"]`).classList.add('active');
+
+            // 隐藏所有部分
+            document.querySelectorAll('.admin-section').forEach(sec => {
+                sec.style.display = 'none';
+            });
+
+            // 显示选中的部分
+            const targetSection = document.getElementById(section);
+            if (targetSection) {
+                targetSection.style.display = 'block';
+                currentSection = section;
+
+                // 加载部分数据
+                loadSectionData(section);
+            }
+        }
+
+        // 加载部分数据
+        function loadSectionData(section) {
+            switch(section) {
+                case 'users':
+                    loadUsersData();
+                    break;
+                case 'templates':
+                    loadTemplatesData();
+                    break;
+                case 'overview':
+                    loadDashboardData();
+                    break;
+                case 'analytics':
+                    loadAnalyticsData();
+                    break;
+                case 'content-analysis':
+                    loadContentAnalysisData();
+                    break;
+                case 'user-behavior':
+                    loadUserBehaviorData();
+                    break;
+                case 'publishing-performance':
+                    loadPublishingPerformanceData();
+                    break;
+            }
+        }
+
+        // 加载模板数据
+        async function loadTemplatesData() {
+            const loading = document.getElementById('templatesLoading');
+            const content = document.getElementById('templatesContent');
+
+            if (loading) loading.style.display = 'flex';
+
+            // 模拟API调用
+            setTimeout(() => {
+                const mockTemplatesData = {
+                    totalTemplates: 12,
+                    activeTemplates: 8,
+                    todayTemplateUsage: 156,
+                    recentActivity: [
+                        { name: '科技公司模板', type: '创建', operator: 'admin', time: '2025-12-15 10:30', status: 'success' },
+                        { name: '金融行业模板', type: '编辑', operator: 'admin', time: '2025-12-15 09:15', status: 'success' },
+                        { name: '教育行业模板', type: '使用', operator: 'user1', time: '2025-12-15 08:45', status: 'success' }
+                    ]
+                };
+
+                // 更新统计卡片
+                updateStatCard('totalTemplates', mockTemplatesData.totalTemplates);
+                updateStatCard('activeTemplates', mockTemplatesData.activeTemplates);
+                updateStatCard('todayTemplateUsage', mockTemplatesData.todayTemplateUsage);
+
+                // 更新活动表格
+                if (loading) loading.style.display = 'none';
+                if (content) {
+                    content.style.display = 'block';
+                    const tbody = document.getElementById('templateActivityTableBody');
+                    tbody.innerHTML = mockTemplatesData.recentActivity.map(activity => `
+                        <tr>
+                            <td>${activity.name}</td>
+                            <td><span class="admin-status-badge admin-status-online">${activity.type}</span></td>
+                            <td>${activity.operator}</td>
+                            <td>${activity.time}</td>
+                            <td><span class="admin-status-badge admin-status-success">${activity.status}</span></td>
+                        </tr>
+                    `).join('');
+                }
+            }, 800);
+        }
+
+        function refreshTemplatesData() {
+            loadTemplatesData();
+            showNotification('模板数据已刷新', 'success');
+        }
+
+        function refreshTemplateActivity() {
+            loadTemplatesData();
+            showNotification('模板活动已刷新', 'success');
+        }
+
+        function exportAnalytics() {
+            showNotification('数据分析导出功能开发中...', 'info');
+        }
+
+        // 切换分析图表周期
+        let currentAnalysisPeriod = 'week';
+        let currentContentType = 'visits';
+
+        function changeAnalysisPeriod(period) {
+            currentAnalysisPeriod = period;
+            loadAnalyticsData();
+        }
+
+        function changeAnalysisChart(type) {
+            currentContentType = type;
+            loadAnalyticsData();
+        }
+
+        // 加载数据分析数据
+        async function loadAnalyticsData() {
+            const loading = document.getElementById('analysisLoading');
+            const content = document.getElementById('analysisContent');
+
+            if (loading) loading.style.display = 'flex';
+
+            // 模拟API调用
+            setTimeout(() => {
+                const mockAnalyticsData = {
+                    todayVisits: 1245,
+                    weekVisits: 8642,
+                    monthVisits: 35126,
+                    todayArticleGeneration: 89,
+                    weekArticleGeneration: 578,
+                    monthArticleGeneration: 2310,
+                    avgResponseTime: 245,
+                    userGrowthRate: 8.5,
+                    newUsersToday: 12,
+                    userRetentionRate: 68.2
+                    hotTopics: [
+                        { topic: 'AI营销策略', count: 156, growth: 23.5 },
+                        { topic: '企业数字化转型', count: 142, growth: 18.2 },
+                        { topic: '内容创作技巧', count: 98, growth: 15.6 }
+                    ]
+                };
+
+                // 更新统计卡片
+                updateStatCard('todayVisits', mockAnalyticsData.todayVisits);
+                updateStatCard('todayArticleGeneration', mockAnalyticsData.todayArticleGeneration);
+                updateStatCard('avgResponseTime', mockAnalyticsData.avgResponseTime);
+
+                // 更新用户统计
+                updateStatCard('activeUsersCount', mockAnalyticsData.monthVisits / 30); // 月活跃用户估算
+                updateStatCard('newUserRegistrations', mockAnalyticsData.newUsersToday);
+                updateStatCard('userRetentionRate', mockAnalyticsData.userRetentionRate);
+
+                // 更新图表
+                updateAnalyticsChart();
+
+                if (loading) loading.style.display = 'none';
+                if (content) {
+                    content.style.display = 'block';
+                    // 显示热门内容
+                    const hotContentEl = document.getElementById('hotContent');
+                    if (hotContentEl) {
+                        hotContentEl.innerHTML = mockAnalyticsData.hotTopics.map((topic, index) => `
+                            <div class="quick-action-card" style="cursor: default;">
+                                <div class="quick-action-title">#${index + 1}</div>
+                                <div class="quick-action-desc">${topic.topic}</div>
+                                <div class="quick-action-desc">${topic.count} 次使用</div>
+                                <div class="quick-action-desc">增长率: ${topic.growth}%</div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            }, 800);
+        }
+
+        // 加载内容分析数据
+        async function loadContentAnalysisData() {
+            const loading = document.getElementById('contentLoading');
+            const content = document.getElementById('contentContent');
+
+            if (loading) loading.style.display = 'flex';
+
+            // 模拟API调用
+            setTimeout(() => {
+                const mockContentData = {
+                    totalContentGenerated: 1256,
+                    publishedContent: 892,
+                    contentQualityScore: 4.2,
+                    contentGrowthRate: 18.5,
+                    topPerformingCategories: [
+                        { category: '科技资讯', count: 456, performance: 4.8 },
+                        { category: '行业分析', count: 342, performance: 4.5 },
+                        { category: '产品推广', count: 521, performance: 4.2 }
+                    ]
+                };
+
+                // 更新统计卡片
+                updateStatCard('totalContentGenerated', mockContentData.totalContentGenerated);
+                updateStatCard('publishedContent', mockContentData.publishedContent);
+                updateStatCard('contentQualityScore', mockContentData.contentQualityScore);
+
+                // 更新内容趋势图表
+                updateContentChart();
+
+                if (loading) loading.style.display = 'none';
+                if (content) {
+                    content.style.display = 'block';
+                    // 显示内容统计表格
+                    const categoriesEl = document.getElementById('contentCategoriesTable');
+                    if (categoriesEl) {
+                        categoriesEl.innerHTML = mockContentData.topPerformingCategories.map((cat, index) => `
+                            <tr>
+                                <td>${cat.category}</td>
+                                <td>${cat.count}</td>
+                                <td><span class="admin-status-badge admin-status-online">${cat.performance.toFixed(1)}</span></td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            }, 800);
+        }
+
+        // 加载用户行为数据
+        async function loadUserBehaviorData() {
+            const loading = document.getElementById('userActivityLoading');
+            const content = document.getElementById('userActivityContent');
+
+            if (loading) loading.style.display = 'flex';
+
+            // 模拟API调用
+            setTimeout(() => {
+                const mockUserBehaviorData = {
+                    activeUsers: 856,
+                    newUsersToday: 12,
+                    userRetentionRate: 68.2,
+                    recentActivities: [
+                        { user: 'admin', action: '登录系统', page: '/admin', time: '2025-12-15 10:30' },
+                        { user: 'user1', action: '生成文章', page: '/platform', time: '2025-12-15 09:15' },
+                        { user: 'user2', action: '发布内容', page: '/publish', time: '2025-12-15 08:45' },
+                        { user: 'admin', action: '查看分析', page: '/admin', time: '2025-12-15 08:20' }
+                    ]
+                };
+
+                // 更新统计卡片
+                updateStatCard('activeUsersCount', mockUserBehaviorData.activeUsers);
+                updateStatCard('newUserRegistrations', mockUserBehaviorData.newUsersToday);
+                updateStatCard('userRetentionRate', mockUserBehaviorData.userRetentionRate);
+
+                // 更新活动表格
+                if (content) {
+                    content.style.display = 'block';
+                    const tbody = document.getElementById('userActivityTableBody');
+                    tbody.innerHTML = mockUserBehaviorData.recentActivities.map((activity, index) => `
+                        <tr>
+                            <td>${activity.user}</td>
+                            <td><span class="admin-status-badge admin-status-online">${activity.action}</span></td>
+                            <td>${activity.page}</td>
+                            <td>${activity.time}</td>
+                            <td><span class="admin-status-badge admin-status-success">${activity.ip || '127.0.0.1'}</span></td>
+                        </tr>
+                    `).join('');
+                }
+            }, 800);
+        }
+
+        // 加载发布效果数据
+        async function loadPublishingPerformanceData() {
+            const loading = document.getElementById('publishingLoading');
+            const content = document.getElementById('publishingContent');
+
+            if (loading) loading.style.display = 'flex';
+
+            // 模拟API调用
+            setTimeout(() => {
+                const mockPublishingData = {
+                    totalPublishAttempts: 456,
+                    successfulPublishes: 89,
+                    failedPublishes: 67,
+                    publishSuccessRate: 57.0,
+                    avgPublishTime: 3250,
+                    platformPerformance: [
+                        { platform: '知乎', successRate: 62.5, avgTime: 2800 },
+                        { platform: 'CSDN', successRate: 48.3, avgTime: 4200 },
+                        { platform: '掘金', successRate: 55.8, avgTime: 3600 }
+                    ]
+                };
+
+                // 更新统计卡片
+                updateStatCard('totalPublishAttempts', mockPublishingData.totalPublishAttempts);
+                updateStatCard('successfulPublishes', mockPublishingData.successfulPublishes);
+                updateStatCard('publishSuccessRate', mockPublishingData.publishSuccessRate);
+                updateStatCard('avgPublishTime', mockPublishingData.avgPublishTime);
+
+                // 更新发布效果图表
+                updatePublishingChart();
+
+                if (loading) loading.style.display = 'none';
+                if (content) {
+                    content.style.display = 'block';
+                    // 显示平台性能对比
+                    const performanceEl = document.getElementById('platformPerformanceTable');
+                    if (performanceEl) {
+                        performanceEl.innerHTML = mockPublishingData.platformPerformance.map((platform, index) => `
+                            <tr>
+                                <td>${platform.platform}</td>
+                                <td><span class="admin-status-badge admin-status-online">${platform.successRate.toFixed(1)}%</span></td>
+                                <td>${platform.avgTime}ms</td>
+                                <td><span class="admin-status-badge ${platform.successRate > 60 ? 'admin-status-warning' : 'admin-status-online'}">${platform.successRate > 60 ? '较慢' : '正常'}</span></td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            }, 800);
+        }
+
+        // 切换内容周期
+        function changeContentPeriod(period) {
+            // 这里可以实现内容分析的周期切换逻辑
+            console.log(`切换内容分析周期为: ${period}`);
+            showNotification(`内容分析周期已切换为${period}`, 'success');
+        }
+
+        // 切换用户行为周期
+        function changeUserBehaviorPeriod(period) {
+            console.log(`切换用户行为分析周期为: ${period}`);
+            showNotification(`用户行为分析周期已切换为${period}`, 'success');
+        }
+
+        // 切换发布周期
+        function changePublishingPeriod(period) {
+            console.log(`切换发布效果分析周期为: ${period}`);
+            showNotification(`发布效果分析周期已切换为${period}`, 'success');
+        }
+
+        // 刷新热门内容
+        function refreshHotContent() {
+            loadContentAnalysisData();
+            showNotification('热门内容已刷新', 'success');
+        }
+
+        // 刷新用户活动
+        function refreshUserActivity() {
+            loadUserBehaviorData();
+            showNotification('用户活动已刷新', 'success');
+        }
+
+        // 导出用户活动
+        function exportUserActivity() {
+            showNotification('用户活动导出功能开发中...', 'info');
+        }
+
+        // 更新分析图表
+        function updateAnalyticsChart() {
+            if (!analysisChart) return;
+
+            const data = {
+                week: {
+                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                    datasets: currentContentType === 'visits' ? {
+                        label: '访问量',
+                        data: [3200, 3800, 4200, 5100, 4800, 4500, 5200],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    } : {
+                        label: '使用量',
+                        data: [65, 78, 90, 81, 156, 125, 98],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                },
+                month: {
+                    labels: ['第1周', '第2周', '第3周', '第4周'],
+                    datasets: currentContentType === 'visits' ? {
+                        label: '访问量',
+                        data: [12000, 15000, 13500, 16800, 14200, 18900],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    } : {
+                        label: '使用量',
+                        data: [320, 450, 380, 420, 510, 480],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                }
+            };
+
+            const selectedData = data[currentAnalysisPeriod] || data.week;
+            analysisChart.data.labels = selectedData.labels;
+            analysisChart.data.datasets[0].data = selectedData.datasets[0].data;
+            analysisChart.data.datasets[0].label = selectedData.datasets[0].label;
+            analysisChart.data.datasets[0].borderColor = selectedData.datasets[0].borderColor;
+            analysisChart.data.datasets[0].backgroundColor = selectedData.datasets[0].backgroundColor;
+            analysisChart.update();
+        }
+
+        // 更新内容图表
+        function updateContentChart() {
+            if (!contentChart) return;
+
+            const data = {
+                week: {
+                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                    datasets: [{
+                        label: '内容生成',
+                        data: [45, 52, 48, 65, 78, 42, 58],
+                        borderColor: '#22c55e',
+                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: '内容发布',
+                        data: [12, 18, 25, 22, 28, 15],
+                        borderColor: '#16a34a',
+                        backgroundColor: 'rgba(22, 163, 74, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                month: {
+                    labels: ['第1周', '第2周', '第3周', '第4周'],
+                    datasets: [{
+                        label: '内容生成',
+                        data: [320, 450, 380, 420, 510, 480],
+                        borderColor: '#22c55e',
+                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: '内容发布',
+                        data: [48, 156, 248, 312, 384, 456],
+                        borderColor: '#16a34a',
+                        backgroundColor: 'rgba(22, 163, 74, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                }
+            };
+
+            const selectedData = data[currentAnalysisPeriod] || data.week;
+            contentChart.data.labels = selectedData.labels;
+            contentChart.data.datasets[0].data = selectedData.datasets[0].data;
+            contentChart.data.datasets[1].data = selectedData.datasets[1].data;
+            contentChart.data.datasets[0].borderColor = selectedData.datasets[0].borderColor;
+            contentChart.data.datasets[0].backgroundColor = selectedData.datasets[0].backgroundColor;
+            contentChart.data.datasets[1].borderColor = selectedData.datasets[1].borderColor;
+            contentChart.data.datasets[1].backgroundColor = selectedData.datasets[1].backgroundColor;
+            contentChart.update();
+        }
+
+        // 更新发布效果图表
+        function updatePublishingChart() {
+            if (!publishingChart) return;
+
+            const data = {
+                week: {
+                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                    datasets: [{
+                        label: '成功发布',
+                        data: [45, 52, 48, 65, 78, 42, 58],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: '失败发布',
+                        data: [8, 12, 15, 22, 28, 15],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                month: {
+                    labels: ['第1周', '第2周', '第3周', '第4周'],
+                    datasets: [{
+                        label: '成功发布',
+                        data: [180, 220, 195, 285, 342, 415],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: '失败发布',
+                        data: [32, 88, 105, 142, 188, 220],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                }
+            };
+
+            const selectedData = data[currentAnalysisPeriod] || data.week;
+            publishingChart.data.labels = selectedData.labels;
+            publishingChart.data.datasets[0].data = selectedData.datasets[0].data;
+            publishingChart.data.datasets[1].data = selectedData.datasets[1].data;
+            publishingChart.data.datasets[0].borderColor = selectedData.datasets[0].borderColor;
+            publishingChart.data.datasets[0].backgroundColor = selectedData.datasets[0].backgroundColor;
+            publishingChart.data.datasets[1].borderColor = selectedData.datasets[1].borderColor;
+            publishingChart.data.datasets[1].backgroundColor = selectedData.datasets[1].backgroundColor;
+            publishingChart.update();
+        }
+
+        // 初始化图表
+        function initializeCharts() {
+            // 分析图表
+            const analysisCtx = document.getElementById('analysisChart');
+            if (analysisCtx) {
+                analysisChart = new Chart(analysisCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                        datasets: [{
+                            label: '访问量',
+                            data: [0, 0, 0, 0, 0, 0, 0],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    borderDash: [5, 5]
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 内容图表
+            const contentCtx = document.getElementById('contentChart');
+            if (contentCtx) {
+                contentChart = new Chart(contentCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                        datasets: [{
+                                label: '内容生成',
+                                data: [0, 0, 0, 0, 0, 0, 0],
+                                borderColor: '#22c55e',
+                                backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                                tension: 0.4,
+                                fill: true
+                            }, {
+                                label: '内容发布',
+                                data: [0, 0, 0, 0, 0, 0],
+                                borderColor: '#16a34a',
+                                backgroundColor: 'rgba(22, 163, 74, 0.2)',
+                                tension: 0.4,
+                                fill: true
+                            }]
+                    }
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    borderDash: [5, 5]
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 发布效果图表
+            const publishingCtx = document.getElementById('publishingChart');
+            if (publishingCtx) {
+                publishingChart = new Chart(publishingCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                        datasets: [{
+                                label: '成功发布',
+                                data: [0, 0, 0, 0, 0, 0, 0],
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                                tension: 0.4,
+                                fill: true
+                            }, {
+                                label: '失败发布',
+                                data: [0, 0, 0, 0, 0, 0],
+                                borderColor: '#ef4444',
+                                backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                                tension: 0.4,
+                                fill: true
+                            }]
+                    }
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    borderDash: [5, 5]
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // 加载仪表板数据
+        async function loadDashboardData() {
+            try {
+                // 模拟API调用
+                const mockData = {
+                    totalUsers: 128,
+                    activeUsers: 42,
+                    todayArticles: 156,
+                    todayPublishes: 89,
+                    systemStatus: {
+                        cpu: 45,
+                        memory: 62,
+                        disk: 38,
+                        network: 'good'
+                    }
+                };
+
+                // 更新统计卡片
+                updateStatCard('totalUsers', mockData.totalUsers);
+                updateStatCard('activeUsers', mockData.activeUsers);
+                updateStatCard('todayArticles', mockData.todayArticles);
+                updateStatCard('todayPublishes', mockData.todayPublishes);
+
+                // 更新用户数量徽章
+                document.getElementById('userCount').textContent = mockData.totalUsers;
+
+                // 加载图表数据
+                updateChartData();
+
+                // 更新系统状态
+                updateSystemStatus(mockData.systemStatus);
+
+            } catch (error) {
+                console.error('加载仪表板数据失败:', error);
+            }
+        }
+
+        // 更新统计卡片
+        function updateStatCard(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value.toLocaleString();
+            }
+        }
+
+        // 初始化图表
+        function initializeChart() {
+            const ctx = document.getElementById('articleChart').getContext('2d');
+            articleChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                    datasets: [{
+                        label: '文章生成数',
+                        data: [65, 78, 90, 81, 156, 125, 98],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                borderDash: [5, 5]
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 更新图表数据
+        function updateChartData(period = 'week') {
+            if (!articleChart) return;
+
+            const data = {
+                week: {
+                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                    data: [65, 78, 90, 81, 156, 125, 98]
+                },
+                month: {
+                    labels: ['第1周', '第2周', '第3周', '第4周'],
+                    data: [420, 532, 485, 612]
+                },
+                year: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    data: [1200, 1890, 1560, 2140, 2380, 2750]
+                }
+            };
+
+            const selectedData = data[period] || data.week;
+            articleChart.data.labels = selectedData.labels;
+            articleChart.data.datasets[0].data = selectedData.data;
+            articleChart.update();
+        }
+
+        // 更新系统状态
+        function updateSystemStatus(status) {
+            const loading = document.getElementById('systemStatusLoading');
+            const content = document.getElementById('systemStatusContent');
+
+            if (loading) loading.style.display = 'none';
+            if (content) {
+                content.style.display = 'block';
+                content.innerHTML = `
+                    <div style="margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>CPU使用率</span>
+                            <span style="font-weight: 600;">${status.cpu}%</span>
+                        </div>
+                        <div class="admin-progress-bar">
+                            <div class="admin-progress-fill" style="width: ${status.cpu}%"></div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>内存使用率</span>
+                            <span style="font-weight: 600;">${status.memory}%</span>
+                        </div>
+                        <div class="admin-progress-bar">
+                            <div class="admin-progress-fill" style="width: ${status.memory}%"></div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>磁盘使用率</span>
+                            <span style="font-weight: 600;">${status.disk}%</span>
+                        </div>
+                        <div class="admin-progress-bar">
+                            <div class="admin-progress-fill" style="width: ${status.disk}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>网络状态</span>
+                            <span class="admin-status-badge ${status.network === 'good' ? 'admin-status-online' : 'admin-status-warning'}">
+                                ${status.network === 'good' ? '正常' : '异常'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // 加载用户数据
+        async function loadUsersData() {
+            const loading = document.getElementById('usersLoading');
+            const content = document.getElementById('usersContent');
+
+            if (loading) loading.style.display = 'flex';
+
+            // 模拟API调用
+            setTimeout(() => {
+                const mockUsers = [
+                    { id: 1, username: 'admin', email: 'admin@example.com', role: 'admin', registerTime: '2024-01-01', lastLogin: '2025-12-15 10:30', status: 'online' },
+                    { id: 2, username: 'user1', email: 'user1@example.com', role: 'user', registerTime: '2024-02-15', lastLogin: '2025-12-14 15:22', status: 'online' },
+                    { id: 3, username: 'user2', email: 'user2@example.com', role: 'user', registerTime: '2024-03-20', lastLogin: '2025-12-13 09:15', status: 'offline' }
+                ];
+
+                if (loading) loading.style.display = 'none';
+                if (content) {
+                    content.style.display = 'block';
+                    const tbody = document.getElementById('usersTableBody');
+                    tbody.innerHTML = mockUsers.map(user => `
+                        <tr>
+                            <td>${user.username}</td>
+                            <td>${user.email}</td>
+                            <td><span class="admin-status-badge ${user.role === 'admin' ? 'admin-status-warning' : 'admin-status-online'}">${user.role}</span></td>
+                            <td>${user.registerTime}</td>
+                            <td>${user.lastLogin}</td>
+                            <td><span class="admin-status-badge admin-status-${user.status}">${user.status === 'online' ? '在线' : '离线'}</span></td>
+                            <td>
+                                <button class="admin-card-action" onclick="editUser(${user.id})">编辑</button>
+                                <button class="admin-card-action" onclick="deleteUser(${user.id})">删除</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }, 1000);
+        }
+
+        // 加载模板数据
+        async function loadTemplatesData() {
+            const loading = document.getElementById('templatesLoading');
+            const content = document.getElementById('templatesContent');
+
+            if (loading) loading.style.display = 'flex';
+
+            // 模拟API调用
+            setTimeout(() => {
+                if (loading) loading.style.display = 'none';
+                if (content) {
+                    content.style.display = 'block';
+                    content.innerHTML = '<p>模板管理功能已集成到 <a href="/templates" target="_blank">模板管理页面</a></p>';
+                }
+            }, 800);
+        }
+
+        // 更新系统运行时间
+        function updateSystemUptime() {
+            const startTime = new Date('2025-12-01T00:00:00');
+            const now = new Date();
+            const uptime = now - startTime;
+
+            const days = Math.floor(uptime / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((uptime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((uptime % (1000 * 60 * 60)) / (1000 * 60));
+
+            const uptimeElement = document.getElementById('systemUptime');
+            if (uptimeElement) {
+                uptimeElement.textContent = `${days}天 ${hours}小时 ${minutes}分钟`;
+            }
+        }
+
+        // 刷新仪表板
+        function refreshDashboard() {
+            loadDashboardData();
+            showNotification('仪表板已刷新', 'success');
+        }
+
+        // 导出报表
+        function exportReport() {
+            showNotification('报表导出功能开发中...', 'info');
+        }
+
+        // 切换图表周期
+        function changeChartPeriod(period) {
+            updateChartData(period);
+        }
+
+        // 快速操作函数
+        function createTemplate() {
+            window.open('/templates', '_blank');
+        }
+
+        function manageUsers() {
+            switchSection('users');
+        }
+
+        function viewLogs() {
+            showNotification('日志查看功能开发中...', 'info');
+        }
+
+        function systemSettings() {
+            showNotification('系统设置功能开发中...', 'info');
+        }
+
+        function addUser() {
+            showNotification('添加用户功能开发中...', 'info');
+        }
+
+        function editUser(id) {
+            showNotification(`编辑用户 ${id} 功能开发中...`, 'info');
+        }
+
+        function deleteUser(id) {
+            if (confirm('确定要删除此用户吗？')) {
+                showNotification(`用户 ${id} 已删除`, 'success');
+                loadUsersData();
+            }
+        }
+
+        function exportUsers() {
+            showNotification('用户导出功能开发中...', 'info');
+        }
+
+        function createTemplate() {
+            window.open('/templates', '_blank');
+        }
+
+        function importTemplates() {
+            showNotification('模板导入功能开发中...', 'info');
+        }
+
+        function refreshSystemStatus() {
+            loadDashboardData();
+        }
+
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            const alertClass = type === 'success' ? 'admin-alert-success' :
+                             type === 'warning' ? 'admin-alert-warning' :
+                             type === 'error' ? 'admin-alert-error' : 'admin-alert-info';
+
+            const notification = document.createElement('div');
+            notification.className = `admin-alert ${alertClass}`;
+            notification.innerHTML = `
+                <span>${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️'}</span>
+                <span>${message}</span>
+            `;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '9999';
+            notification.style.maxWidth = '300px';
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
+
+        // 自动刷新
+        function startAutoRefresh() {
+            setInterval(() => {
+                if (currentSection === 'overview') {
+                    loadDashboardData();
+                }
+            }, 60000); // 每分钟刷新一次
+        }
+    </script>
+
+    <!-- 用户信息显示脚本 -->
+    <script src="/static/auth_utils.js"></script>
+    <script src="/static/user_display.js"></script>
+    <script>
+        // 为管理控制台定义登录点击处理函数
+        function handleLoginClick() {
+            window.location.href = '/login';
+        }
+
+        // 确保用户显示在管理控制台中正常工作
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化用户显示
+            if (typeof userDisplay !== 'undefined') {
+                userDisplay.init();
+            }
+        });
+    </script>
+</body>
+</html>

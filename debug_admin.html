@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理控制台调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-info { background: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 10px; }
+        .test-btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .current-user { background: #e2e3e5; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>管理控制台访问调试</h1>
+
+    <div class="current-user" id="currentUserInfo">
+        <strong>当前用户信息：</strong><br>
+        正在检查...
+    </div>
+
+    <div class="debug-info">
+        <h3>调试步骤</h3>
+        <p>1. 检查登录状态</p>
+        <p>2. 尝试访问管理控制台</p>
+        <p>3. 显示详细错误信息</p>
+    </div>
+
+    <button class="test-btn" onclick="checkLoginStatus()">检查登录状态</button>
+    <button class="test-btn" onclick="testAdminAccess()">测试管理控制台</button>
+    <button class="test-btn" onclick="openAdmin()">直接打开管理控制台</button>
+
+    <div id="results"></div>
+
+    <script>
+        async function checkLoginStatus() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                });
+                const data = await response.json();
+
+                document.getElementById('currentUserInfo').innerHTML = `
+                    <strong>当前用户信息：</strong><br>
+                    用户名: ${data.user ? data.user.username : '未登录'}<br>
+                    角色: ${data.user ? data.user.role : '未知'}<br>
+                    邮箱: ${data.user ? data.user.email : '无'}<br>
+                    ID: ${data.user ? data.user.id : '无'}
+                `;
+
+                addResult('登录状态检查完成', data.success ? 'success' : 'error');
+            } catch (error) {
+                addResult('登录状态检查失败: ' + error.message, 'error');
+            }
+        }
+
+        async function testAdminAccess() {
+            try {
+                const response = await fetch('/admin', {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                });
+
+                if (response.ok) {
+                    addResult('管理控制台访问成功', 'success');
+                    setTimeout(() => openAdmin(), 1000);
+                } else {
+                    const errorText = await response.text();
+                    addResult('管理控制台访问失败: ' + response.status + '<br>' + errorText, 'error');
+                }
+            } catch (error) {
+                addResult('管理控制台测试失败: ' + error.message, 'error');
+            }
+        }
+
+        function openAdmin() {
+            window.open('/admin', '_blank');
+        }
+
+        function addResult(message, type) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong><br>${message}`;
+            results.appendChild(div);
+        }
+
+        // 页面加载时自动检查
+        window.addEventListener('load', checkLoginStatus);
+    </script>
+</body>
+</html>

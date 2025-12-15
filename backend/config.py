@@ -84,7 +84,7 @@ class Config:
     }
 
     # 默认使用的AI模型
-    DEFAULT_AI_MODEL = os.environ.get('DEFAULT_AI_MODEL', 'glm-4-flash')
+    DEFAULT_AI_MODEL = os.environ.get('DEFAULT_AI_MODEL', 'glm-4-plus')
 
     # 日志配置
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'DEBUG')

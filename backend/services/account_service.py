@@ -13,6 +13,16 @@ from typing import List, Dict, Optional
 from models import PlatformAccount, get_db_session
 from encryption import encrypt_password, decrypt_password
 
+try:
+    from logger_config import log_service_call
+except ImportError:
+    # 如果没有 log_service_call，创建一个空装饰器
+    def log_service_call(name):
+        def decorator(func):
+            return func
+        return decorator
+
+
 logger = setup_logger(__name__)
 
 

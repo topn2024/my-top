@@ -5,15 +5,13 @@ AI服务V2 - 支持三模块提示词系统
 继承原有AIService，增加对analysis_prompts、article_prompts、platform_style_prompts的支持
 """
 import logging
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from logger_config import setup_logger, log_service_call
+import sys
+import os
 from typing import Dict, List, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-import sys
-import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from logger_config import setup_logger, log_service_call
 
 from services.ai_service import AIService, remove_markdown_and_ai_traces
 
