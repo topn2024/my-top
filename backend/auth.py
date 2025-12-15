@@ -72,13 +72,31 @@ def create_user(username, email, password, full_name=None):
         db.add(user)
         db.commit()
         db.refresh(user)
-        return user, None
+
+        # 设置默认角色为'user' (使用SQL直接更新)
+        from sqlalchemy import text
+        db.execute(text(f"UPDATE users SET role = 'user' WHERE id = {user.id}"))
+        db.commit()
+
+        # 获取用户的基本信息（在session关闭前）
+        user_id = user.id
+        user_username = user.username
+        user_email = user.email
+
+        db.close()
+
+        # 返回detached的用户对象
+        result_user = User()
+        result_user.id = user_id
+        result_user.username = user_username
+        result_user.email = user_email
+
+        return result_user, None
 
     except Exception as e:
         db.rollback()
-        return None, str(e)
-    finally:
         db.close()
+        return None, str(e)
 
 
 def authenticate_user(username, password):

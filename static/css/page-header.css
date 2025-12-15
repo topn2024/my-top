@@ -1,0 +1,110 @@
+/**
+ * 统一页面头部样式
+ */
+
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: var(--spacing-xl) 0;
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-md);
+}
+
+.page-header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-lg);
+}
+
+.page-header-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.page-header-nav-link {
+    text-decoration: none;
+    color: white;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    transition: opacity var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.page-header-nav-link:hover {
+    opacity: 0.8;
+}
+
+.page-header-title {
+    font-size: var(--font-size-4xl);
+    font-weight: bold;
+    margin: 0;
+    margin-bottom: var(--spacing-sm);
+}
+
+.page-header-subtitle {
+    font-size: var(--font-size-lg);
+    opacity: 0.9;
+    margin: 0;
+}
+
+.page-header-actions {
+    margin-top: var(--spacing-lg);
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.page-header-btn {
+    background: white;
+    color: var(--primary-color);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--border-radius-sm);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    transition: all var(--transition-fast);
+    border: none;
+    cursor: pointer;
+}
+
+.page-header-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.page-header-btn-outline {
+    background: transparent;
+    color: white;
+    border: 2px solid white;
+}
+
+.page-header-btn-outline:hover {
+    background: white;
+    color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        padding: var(--spacing-lg) 0;
+    }
+
+    .page-header-title {
+        font-size: var(--font-size-2xl);
+    }
+
+    .page-header-subtitle {
+        font-size: var(--font-size-base);
+    }
+
+    .page-header-nav {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+}

@@ -96,6 +96,7 @@ class PublishHistoryManager {
      */
     renderHistoryRow(tbody, item) {
         const row = document.createElement('tr');
+        row.setAttribute('data-id', item.id);
 
         const statusClass = item.status === 'success' ? 'status-success' : 'status-failed';
         const statusText = item.status === 'success' ? '✓ 成功' : '✗ 失败';
@@ -119,7 +120,8 @@ class PublishHistoryManager {
             <td><span class="status-badge ${statusClass}">${statusText}</span></td>
             <td>${publishTime}</td>
             <td class="action-cell">
-                ${item.url ? `<a href="${this.escapeHtml(item.url)}" target="_blank" class="view-link">查看文章</a>` : ''}
+                ${item.article_content ? `<button onclick="publishHistoryManager.viewContent(${item.id})" class="view-content-btn">📄 查看内容</button>` : '<span style="color: #999;">无内容</span>'}
+                ${item.url ? `<a href="${this.escapeHtml(item.url)}" target="_blank" class="view-link">🔗 查看链接</a>` : ''}
                 ${item.status === 'failed' ? `
                     <button onclick="publishHistoryManager.retryPublish(${item.id}, '${this.escapeHtml(item.article_title || '').replace(/'/g, "\\'")}', this)" class="retry-btn">
                         🔄 重试
@@ -141,6 +143,57 @@ class PublishHistoryManager {
             `;
             tbody.appendChild(msgRow);
         }
+    }
+
+    /**
+     * 查看文章内容
+     */
+    viewContent(id) {
+        const item = this.allHistory.find(h => h.id === id);
+        if (!item || !item.article_content) {
+            alert('没有文章内容');
+            return;
+        }
+
+        // 创建模态框显示内容
+        const modal = document.createElement('div');
+        modal.className = 'content-modal';
+        modal.innerHTML = `
+            <div class="modal-overlay" onclick="this.parentElement.remove()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>${this.escapeHtml(item.article_title || '文章内容')}</h3>
+                    <button class="modal-close" onclick="this.closest('.content-modal').remove()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="content-preview">${this.escapeHtml(item.article_content).replace(/\n/g, '<br>')}</div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="publishHistoryManager.copyContent(${id})" class="copy-btn">📋 复制内容</button>
+                    <button onclick="this.closest('.content-modal').remove()" class="close-btn">关闭</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    /**
+     * 复制文章内容
+     */
+    copyContent(id) {
+        const item = this.allHistory.find(h => h.id === id);
+        if (!item || !item.article_content) {
+            alert('没有文章内容');
+            return;
+        }
+
+        navigator.clipboard.writeText(item.article_content).then(() => {
+            alert('内容已复制到剪贴板');
+        }).catch(err => {
+            console.error('复制失败:', err);
+            alert('复制失败，请手动复制');
+        });
     }
 
     /**

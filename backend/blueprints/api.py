@@ -3,7 +3,6 @@ API路由蓝图
 处理所有API请求
 """
 from flask import Blueprint, request, jsonify
-import logging
 
 # 从父目录导入
 import sys
@@ -12,11 +11,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from auth import login_required, get_current_user
 from config import get_config
+from logger_config import setup_logger, log_api_request
 
 # 初始化配置
 config = get_config()
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 # 创建蓝图
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -34,6 +34,7 @@ def health_check():
 
 @api_bp.route('/upload', methods=['POST'])
 @login_required
+@log_api_request("上传文件并提取文本")
 def upload_file():
     """文件上传"""
     from services.file_service import FileService
@@ -63,10 +64,14 @@ def upload_file():
 
 @api_bp.route('/analyze', methods=['POST'])
 @login_required
+@log_api_request("分析公司信息")
 def analyze_company():
     """公司分析"""
     from services.ai_service import AIService
     from services.workflow_service import WorkflowService
+    from services.prompt_template_service import PromptTemplateService
+    from services.analysis_prompt_service import AnalysisPromptService
+    from services.ai_service_v2 import AIServiceV2
 
     user = get_current_user()
     data = request.json
@@ -75,29 +80,82 @@ def analyze_company():
         return jsonify({'error': '请输入公司名称'}), 400
 
     try:
-        # AI分析
-        # 获取模型参数
-        model = data.get('model')
-        ai_service = AIService(config, model=model)
-        analysis = ai_service.analyze_company(
-            company_name=data.get('company_name'),
-            company_desc=data.get('company_desc', ''),
-            uploaded_text=data.get('uploaded_text', '')
-        )
+        # 检查是否使用新的三模块提示词系统
+        analysis_prompt_id = data.get('analysis_prompt_id')
 
-        # 保存工作流
+        if analysis_prompt_id:
+            # 使用新的三模块系统
+            logger.info(f'Using V2 analysis prompt: {analysis_prompt_id}')
+
+            # 获取分析提示词
+            analysis_prompt = AnalysisPromptService.get_prompt(analysis_prompt_id)
+            if not analysis_prompt:
+                return jsonify({'error': f'分析提示词不存在: {analysis_prompt_id}'}), 404
+
+            # 使用AIServiceV2进行分析
+            ai_service_v2 = AIServiceV2(config)
+            company_info = {
+                'company_name': data.get('company_name'),
+                'company_desc': data.get('company_desc', ''),
+                'uploaded_text': data.get('uploaded_text', '')
+            }
+            analysis = ai_service_v2.analyze_with_prompt(company_info, analysis_prompt)
+
+            # 更新使用统计
+            AnalysisPromptService.increment_usage(analysis_prompt_id)
+
+        else:
+            # 兼容旧系统
+            ai_service = AIService(config)
+
+            # 检查是否使用旧模板
+            template_id = data.get('template_id')
+            template = None
+            if template_id:
+                template = PromptTemplateService.get_template(template_id)
+                if not template:
+                    return jsonify({'error': f'模板不存在: {template_id}'}), 404
+                logger.info(f'Using template: {template["name"]} (ID: {template_id})')
+
+            # 使用模板或默认方法进行分析
+            if template:
+                company_info = {
+                    'company_name': data.get('company_name'),
+                    'company_desc': data.get('company_desc', ''),
+                    'uploaded_text': data.get('uploaded_text', '')
+                }
+                analysis = ai_service.analyze_company_with_template(company_info, template)
+            else:
+                analysis = ai_service.analyze_company(
+                    company_name=data.get('company_name'),
+                    company_desc=data.get('company_desc', ''),
+                    uploaded_text=data.get('uploaded_text', '')
+                )
+
+        # 保存工作流（包含新的prompt IDs）
         workflow_service = WorkflowService()
+        workflow_data = {
+            'company_name': data.get('company_name'),
+            'company_desc': data.get('company_desc'),
+            'uploaded_text': data.get('uploaded_text', ''),
+            'uploaded_filename': data.get('uploaded_filename', ''),
+            'template_id': data.get('template_id'),
+            'analysis': analysis,
+            'current_step': 2
+        }
+
+        # 添加新的三模块提示词ID
+        if analysis_prompt_id:
+            workflow_data['analysis_prompt_id'] = analysis_prompt_id
+        if data.get('article_prompt_id'):
+            workflow_data['article_prompt_id'] = data.get('article_prompt_id')
+        if data.get('platform_style_prompt_id'):
+            workflow_data['platform_style_prompt_id'] = data.get('platform_style_prompt_id')
+
         workflow = workflow_service.save_workflow(
             user_id=user.id,
             workflow_id=data.get('workflow_id'),
-            data={
-                'company_name': data.get('company_name'),
-                'company_desc': data.get('company_desc'),
-                'uploaded_text': data.get('uploaded_text', ''),
-                'uploaded_filename': data.get('uploaded_filename', ''),
-                'analysis': analysis,
-                'current_step': 2
-            }
+            data=workflow_data
         )
 
         logger.info(f'Analysis completed for: {data.get("company_name")}')
@@ -115,24 +173,81 @@ def analyze_company():
 
 @api_bp.route('/generate_articles', methods=['POST'])
 @login_required
+@log_api_request("生成推广文章")
 def generate_articles():
     """生成文章"""
     from services.ai_service import AIService
     from services.workflow_service import WorkflowService
+    from services.prompt_template_service import PromptTemplateService
+    from services.article_prompt_service import ArticlePromptService
+    from services.platform_style_service import PlatformStyleService
+    from services.ai_service_v2 import AIServiceV2
 
     user = get_current_user()
     data = request.json
 
     try:
-        # 生成文章
-        # 获取模型参数
-        model = data.get('model')
-        ai_service = AIService(config, model=model)
-        articles = ai_service.generate_articles(
-            company_name=data.get('company_name'),
-            analysis=data.get('analysis'),
-            article_count=data.get('article_count', 3)
-        )
+        # 检查是否使用新的三模块提示词系统
+        article_prompt_id = data.get('article_prompt_id')
+        platform_style_prompt_id = data.get('platform_style_prompt_id')
+
+        if article_prompt_id:
+            # 使用新的三模块系统
+            logger.info(f'Using V2 article prompt: {article_prompt_id}')
+
+            # 获取文章提示词
+            article_prompt = ArticlePromptService.get_prompt(article_prompt_id)
+            if not article_prompt:
+                return jsonify({'error': f'文章提示词不存在: {article_prompt_id}'}), 404
+
+            # 获取平台风格提示词（如果指定）
+            platform_style = None
+            if platform_style_prompt_id:
+                platform_style = PlatformStyleService.get_style(platform_style_prompt_id)
+                if platform_style:
+                    logger.info(f'Using platform style: {platform_style["name"]} ({platform_style["platform"]})')
+
+            # 使用AIServiceV2生成文章
+            ai_service_v2 = AIServiceV2(config)
+            articles = ai_service_v2.generate_articles_with_prompts(
+                company_name=data.get('company_name'),
+                analysis=data.get('analysis'),
+                article_prompt=article_prompt,
+                article_count=data.get('article_count', 3),
+                platform_style=platform_style
+            )
+
+            # 更新使用统计
+            ArticlePromptService.increment_usage(article_prompt_id)
+            if platform_style_prompt_id:
+                PlatformStyleService.increment_usage(platform_style_prompt_id)
+
+        else:
+            # 兼容旧系统
+            ai_service = AIService(config)
+
+            # 检查是否使用旧模板
+            template_id = data.get('template_id')
+            template = None
+            if template_id:
+                template = PromptTemplateService.get_template(template_id)
+                if template:
+                    logger.info(f'Using template for article generation: {template["name"]} (ID: {template_id})')
+
+            # 使用模板或默认方法生成文章
+            if template:
+                articles = ai_service.generate_articles_with_template(
+                    company_name=data.get('company_name'),
+                    analysis=data.get('analysis'),
+                    template=template,
+                    article_count=data.get('article_count', 3)
+                )
+            else:
+                articles = ai_service.generate_articles(
+                    company_name=data.get('company_name'),
+                    analysis=data.get('analysis'),
+                    article_count=data.get('article_count', 3)
+                )
 
         # 保存文章到数据库
         saved_articles = articles
@@ -143,6 +258,10 @@ def generate_articles():
                 workflow_id=data.get('workflow_id'),
                 articles=articles
             )
+
+            # 如果使用了旧模板，记录使用情况
+            if data.get('template_id'):
+                PromptTemplateService.increment_usage_count(data.get('template_id'))
 
         logger.info(f'Generated and saved {len(saved_articles)} articles for {data.get("company_name")}')
         return jsonify({
@@ -179,6 +298,7 @@ def get_models():
 
 @api_bp.route('/accounts', methods=['GET'])
 @login_required
+@log_api_request("获取平台账号列表")
 def get_accounts():
     """获取账号列表"""
     from services.account_service import AccountService
@@ -201,6 +321,7 @@ def get_accounts():
 
 @api_bp.route('/accounts', methods=['POST'])
 @login_required
+@log_api_request("添加平台账号")
 def add_account():
     """添加账号"""
     from services.account_service import AccountService
@@ -228,6 +349,7 @@ def add_account():
 
 @api_bp.route('/accounts/<int:account_id>', methods=['DELETE'])
 @login_required
+@log_api_request("删除平台账号")
 def delete_account(account_id):
     """删除账号"""
     from services.account_service import AccountService
@@ -251,6 +373,7 @@ def delete_account(account_id):
 
 @api_bp.route('/publish_zhihu', methods=['POST'])
 @login_required
+@log_api_request("发布文章到知乎")
 def publish_to_zhihu():
     """发布到知乎（异步任务队列版本）"""
     from services.task_queue_manager import get_task_manager
@@ -303,6 +426,7 @@ def publish_to_zhihu():
 
 @api_bp.route('/publish_zhihu_batch', methods=['POST'])
 @login_required
+@log_api_request("批量发布文章到知乎")
 def publish_to_zhihu_batch():
     """批量发布到知乎（异步）"""
     from services.task_queue_manager import get_task_manager
@@ -359,6 +483,7 @@ def publish_to_zhihu_batch():
 
 @api_bp.route('/publish_task/<task_id>', methods=['GET'])
 @login_required
+@log_api_request("查询发布任务状态")
 def get_publish_task_status(task_id):
     """获取发布任务状态"""
     from services.task_queue_manager import get_task_manager
@@ -391,6 +516,7 @@ def get_publish_task_status(task_id):
 
 @api_bp.route('/publish_tasks', methods=['GET'])
 @login_required
+@log_api_request("获取发布任务列表")
 def get_publish_tasks():
     """获取用户的发布任务列表"""
     from services.task_queue_manager import get_task_manager
@@ -423,6 +549,7 @@ def get_publish_tasks():
 
 @api_bp.route('/publish_task/<task_id>/cancel', methods=['POST'])
 @login_required
+@log_api_request("取消发布任务")
 def cancel_publish_task(task_id):
     """取消发布任务"""
     from services.task_queue_manager import get_task_manager
@@ -445,6 +572,7 @@ def cancel_publish_task(task_id):
 
 @api_bp.route('/publish_task/<task_id>/retry', methods=['POST'])
 @login_required
+@log_api_request("重试失败的发布任务")
 def retry_publish_task(task_id):
     """重试失败的任务"""
     from services.task_queue_manager import get_task_manager
@@ -467,6 +595,7 @@ def retry_publish_task(task_id):
 
 @api_bp.route('/workflow/current', methods=['GET'])
 @login_required
+@log_api_request("获取当前工作流")
 def get_current_workflow():
     """获取当前工作流"""
     from services.workflow_service import WorkflowService
@@ -489,6 +618,7 @@ def get_current_workflow():
 
 @api_bp.route('/workflow/save', methods=['POST'])
 @login_required
+@log_api_request("保存工作流")
 def save_workflow():
     """保存工作流"""
     from services.workflow_service import WorkflowService
@@ -514,6 +644,7 @@ def save_workflow():
 
 @api_bp.route('/workflow/list', methods=['GET'])
 @login_required
+@log_api_request("获取工作流列表")
 def get_workflow_list():
     """获取工作流列表"""
     from services.workflow_service import WorkflowService
@@ -537,6 +668,7 @@ def get_workflow_list():
 
 @api_bp.route('/zhihu/qr_login/start', methods=['POST'])
 @login_required
+@log_api_request("开始知乎二维码登录")
 def start_zhihu_qr_login():
     """开始知乎二维码登录流程"""
     from zhihu_auth.zhihu_qr_login import ZhihuQRLogin
@@ -574,6 +706,7 @@ def start_zhihu_qr_login():
 
 @api_bp.route('/zhihu/qr_login/check', methods=['POST'])
 @login_required
+@log_api_request("检查知乎二维码登录状态")
 def check_zhihu_qr_login():
     """检查二维码登录状态"""
     user = get_current_user()
@@ -623,6 +756,7 @@ def check_zhihu_qr_login():
 
 @api_bp.route('/publish_history', methods=['GET'])
 @login_required
+@log_api_request("获取发布历史记录")
 def get_publish_history():
     """获取发布历史记录"""
     from services.publish_service import PublishService
@@ -652,6 +786,7 @@ def get_publish_history():
 
 @api_bp.route('/articles/history', methods=['GET'])
 @login_required
+@log_api_request("获取用户文章归档")
 def get_user_articles():
     """获取用户的文章归档（包含已发布和未发布的文章）"""
     from services.workflow_service import WorkflowService

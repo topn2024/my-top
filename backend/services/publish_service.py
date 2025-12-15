@@ -3,10 +3,15 @@
 负责文章发布到各个平台
 """
 import logging
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from logger_config import setup_logger, log_service_call
 from typing import Dict, Optional
 from models import PublishHistory, get_db_session
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 
 class PublishService:
@@ -118,6 +123,8 @@ class PublishService:
         finally:
             db.close()
 
+
+    @log_service_call("获取发布历史")
     def get_publish_history(self, user_id: int, limit: int = 20, platform: str = None):
         """
         获取发布历史

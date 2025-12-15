@@ -41,6 +41,7 @@ class User(Base):
     email = Column(String(100), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(100))
+    role = Column(String(20), default='user', nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())
     last_login = Column(TIMESTAMP, nullable=True)
     is_active = Column(Boolean, default=True)
@@ -60,6 +61,7 @@ class User(Base):
             'username': self.username,
             'email': self.email,
             'full_name': self.full_name,
+            'role': self.role,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'last_login': self.last_login.isoformat() if self.last_login else None,
             'is_active': self.is_active
@@ -76,6 +78,7 @@ class Workflow(Base):
     company_desc = Column(Text)
     uploaded_text = Column(Text)
     uploaded_filename = Column(String(255))
+    template_id = Column(String(100), nullable=True)  # 使用的提示词模板ID
     analysis = Column(Text)
     article_count = Column(Integer, default=3)
     platforms = Column(JSON)  # 存储平台列表
@@ -100,6 +103,7 @@ class Workflow(Base):
             'company_desc': self.company_desc,
             'uploaded_text': self.uploaded_text,
             'uploaded_filename': self.uploaded_filename,
+            'template_id': self.template_id,
             'analysis': self.analysis,
             'article_count': self.article_count,
             'platforms': self.platforms,
@@ -193,6 +197,8 @@ class PublishHistory(Base):
     url = Column(Text)
     message = Column(Text)
     published_at = Column(TIMESTAMP, server_default=func.now(), index=True)
+    article_title = Column(String(500), nullable=True)
+    article_content = Column(Text, nullable=True)
 
     # 关系
     article = relationship("Article", back_populates="publish_history")
@@ -206,6 +212,8 @@ class PublishHistory(Base):
         return {
             'id': self.id,
             'article_id': self.article_id,
+            'article_title': self.article_title,
+            'article_content': self.article_content,
             'user_id': self.user_id,
             'platform': self.platform,
             'status': self.status,

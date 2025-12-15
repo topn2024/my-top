@@ -4,18 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>信息输入 - TOP_N 推广平台</title>
+    <link rel="stylesheet" href="/static/css/design-system.css">
+    <link rel="stylesheet" href="/static/css/page-header.css">
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🚀 TOP_N 推广平台</h1>
-            <p class="subtitle">让您的公司在大模型推荐中排名靠前</p>
-            <div class="header-buttons">
-                <button class="btn-config" onclick="showAccountConfig()">⚙️ 账号配置</button>
-                <button class="btn-login" id="login-btn" onclick="handleLoginClick()">🔑 登录/注册</button>
+    <!-- 页面头部 -->
+    <header class="page-header">
+        <div class="page-header-content">
+            <nav class="page-header-nav">
+                <a href="/" class="page-header-nav-link">← 返回首页</a>
+                <span data-role-required="admin">
+                    <a href="/templates" class="page-header-nav-link">📋 模板管理</a>
+                </span>
+            </nav>
+            <h1 class="page-header-title">🚀 TOP_N 推广平台</h1>
+            <p class="page-header-subtitle">让您的公司在大模型推荐中排名靠前</p>
+            <div class="page-header-actions">
+                <button class="page-header-btn" onclick="showAccountConfig()">⚙️ 账号配置</button>
+                <button class="page-header-btn-outline page-header-btn" id="login-btn" onclick="handleLoginClick()">🔑 登录/注册</button>
             </div>
-        </header>
+        </div>
+    </header>
+
+    <div class="container">
 
         <main>
             <!-- 步骤指示器 -->
@@ -65,6 +77,83 @@
                         <textarea id="company-desc" name="company_desc" rows="6"
                                   placeholder="请详细描述您的公司/产品，包括业务领域、核心优势、目标用户等信息...&#10;&#10;提示：您也可以通过上传文档来提供信息"></textarea>
                     </div>
+
+                    <!-- 模板选择 -->
+                    <div class="form-group">
+                        <label for="template-select">
+                            📋 提示词模板
+                            <span style="font-size: 12px; color: #6c757d; font-weight: normal;">(可选 - 使用专业模板提升效果)</span>
+                        </label>
+                        <select id="template-select" name="template_id">
+                            <option value="">智能推荐（系统自动选择最佳模板）</option>
+                        </select>
+                        <div id="template-info" style="display: none; margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 13px;">
+                            <div style="font-weight: bold; margin-bottom: 5px;" id="template-name"></div>
+                            <div style="color: #6c757d;" id="template-description"></div>
+                            <div style="margin-top: 8px; display: flex; gap: 10px;">
+                                <span id="template-tags"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 新增：三模块提示词选择 -->
+                    <div class="form-group" style="border: 2px dashed #e0e0e0; padding: 20px; border-radius: 8px; background: #fafbfc;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <label style="margin: 0;">
+                                🎯 提示词组合选择
+                                <span style="font-size: 12px; color: #6c757d; font-weight: normal;">(可选 - 高级用户功能)</span>
+                            </label>
+                            <button type="button" class="btn" style="padding: 8px 16px; font-size: 13px;" onclick="getRecommendation()">
+                                💡 为我推荐
+                            </button>
+                        </div>
+
+                        <!-- 推荐理由显示 -->
+                        <div id="recommendation-reason" style="display: none; margin-bottom: 15px; padding: 10px; background: #e7f3ff; border-left: 4px solid #2196f3; border-radius: 4px; font-size: 13px;">
+                            <strong>推荐理由：</strong><span id="reason-text"></span>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                            <!-- 分析提示词 -->
+                            <div>
+                                <label for="analysis-prompt-select" style="font-size: 13px; display: block; margin-bottom: 5px;">
+                                    📊 分析提示词
+                                </label>
+                                <select id="analysis-prompt-select" name="analysis_prompt_id" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
+                                    <option value="">使用默认</option>
+                                </select>
+                            </div>
+
+                            <!-- 文章提示词 -->
+                            <div>
+                                <label for="article-prompt-select" style="font-size: 13px; display: block; margin-bottom: 5px;">
+                                    📝 文章提示词
+                                </label>
+                                <select id="article-prompt-select" name="article_prompt_id" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
+                                    <option value="">使用默认</option>
+                                </select>
+                            </div>
+
+                            <!-- 平台风格 -->
+                            <div>
+                                <label for="platform-style-select" style="font-size: 13px; display: block; margin-bottom: 5px;">
+                                    🎨 目标平台风格
+                                </label>
+                                <select id="platform-style-select" name="platform_style_id" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
+                                    <option value="">通用风格</option>
+                                    <option value="zhihu">知乎（专业深度）</option>
+                                    <option value="csdn">CSDN（技术教程）</option>
+                                    <option value="juejin">掘金（前端技术）</option>
+                                    <option value="xiaohongshu">小红书（种草分享）</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                            💡 提示：点击"为我推荐"可根据您的公司信息智能推荐最佳组合
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label for="article-count">生成文章数量</label>
                         <select id="article-count" name="article_count">
@@ -161,6 +250,7 @@
         </div>
     </div>
 
+    <script src="/static/auth_utils.js"></script>
     <script src="/static/state.js"></script>
     <script src="/static/input.js"></script>
     <script src="/static/account_config.js"></script>

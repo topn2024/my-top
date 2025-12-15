@@ -9,15 +9,18 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from auth import create_user, authenticate_user, get_current_user, login_required
+from auth import create_user, authenticate_user
+from auth_decorators import login_required
+from logger_config import setup_logger, log_api_request
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 # 创建蓝图
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
 
 @auth_bp.route('/register', methods=['POST'])
+@log_api_request("用户注册")
 def register():
     """用户注册"""
     try:
@@ -56,6 +59,7 @@ def register():
 
 
 @auth_bp.route('/login', methods=['POST'])
+@log_api_request("用户登录")
 def login():
     """用户登录"""
     try:
@@ -115,24 +119,28 @@ def logout():
 
 @auth_bp.route('/me', methods=['GET'])
 @login_required
+@log_api_request("获取当前用户信息")
 def get_current_user_info():
     """获取当前用户信息"""
     try:
-        user = get_current_user()
+        from auth_decorators import get_current_user as get_user_with_role
+        user = get_user_with_role()
 
         if user:
+            role = getattr(user, 'role', 'user')
             return jsonify({
                 'success': True,
                 'user': {
                     'id': user.id,
                     'username': user.username,
                     'email': user.email,
+                    'role': role,
                     'created_at': user.created_at.isoformat() if hasattr(user, 'created_at') else None
                 }
             })
         else:
-            return jsonify({'error': '未登录'}), 401
+            return jsonify({'success': False, 'error': '未登录'}), 401
 
     except Exception as e:
         logger.error(f'Get current user failed: {e}', exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500

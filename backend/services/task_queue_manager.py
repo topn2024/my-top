@@ -3,6 +3,11 @@
 负责创建、管理发布任务，并将任务入队到RQ
 """
 import logging
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from logger_config import setup_logger, log_service_call
 import uuid
 from typing import Dict, List, Optional
 from datetime import datetime
@@ -13,7 +18,7 @@ from rq.job import Job
 from models import PublishTask, get_db_session
 from services.user_rate_limiter import get_rate_limiter
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 
 class TaskQueueManager:
@@ -58,6 +63,8 @@ class TaskQueueManager:
         queue_name = f'user:{user_id}'
         return Queue(queue_name, connection=self.redis)
 
+
+    @log_service_call("创建发布任务")
     def create_publish_task(
         self,
         user_id: int,
@@ -213,6 +220,8 @@ class TaskQueueManager:
                 'message': str(e)
             }
 
+
+    @log_service_call("批量创建任务")
     def create_batch_tasks(
         self,
         user_id: int,
@@ -261,6 +270,8 @@ class TaskQueueManager:
             'results': results
         }
 
+
+    @log_service_call("查询任务状态")
     def get_task_status(self, task_id: str) -> Optional[Dict]:
         """
         获取任务状态
@@ -368,6 +379,8 @@ class TaskQueueManager:
                 'error': str(e)
             }
 
+
+    @log_service_call("取消任务")
     def cancel_task(self, task_id: str, user_id: int) -> Dict:
         """
         取消任务
@@ -432,6 +445,8 @@ class TaskQueueManager:
                 'error': str(e)
             }
 
+
+    @log_service_call("重试任务")
     def retry_task(self, task_id: str, user_id: int) -> Dict:
         """
         重试失败的任务

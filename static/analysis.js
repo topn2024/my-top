@@ -28,16 +28,36 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     showLoading('正在生成推广文章，请稍候...');
 
     try {
+        const requestData = {
+            company_name: state.companyName,
+            analysis: state.analysis,
+            article_count: state.articleCount || 3
+        };
+
+        // 添加workflow_id（如果存在）
+        if (state.workflowId) {
+            requestData.workflow_id = state.workflowId;
+        }
+
+        // 添加旧模板ID（向后兼容）
+        if (state.templateId) {
+            requestData.template_id = state.templateId;
+        }
+
+        // 添加新的三模块提示词ID
+        if (state.articlePromptId) {
+            requestData.article_prompt_id = state.articlePromptId;
+        }
+        if (state.platformStylePromptId) {
+            requestData.platform_style_prompt_id = state.platformStylePromptId;
+        }
+
         const response = await fetch('/api/generate_articles', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                company_name: state.companyName,
-                analysis: state.analysis,
-                article_count: state.articleCount || 3
-            })
+            body: JSON.stringify(requestData)
         });
 
         const data = await response.json();

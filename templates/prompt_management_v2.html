@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提示词管理系统 - TOP_N</title>
+    <link rel="stylesheet" href="/static/css/prompt_management_v2.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #2c3e50;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 12px;
+            margin: 0 3px;
+        }
+
+        .tabs {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .tab-header {
+            display: flex;
+            border-bottom: 2px solid #ecf0f1;
+            background: #fafafa;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            color: #7f8c8d;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab-button.active {
+            color: #3498db;
+            background: white;
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #3498db;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .filter-group select,
+        .filter-group input[type="text"] {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 150px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #555;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-draft {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-archived {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-default {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .tags {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 3px 8px;
+            background: #e9ecef;
+            border-radius: 3px;
+            font-size: 11px;
+            color: #495057;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: monospace;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-help {
+            font-size: 12px;
+            color: #777;
+            margin-top: 5px;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .page-btn {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .page-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 提示词管理系统</h1>
+            <button class="btn btn-primary" onclick="showCreateModal()">+ 创建提示词</button>
+        </div>
+
+        <div class="tabs">
+            <div class="tab-header">
+                <button class="tab-button active" data-tab="analysis">分析提示词</button>
+                <button class="tab-button" data-tab="article">文章提示词</button>
+                <button class="tab-button" data-tab="platform">平台风格</button>
+            </div>
+
+            <!-- 分析提示词标签页 -->
+            <div class="tab-content active" id="analysis-tab">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>状态:</label>
+                        <select id="analysis-status-filter">
+                            <option value="">全部</option>
+                            <option value="active">活跃</option>
+                            <option value="draft">草稿</option>
+                            <option value="archived">已归档</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>行业:</label>
+                        <select id="analysis-industry-filter">
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>搜索:</label>
+                        <input type="text" id="analysis-search" placeholder="搜索名称或描述...">
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="applyAnalysisFilters()">筛选</button>
+                    <button class="btn btn-secondary btn-sm" onclick="resetAnalysisFilters()">重置</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="analysis-table">
+                        <thead>
+                            <tr>
+                                <th>名称</th>
+                                <th>代码</th>
+                                <th>状态</th>
+                                <th>行业标签</th>
+                                <th>使用次数</th>
+                                <th>成功率</th>
+                                <th>默认</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analysis-tbody">
+                            <tr><td colspan="8" class="loading">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="analysis-pagination"></div>
+            </div>
+
+            <!-- 文章提示词标签页 -->
+            <div class="tab-content" id="article-tab">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>状态:</label>
+                        <select id="article-status-filter">
+                            <option value="">全部</option>
+                            <option value="active">活跃</option>
+                            <option value="draft">草稿</option>
+                            <option value="archived">已归档</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>行业:</label>
+                        <select id="article-industry-filter">
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>风格:</label>
+                        <select id="article-style-filter">
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>搜索:</label>
+                        <input type="text" id="article-search" placeholder="搜索名称或描述...">
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="applyArticleFilters()">筛选</button>
+                    <button class="btn btn-secondary btn-sm" onclick="resetArticleFilters()">重置</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="article-table">
+                        <thead>
+                            <tr>
+                                <th>名称</th>
+                                <th>代码</th>
+                                <th>状态</th>
+                                <th>标签</th>
+                                <th>使用次数</th>
+                                <th>评分</th>
+                                <th>默认</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="article-tbody">
+                            <tr><td colspan="8" class="loading">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="article-pagination"></div>
+            </div>
+
+            <!-- 平台风格标签页 -->
+            <div class="tab-content" id="platform-tab">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>平台:</label>
+                        <select id="platform-filter">
+                            <option value="">全部</option>
+                            <option value="zhihu">知乎</option>
+                            <option value="csdn">CSDN</option>
+                            <option value="juejin">掘金</option>
+                            <option value="xiaohongshu">小红书</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>状态:</label>
+                        <select id="platform-status-filter">
+                            <option value="">全部</option>
+                            <option value="active">活跃</option>
+                            <option value="draft">草稿</option>
+                            <option value="archived">已归档</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>应用阶段:</label>
+                        <select id="platform-stage-filter">
+                            <option value="">全部</option>
+                            <option value="generation">生成时</option>
+                            <option value="publish">发布前</option>
+                            <option value="both">两个阶段</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>搜索:</label>
+                        <input type="text" id="platform-search" placeholder="搜索名称或描述...">
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="applyPlatformFilters()">筛选</button>
+                    <button class="btn btn-secondary btn-sm" onclick="resetPlatformFilters()">重置</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="platform-table">
+                        <thead>
+                            <tr>
+                                <th>名称</th>
+                                <th>平台</th>
+                                <th>代码</th>
+                                <th>状态</th>
+                                <th>应用阶段</th>
+                                <th>使用次数</th>
+                                <th>评分</th>
+                                <th>默认</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="platform-tbody">
+                            <tr><td colspan="9" class="loading">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="platform-pagination"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建/编辑模态框 -->
+    <div class="modal" id="edit-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">创建提示词</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="prompt-form">
+                    <input type="hidden" id="form-type">
+                    <input type="hidden" id="form-id">
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>名称 *</label>
+                            <input type="text" id="form-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>代码 *</label>
+                            <input type="text" id="form-code" required>
+                            <div class="form-help">唯一标识符，使用小写字母和下划线</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>描述</label>
+                        <textarea id="form-description" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>系统提示词 *</label>
+                        <textarea id="form-system-prompt" rows="4" required></textarea>
+                        <div class="form-help">AI的角色定义和行为规范</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>用户模板 *</label>
+                        <textarea id="form-user-template" rows="6" required></textarea>
+                        <div class="form-help">支持 {{variable}} 和 {% if variable %} 语法</div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>温度参数</label>
+                            <input type="number" id="form-temperature" step="0.1" min="0" max="2" value="0.7">
+                        </div>
+                        <div class="form-group">
+                            <label>最大Token数</label>
+                            <input type="number" id="form-max-tokens" min="100" max="8000" value="2000">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>状态</label>
+                            <select id="form-status">
+                                <option value="draft">草稿</option>
+                                <option value="active">活跃</option>
+                                <option value="archived">已归档</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="form-is-default">
+                                设为默认
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 平台风格特有字段 -->
+                    <div id="platform-specific-fields" style="display: none;">
+                        <div class="form-group">
+                            <label>平台 *</label>
+                            <select id="form-platform">
+                                <option value="zhihu">知乎</option>
+                                <option value="csdn">CSDN</option>
+                                <option value="juejin">掘金</option>
+                                <option value="xiaohongshu">小红书</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>应用阶段</label>
+                            <select id="form-apply-stage">
+                                <option value="both">两个阶段</option>
+                                <option value="generation">生成时</option>
+                                <option value="publish">发布前</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="savePrompt()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/prompt_management_v2.js"></script>
+</body>
+</html>

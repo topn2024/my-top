@@ -39,6 +39,10 @@ def create_app(config_name='default'):
     # 配置日志
     setup_logging(config)
 
+    # 初始化权限系统
+    from auth_decorators import init_permissions
+    init_permissions(app)
+
     # 注册蓝图
     register_blueprints(app)
 
@@ -57,9 +61,10 @@ def setup_logging(config):
     from logging.handlers import RotatingFileHandler
 
     # 设置Windows控制台输出编码
-    if sys.platform == 'win32':
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+    # 注意：在某些环境下（如后台执行），不应重新包装stdout/stderr
+    # if sys.platform == 'win32':
+    #     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    #     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
     # 创建根logger
     root_logger = logging.getLogger()
@@ -105,6 +110,14 @@ def register_blueprints(app):
     from blueprints.auth import auth_bp
     from blueprints.api import api_bp
     from blueprints.task_api import task_bp
+    from blueprints.prompt_template_api import bp as prompt_template_bp
+
+    # 新增：三模块提示词系统API蓝图
+    from blueprints.analysis_prompt_api import analysis_prompt_bp
+    from blueprints.article_prompt_api import article_prompt_bp
+    from blueprints.platform_style_api import platform_style_bp
+    from blueprints.prompt_combination_api import combination_bp
+    from blueprints.article_style_api import article_style_bp
 
     # 注册页面蓝图
     app.register_blueprint(pages_bp)
@@ -117,6 +130,16 @@ def register_blueprints(app):
 
     # 注册任务API蓝图
     app.register_blueprint(task_bp, url_prefix='/task')
+
+    # 注册提示词模板API蓝图（旧系统，保留兼容）
+    app.register_blueprint(prompt_template_bp)
+
+    # 注册三模块提示词系统API蓝图（新系统）
+    app.register_blueprint(analysis_prompt_bp)
+    app.register_blueprint(article_prompt_bp)
+    app.register_blueprint(platform_style_bp)
+    app.register_blueprint(combination_bp)
+    app.register_blueprint(article_style_bp)
 
     logging.info('Blueprints registered successfully')
 

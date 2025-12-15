@@ -4,20 +4,21 @@
 window.addEventListener('load', () => {
     const state = WorkflowState.get();
 
-    // 加载当前用户信息
+    // 1. 加载当前用户信息
     loadCurrentUser();
 
-    // 检查是否有文章
-    if (!state.articles || state.articles.length === 0) {
-        alert('未找到生成的文章，请先完成文章生成');
-        WorkflowNav.goToArticles();
-        return;
+    // 2. 显示文章选择列表（如果有文章）
+    if (state.articles && state.articles.length > 0) {
+        displayArticleSelection(state.articles);
+    } else {
+        // 没有文章时显示提示
+        const selectionDiv = document.getElementById('article-selection');
+        if (selectionDiv) {
+            selectionDiv.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">暂无文章，请先完成文章生成</p>';
+        }
     }
 
-    // 显示文章选择列表
-    displayArticleSelection(state.articles);
-
-    // 加载发布历史（使用新的模块）
+    // 3. 加载发布历史（不管有没有文章都要加载）
     publishHistoryManager.init();
 });
 
@@ -167,25 +168,44 @@ async function publishBatchToZhihu(articles) {
         const data = await response.json();
         console.log('[发布流程] 后端返回数据:', data);
         hideLoading();
-
         if (data.success || data.success_count > 0) {
-            console.log(`[发布流程] 任务创建成功！成功: ${data.success_count}, 失败: ${data.failed_count}`);
-            console.log('[发布流程] 任务创建结果详情:', data.results);
+            console.log(`[发布流程] 发布完成！成功: ${data.success_count}, 失败: ${data.failed_count}`);
+            console.log('[发布流程] 发布结果详情:', data.results);
 
-            const message = `任务创建成功！\n\n` +
-                          `成功创建: ${data.success_count} 个任务\n` +
-                          `创建失败: ${data.failed_count} 个任务\n\n` +
-                          `任务正在后台处理中，您可以在"发布任务"标签页查看进度。`;
+            // 构建结果消息
+            let message = `批量发布完成！
+
+` +
+                          `成功: ${data.success_count} 篇
+` +
+                          `失败: ${data.failed_count} 篇
+
+`;
+            
+            // 显示详细结果
+            if (data.results && data.results.length > 0) {
+                message += '详细结果：\n';
+                data.results.forEach((result, index) => {
+                    const status = result.success ? '✓' : '✗';
+                    const title = result.title.substring(0, 30) + (result.title.length > 30 ? '...' : '');
+                    message += `${status} ${title}\n`;
+                    if (!result.success && result.message) {
+                        message += `   错误: ${result.message}\n`;
+                    }
+                });
+            }
 
             alert(message);
 
-            // 显示任务监控面板
-            console.log('[发布流程] 显示任务监控面板');
-            showTaskMonitor(data.results);
+            // 刷新发布历史
+            if (typeof publishHistoryManager !== 'undefined') {
+                console.log('[发布流程] 刷新发布历史');
+                publishHistoryManager.refresh();
+            }
 
         } else {
-            console.error('[发布流程] 任务创建失败:', data.error);
-            alert(`创建任务失败：${data.error || '未知错误'}`);
+            console.error('[发布流程] 发布失败:', data.error);
+            alert(`发布失败：${data.error || '未知错误'}`);
         }
 
     } catch (error) {

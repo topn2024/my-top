@@ -3,16 +3,23 @@
 负责工作流程的管理和文章保存
 """
 import logging
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from logger_config import setup_logger, log_service_call
 from datetime import datetime
 from typing import Dict, List, Optional
 from models import Workflow, Article, get_db_session
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 
 class WorkflowService:
     """工作流服务类"""
 
+
+    @log_service_call("获取当前工作流")
     def get_current_workflow(self, user_id: int) -> Optional[Dict]:
         """
         获取用户当前工作流
@@ -33,6 +40,8 @@ class WorkflowService:
         finally:
             db.close()
 
+
+    @log_service_call("保存工作流")
     def save_workflow(self, user_id: int, workflow_id: Optional[int],
                      data: Dict) -> Dict:
         """
@@ -82,6 +91,8 @@ class WorkflowService:
         finally:
             db.close()
 
+
+    @log_service_call("保存文章")
     def save_articles(self, user_id: int, workflow_id: int,
                      articles: List[Dict]) -> List[Dict]:
         """
@@ -143,6 +154,8 @@ class WorkflowService:
         finally:
             db.close()
 
+
+    @log_service_call("获取工作流列表")
     def get_workflow_list(self, user_id: int, limit: int = 10) -> List[Dict]:
         """
         获取用户的工作流列表

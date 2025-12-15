@@ -47,7 +47,10 @@
       "Bash(ls:*)",
       "Bash(tar:*)",
       "Bash(netstat:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(grep:*)",
+      "Bash(paste:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

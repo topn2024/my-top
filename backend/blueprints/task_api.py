@@ -4,11 +4,15 @@
 """
 from flask import Blueprint, request, jsonify, session
 from functools import wraps
-import logging
+import sys
+import os
 
-from backend.services.task_queue_manager import get_task_manager
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-logger = logging.getLogger(__name__)
+from services.task_queue_manager import get_task_manager
+from logger_config import setup_logger, log_api_request
+
+logger = setup_logger(__name__)
 
 # 创建Blueprint
 task_bp = Blueprint('task_api', __name__)
@@ -29,6 +33,7 @@ def login_required(f):
 
 @task_bp.route('/create', methods=['POST'])
 @login_required
+@log_api_request("创建发布任务")
 def create_task():
     """
     创建单个发布任务
@@ -94,6 +99,7 @@ def create_task():
 
 @task_bp.route('/create_batch', methods=['POST'])
 @login_required
+@log_api_request("批量创建发布任务")
 def create_batch_tasks():
     """
     批量创建发布任务
@@ -164,6 +170,7 @@ def create_batch_tasks():
 
 @task_bp.route('/<task_id>', methods=['GET'])
 @login_required
+@log_api_request("查询任务状态")
 def get_task_status(task_id):
     """
     查询任务状态
@@ -216,6 +223,7 @@ def get_task_status(task_id):
 
 @task_bp.route('/list', methods=['GET'])
 @login_required
+@log_api_request("获取任务列表")
 def get_task_list():
     """
     获取任务列表
@@ -274,6 +282,7 @@ def get_task_list():
 
 @task_bp.route('/<task_id>/cancel', methods=['POST'])
 @login_required
+@log_api_request("取消任务")
 def cancel_task(task_id):
     """
     取消任务
@@ -308,6 +317,7 @@ def cancel_task(task_id):
 
 @task_bp.route('/<task_id>/retry', methods=['POST'])
 @login_required
+@log_api_request("重试失败的任务")
 def retry_task(task_id):
     """
     重试失败的任务
@@ -342,6 +352,7 @@ def retry_task(task_id):
 
 @task_bp.route('/stats', methods=['GET'])
 @login_required
+@log_api_request("获取任务统计信息")
 def get_stats():
     """
     获取用户的限流统计信息
@@ -378,6 +389,7 @@ def get_stats():
 
 @task_bp.route('/clear', methods=['POST'])
 @login_required
+@log_api_request("批量清理任务")
 def clear_tasks():
     """
     清理任务（批量删除）

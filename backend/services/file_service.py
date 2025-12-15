@@ -4,10 +4,14 @@
 """
 import os
 import logging
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from logger_config import setup_logger, log_service_call
 from werkzeug.utils import secure_filename
 from typing import Optional, Tuple
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 # 条件导入文档处理库
 try:
@@ -73,6 +77,8 @@ class FileService:
 
         return True, ''
 
+
+    @log_service_call("保存上传文件")
     def save_file(self, file) -> Tuple[bool, str, Optional[str]]:
         """
         保存上传的文件
@@ -103,6 +109,8 @@ class FileService:
             logger.error(f"Error saving file: {e}", exc_info=True)
             return False, f'文件保存失败: {str(e)}', None
 
+
+    @log_service_call("提取文件文本")
     def extract_text(self, filepath: str) -> Optional[str]:
         """
         从文件中提取文本

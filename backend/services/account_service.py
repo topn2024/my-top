@@ -4,11 +4,16 @@
 """
 import json
 import logging
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from logger_config import setup_logger, log_service_call
 from typing import List, Dict, Optional
 from models import PlatformAccount, get_db_session
 from encryption import encrypt_password, decrypt_password
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 
 class AccountService:
@@ -19,6 +24,8 @@ class AccountService:
         self.config = config
         self.accounts_file = config.ACCOUNTS_FILE
 
+
+    @log_service_call("获取用户账号列表")
     def get_user_accounts(self, user_id: int) -> List[Dict]:
         """
         获取用户的所有账号
@@ -38,6 +45,8 @@ class AccountService:
         finally:
             db.close()
 
+
+    @log_service_call("添加平台账号")
     def add_account(self, user_id: int, platform: str, username: str,
                    password: str, config: Optional[str] = None) -> Dict:
         """
@@ -83,6 +92,8 @@ class AccountService:
         finally:
             db.close()
 
+
+    @log_service_call("删除账号")
     def delete_account(self, user_id: int, account_id: int) -> bool:
         """
         删除账号

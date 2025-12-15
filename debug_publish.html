@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>发布页面诊断</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .log { margin: 5px 0; padding: 5px; background: #f0f0f0; }
+        .error { background: #ffe0e0; color: red; }
+        .success { background: #e0ffe0; color: green; }
+    </style>
+</head>
+<body>
+    <h1>发布页面诊断工具</h1>
+    <div id="logs"></div>
+
+    <script>
+        const logsDiv = document.getElementById('logs');
+        
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = 'log ' + (type === 'error' ? 'error' : type === 'success' ? 'success' : '');
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + msg;
+            logsDiv.appendChild(div);
+            console.log(msg);
+        }
+
+        log('开始诊断...');
+
+        // 检查localStorage
+        try {
+            const state = localStorage.getItem('topn_workflow_state');
+            if (state) {
+                const parsed = JSON.parse(state);
+                log('✓ localStorage状态存在', 'success');
+                log('  - 公司名称: ' + (parsed.companyName || '无'));
+                log('  - 文章数量: ' + (parsed.articles ? parsed.articles.length : 0));
+                log('  - 当前步骤: ' + parsed.currentStep);
+                
+                if (parsed.articles && parsed.articles.length > 0) {
+                    log('  - 文章标题:');
+                    parsed.articles.forEach((art, i) => {
+                        log('    ' + (i+1) + '. ' + art.title);
+                    });
+                }
+            } else {
+                log('✗ localStorage中没有工作流状态', 'error');
+            }
+        } catch (e) {
+            log('✗ localStorage读取失败: ' + e.message, 'error');
+        }
+
+        // 检查用户登录状态
+        log('检查用户登录状态...');
+        fetch('/api/auth/me')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.user) {
+                    log('✓ 用户已登录: ' + data.user.username, 'success');
+                } else {
+                    log('✗ 用户未登录', 'error');
+                }
+            })
+            .catch(e => {
+                log('✗ 用户状态检查失败: ' + e.message, 'error');
+            });
+
+        // 检查发布历史API
+        log('检查发布历史API...');
+        fetch('/api/publish_history')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    log('✓ 发布历史API正常，记录数: ' + (data.history ? data.history.length : 0), 'success');
+                } else {
+                    log('✗ 发布历史API返回失败: ' + data.error, 'error');
+                }
+            })
+            .catch(e => {
+                log('✗ 发布历史API调用失败: ' + e.message, 'error');
+            });
+
+        // 检查页面元素
+        setTimeout(() => {
+            log('检查页面元素...');
+            const username = document.getElementById('username');
+            const articleSelection = document.getElementById('article-selection');
+            const historyContainer = document.getElementById('history-container');
+            
+            log('username元素: ' + (username ? '✓ 存在' : '✗ 不存在'));
+            log('article-selection元素: ' + (articleSelection ? '✓ 存在' : '✗ 不存在'));
+            log('history-container元素: ' + (historyContainer ? '✓ 存在' : '✗ 不存在'));
+        }, 100);
+
+        log('诊断完成');
+    </script>
+</body>
+</html>

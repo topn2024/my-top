@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提示词模板管理 - TOP_N</title>
+    <link rel="stylesheet" href="/static/css/design-system.css">
+    <link rel="stylesheet" href="/static/css/page-header.css">
+    <style>
+        body {
+            background: var(--bg-body);
+        }
+
+        .top-nav-bar {
+            background: white;
+            border-bottom: 2px solid var(--gray-100);
+            padding: var(--spacing-md) 0;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .top-nav-bar-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--spacing-lg);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-xl);
+            background: white;
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .template-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .template-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .template-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .template-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .template-code {
+            font-size: 12px;
+            color: #7f8c8d;
+            font-family: monospace;
+        }
+
+        .template-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-draft {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-archived {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .template-meta {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .template-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 15px 0;
+        }
+
+        .tag {
+            padding: 3px 10px;
+            background: #e9ecef;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #495057;
+        }
+
+        .tag-industry {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        .tag-platform {
+            background: #d1e7dd;
+            color: #0a3622;
+        }
+
+        .template-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 8px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .close {
+            font-size: 28px;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        textarea.form-control {
+            min-height: 100px;
+            font-family: monospace;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .prompt-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .prompt-section-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7f8c8d;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <div class="top-nav-bar">
+        <div class="top-nav-bar-content">
+            <a href="/" class="nav-link">← 返回首页</a>
+            <a href="/platform" class="nav-link">🚀 推广平台</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="card-title">提示词模板管理</h1>
+            <div class="d-flex gap-2">
+                <a href="/template-guide" class="btn btn-secondary">📚 使用指南</a>
+                <button class="btn btn-primary" onclick="showCreateModal()">+ 创建新模板</button>
+            </div>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalTemplates">-</div>
+                <div class="stat-label">总模板数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="activeTemplates">-</div>
+                <div class="stat-label">活跃模板</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalCategories">-</div>
+                <div class="stat-label">分类数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalExamples">-</div>
+                <div class="stat-label">样例库</div>
+            </div>
+        </div>
+
+        <div class="filters">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>状态</label>
+                    <select class="form-control" id="filterStatus" onchange="loadTemplates()">
+                        <option value="">全部</option>
+                        <option value="active" selected>活跃</option>
+                        <option value="draft">草稿</option>
+                        <option value="archived">已归档</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>行业</label>
+                    <select class="form-control" id="filterIndustry" onchange="loadTemplates()">
+                        <option value="">全部行业</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>平台</label>
+                    <select class="form-control" id="filterPlatform" onchange="loadTemplates()">
+                        <option value="">全部平台</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>搜索</label>
+                    <input type="text" class="form-control" id="searchKeyword" placeholder="搜索模板名称或代码..." onkeyup="loadTemplates()">
+                </div>
+            </div>
+        </div>
+
+        <div id="templatesContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>加载中...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建/编辑模板模态框 -->
+    <div id="templateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">创建新模板</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+
+            <form id="templateForm">
+                <input type="hidden" id="templateId">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>模板名称 *</label>
+                        <input type="text" class="form-control" id="templateName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>模板代码 *</label>
+                        <input type="text" class="form-control" id="templateCode" required
+                               placeholder="例: tech_zhihu_v1">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>描述</label>
+                    <textarea class="form-control" id="templateDescription" rows="3"></textarea>
+                </div>
+
+                <div class="prompt-section">
+                    <div class="prompt-section-title">分析阶段提示词</div>
+                    <div class="form-group">
+                        <label>系统提示词 (System Prompt)</label>
+                        <textarea class="form-control" id="analysisSystem" rows="3"
+                                  placeholder="定义AI的角色和专业背景..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>用户模板 (User Template)</label>
+                        <textarea class="form-control" id="analysisUserTemplate" rows="4"
+                                  placeholder="支持变量: {{company_name}}, {{company_desc}}, {{uploaded_text}}"></textarea>
+                    </div>
+                </div>
+
+                <div class="prompt-section">
+                    <div class="prompt-section-title">文章生成阶段提示词</div>
+                    <div class="form-group">
+                        <label>系统提示词 (System Prompt)</label>
+                        <textarea class="form-control" id="generationSystem" rows="3"
+                                  placeholder="定义AI的角色和写作风格..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>用户模板 (User Template)</label>
+                        <textarea class="form-control" id="generationUserTemplate" rows="4"
+                                  placeholder="支持变量: {{company_name}}, {{analysis}}, {{angle}}"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>行业标签 (逗号分隔)</label>
+                        <input type="text" class="form-control" id="industryTags"
+                               placeholder="tech, finance, education">
+                    </div>
+                    <div class="form-group">
+                        <label>平台标签 (逗号分隔)</label>
+                        <input type="text" class="form-control" id="platformTags"
+                               placeholder="zhihu, csdn, juejin">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>关键词 (逗号分隔)</label>
+                    <input type="text" class="form-control" id="keywords"
+                           placeholder="AI, Cloud, Innovation">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Temperature (0-1)</label>
+                        <input type="number" class="form-control" id="temperature"
+                               min="0" max="1" step="0.1" value="0.8">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Tokens</label>
+                        <input type="number" class="form-control" id="maxTokens"
+                               min="500" max="10000" step="100" value="3000">
+                    </div>
+                    <div class="form-group">
+                        <label>状态</label>
+                        <select class="form-control" id="templateStatus">
+                            <option value="draft">草稿</option>
+                            <option value="active">活跃</option>
+                            <option value="archived">归档</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+                    <button type="submit" class="btn btn-primary">保存模板</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/template_management.js"></script>
+</body>
+</html>

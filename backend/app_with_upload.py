@@ -15,13 +15,14 @@ from auth import hash_password, verify_password, create_user, authenticate_user,
 from encryption import encrypt_password, decrypt_password
 from database import get_db_context
 
-# 配置日志 - 详细格式,包含文件名和行号
-logging.basicConfig(
-    stream=sys.stdout,
-    level=logging.INFO,  # INFO级别用于生产环境,DEBUG用于开发调试
-    format='%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# 导入统一日志配置
+from logger_config import setup_logger, log_api_request, log_function_call
+
+# 导入AI服务辅助函数
+from services.ai_service import remove_markdown_and_ai_traces, AIService
+
+# 配置日志
+logger = setup_logger(__name__)
 
 # 设置第三方库的日志级别
 logging.getLogger('werkzeug').setLevel(logging.INFO)
@@ -143,25 +144,31 @@ def publish():
     """发布推广页面"""
     return render_template('publish.html')
 
+@app.route('/templates')
+@login_required
+def templates_page():
+    """提示词模板管理页面"""
+    return render_template('template_management.html')
+
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     """处理文件上传"""
     try:
         if 'file' not in request.files:
             logger.error("No file in request")
-            return jsonify({'error': '没有文件被上传'}), 400
+            return jsonify({'success': False, 'error': '没有文件被上传'}), 400
 
         file = request.files['file']
 
         if file.filename == '':
             logger.error("Empty filename")
-            return jsonify({'error': '文件名为空'}), 400
+            return jsonify({'success': False, 'error': '文件名为空'}), 400
 
         logger.info(f"Uploading file: {file.filename}")
 
         if not allowed_file(file.filename):
             logger.error(f"Unsupported file type: {file.filename}")
-            return jsonify({'error': f'不支持的文件格式，仅支持: {", ".join(ALLOWED_EXTENSIONS)}'}), 400
+            return jsonify({'success': False, 'error': f'不支持的文件格式，仅支持: {", ".join(ALLOWED_EXTENSIONS)}'}), 400
 
         # 保存文件
         # 先获取原始文件名和扩展名
@@ -170,7 +177,7 @@ def upload_file():
             ext = original_filename.rsplit('.', 1)[1].lower()
         else:
             logger.error(f"File has no extension: {original_filename}")
-            return jsonify({'error': '文件名没有扩展名'}), 400
+            return jsonify({'success': False, 'error': '文件名没有扩展名'}), 400
 
         # 使用时间戳作为文件名，保留扩展名
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
@@ -194,7 +201,7 @@ def upload_file():
                 error_msg = '无法提取文件内容，请检查文件格式或内容'
 
             logger.error(f"Text extraction failed for {filepath}: {error_msg}")
-            return jsonify({'error': error_msg}), 500
+            return jsonify({'success': False, 'error': error_msg}), 500
 
         # 限制文本长度
         if len(text) > 10000:
@@ -210,10 +217,11 @@ def upload_file():
 
     except Exception as e:
         logger.error(f"Exception in upload_file: {str(e)}", exc_info=True)
-        return jsonify({'error': f'文件上传失败: {str(e)}'}), 500
+        return jsonify({'success': False, 'error': f'文件上传失败: {str(e)}'}), 500
 
 @app.route('/api/analyze', methods=['POST'])
 @login_required
+@log_api_request("分析公司信息")
 def analyze_company():
     try:
         user = get_current_user()
@@ -225,7 +233,7 @@ def analyze_company():
         workflow_id = data.get('workflow_id')
 
         if not company_name:
-            return jsonify({'error': '请输入公司名称'}), 400
+            return jsonify({'success': False, 'error': '请输入公司名称'}), 400
 
         prompt = f'''
 请分析以下公司/产品信息：
@@ -308,103 +316,32 @@ def analyze_company():
 
     except requests.exceptions.RequestException as e:
         logger.error(f'API request failed: {str(e)}', exc_info=True)
-        return jsonify({'error': f'API调用失败: {str(e)}'}), 500
+        return jsonify({'success': False, 'error': f'API调用失败: {str(e)}'}), 500
     except Exception as e:
         logger.error(f'Analysis failed: {str(e)}', exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/generate_articles', methods=['POST'])
 @login_required
+@log_api_request("生成推广文章")
 def generate_articles():
     try:
         user = get_current_user()
         data = request.json
-        company_name = data.get('company_name', '')
-        analysis = data.get('analysis', '')
-        article_count = data.get('article_count', 3)
-        workflow_id = data.get('workflow_id')
+        company_name = data.get("company_name", "")
+        analysis = data.get("analysis", "")
+        article_count = data.get("article_count", 3)
+        workflow_id = data.get("workflow_id")
 
         if not company_name or not analysis:
-            return jsonify({'error': '缺少必要参数'}), 400
+            return jsonify({"success": False, "error": "缺少必要参数"}), 400
 
-        articles = []
-
-        article_types = [
-            '技术创新角度的深度分析文章',
-            '用户体验角度的评测文章',
-            '行业对比角度的专业评论',
-            '未来发展趋势的前瞻分析',
-            '实际应用场景的案例分享'
-        ]
-
-        for i in range(min(article_count, len(article_types))):
-            prompt = f'''
-基于以下分析信息，撰写一篇关于 {company_name} 的{article_types[i]}：
-
-{analysis}
-
-重要要求：
-1. 文章长度800-1200字
-2. 突出公司/产品的核心优势
-3. 用自然口语化的表达，像人写的而不是AI生成的
-4. 不要使用Markdown格式（不要用###标题、**粗体**、*斜体*、- 列表、> 引用等）
-5. 避免使用总结性、概括性的套话（如"综上所述"、"总的来说"、"值得一提的是"等）
-6. 不要使用过于正式的连接词，用更自然的表达
-7. 包含具体案例或数据支撑
-8. 标题要吸引人但不要夸张
-9. 适合发布到知乎、CSDN等平台
-10. 文章应该像是一个真实用户在分享自己的体验和想法
-
-请按以下格式返回：
-标题：[文章标题]
-
-正文：
-[文章内容]
-'''
-
-            # 使用 Chat Completion API (通过 requests 库)
-            headers = {
-                'Authorization': f'Bearer {QIANWEN_API_KEY}',
-                'Content-Type': 'application/json'
-            }
-
-            payload = {
-                'model': 'qwen-plus',
-                'messages': [
-                    {'role': 'system', 'content': '你是一个专业的科技文章撰写者。'},
-                    {'role': 'user', 'content': prompt}
-                ],
-                'temperature': 0.8,
-                'max_tokens': 2000
-            }
-
-            logger.info(f'Generating article {i+1}/{article_count} for {company_name}')
-            response = requests.post(QIANWEN_CHAT_URL, headers=headers, json=payload, timeout=60)
-            response.raise_for_status()
-
-            result = response.json()
-            article_text = result['choices'][0]['message']['content'].strip()
-
-            # 处理文章文本，去除Markdown格式和AI生成痕迹
-            article_text = remove_markdown_and_ai_traces(article_text)
-
-            lines = article_text.strip().split('\n')
-            title = company_name + ' - ' + article_types[i]
-            content = article_text
-
-            for line in lines:
-                if line.startswith('标题：'):
-                    title = line.replace('标题：', '').strip()
-                    break
-
-            articles.append({
-                'id': i + 1,
-                'title': title,
-                'content': content,
-                'type': article_types[i],
-                'created_at': datetime.now().isoformat()
-            })
-            logger.info(f'Article {i+1} generated: {title}')
+        # 使用AIService的并发版本生成文章
+        from config import Config
+        ai_service = AIService(Config)
+        
+        logger.info(f"Using concurrent article generation for {company_name}")
+        articles = ai_service.generate_articles(company_name, analysis, article_count)
 
         # 保存到数据库
         db = get_db_session()
@@ -423,9 +360,9 @@ def generate_articles():
                     for i, art_data in enumerate(articles):
                         article = Article(
                             workflow_id=workflow.id,
-                            title=art_data['title'],
-                            content=art_data['content'],
-                            article_type=art_data['type'],
+                            title=art_data["title"],
+                            content=art_data["content"],
+                            article_type=art_data.get("type", ""),
                             article_order=i
                         )
                         db.add(article)
@@ -436,7 +373,7 @@ def generate_articles():
                     db.commit()
         except Exception as e:
             db.rollback()
-            logger.error(f'Failed to save articles: {e}', exc_info=True)
+            logger.error(f"Failed to save articles: {e}", exc_info=True)
         finally:
             db.close()
 
@@ -444,120 +381,13 @@ def generate_articles():
         save_articles(company_name, articles)
 
         return jsonify({
-            'success': True,
-            'articles': articles
+            "success": True,
+            "articles": articles
         })
 
     except Exception as e:
-        logger.error(f'Generate articles failed: {e}', exc_info=True)
-        return jsonify({'error': str(e)}), 500
-    """
-    去除Markdown格式和AI生成痕迹
-
-    功能:
-    1. 去除所有Markdown格式标记
-    2. 去除AI生成的典型特征词
-    3. 替换过于正式的连接词为更自然的表达
-    """
-    import re
-
-    # 去除Markdown标题标记 (###, ##, #)
-    text = re.sub(r'#{1,6}\s+', '', text)
-
-    # 去除Markdown粗体标记 (**, __)
-    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
-    text = re.sub(r'__(.+?)__', r'\1', text)
-
-    # 去除Markdown斜体标记 (*, _)
-    text = re.sub(r'\*(.+?)\*', r'\1', text)
-    text = re.sub(r'_(.+?)_', r'\1', text)
-
-    # 去除Markdown代码块标记 (```, `)
-    text = re.sub(r'```[\s\S]*?```', '', text)
-    text = re.sub(r'`(.+?)`', r'\1', text)
-
-    # 去除Markdown链接 [文本](URL)
-    text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
-
-    # 去除Markdown引用标记 (>)
-    text = re.sub(r'^>\s+', '', text, flags=re.MULTILINE)
-
-    # 去除Markdown无序列表标记 (-, *, +)
-    text = re.sub(r'^[\-\*\+]\s+', '', text, flags=re.MULTILINE)
-
-    # 去除Markdown有序列表标记 (1. 2. 3.)
-    text = re.sub(r'^\d+\.\s+', '', text, flags=re.MULTILINE)
-
-    # 去除Markdown水平分割线 (---, ***)
-    text = re.sub(r'^[\-\*]{3,}\s*$', '', text, flags=re.MULTILINE)
-
-    # AI生成的典型特征词列表
-    ai_phrases = [
-        '综上所述',
-        '总的来说',
-        '总而言之',
-        '值得一提的是',
-        '需要注意的是',
-        '不难发现',
-        '由此可见',
-        '显而易见',
-        '毋庸置疑',
-        '毫无疑问',
-        '众所周知',
-        '不言而喻',
-        '可以说',
-        '总之',
-        '归根结底',
-        '从某种意义上说',
-        '从这个角度来看',
-        '在此背景下',
-        '基于以上分析',
-        '通过以上分析',
-        '综合以上',
-    ]
-
-    # 去除AI特征词
-    for phrase in ai_phrases:
-        text = text.replace(phrase + '，', '')
-        text = text.replace(phrase + ',', '')
-        text = text.replace(phrase, '')
-
-    # 替换过于正式的连接词为更自然的表达
-    formal_to_natural = {
-        '与此同时': '同时',
-        '然而': '但是',
-        '因此': '所以',
-        '从而': '这样',
-        '进而': '接着',
-        '此外': '另外',
-        '并且': '而且',
-        '以及': '和',
-        '亦即': '也就是',
-        '换言之': '换句话说',
-        '例如': '比如',
-        '诸如': '像',
-        '关于': '对于',
-        '针对': '对',
-        '鉴于': '考虑到',
-        '倘若': '如果',
-        '若是': '要是',
-        '譬如': '比如',
-    }
-
-    for formal, natural in formal_to_natural.items():
-        text = text.replace(formal, natural)
-
-    # 去除多余的空行 (超过2个连续换行符)
-    text = re.sub(r'\n{3,}', '\n\n', text)
-
-    # 去除行首行尾空格
-    lines = [line.strip() for line in text.split('\n')]
-    text = '\n'.join(lines)
-
-    # 去除整体首尾空白
-    text = text.strip()
-
-    return text
+        logger.error(f"Generate articles failed: {e}", exc_info=True)
+        return jsonify({"success": False, "error": f"生成文章失败: {str(e)}"}), 500
 
 def save_articles(company_name, articles):
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -593,6 +423,7 @@ def save_accounts(accounts):
 
 @app.route('/api/accounts', methods=['GET'])
 @login_required
+@log_api_request("获取平台账号列表")
 def get_accounts():
     """获取当前用户的所有账号配置"""
     try:
@@ -613,10 +444,11 @@ def get_accounts():
 
     except Exception as e:
         logger.error(f'Get accounts failed: {e}', exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/accounts', methods=['POST'])
 @login_required
+@log_api_request("添加平台账号")
 def add_account():
     """添加新账号"""
     try:
@@ -628,7 +460,7 @@ def add_account():
         notes = data.get('notes', '')
 
         if not platform or not username:
-            return jsonify({'error': '平台和用户名不能为空'}), 400
+            return jsonify({'success': False, 'error': '平台和用户名不能为空'}), 400
 
         # 加密密码
         encrypted_password = encrypt_password(password) if password else ''
@@ -644,7 +476,7 @@ def add_account():
             ).first()
 
             if existing:
-                return jsonify({'error': '该平台账号已存在'}), 400
+                return jsonify({'success': False, 'error': '该平台账号已存在'}), 400
 
             # 创建新账号
             new_account = PlatformAccount(
@@ -672,10 +504,11 @@ def add_account():
 
     except Exception as e:
         logger.error(f'Add account failed: {e}', exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/accounts/<int:account_id>', methods=['DELETE'])
 @login_required
+@log_api_request("删除平台账号")
 def delete_account(account_id):
     """删除账号"""
     try:
@@ -689,7 +522,7 @@ def delete_account(account_id):
             ).first()
 
             if not account:
-                return jsonify({'error': '账号不存在'}), 404
+                return jsonify({'success': False, 'error': '账号不存在'}), 404
 
             db.delete(account)
             db.commit()
@@ -704,10 +537,11 @@ def delete_account(account_id):
 
     except Exception as e:
         logger.error(f'Delete account failed: {e}', exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/accounts/<int:account_id>/test', methods=['POST'])
 @login_required
+@log_api_request("测试平台账号连接")
 def test_account(account_id):
     """测试账号登录 - 使用真实的网站登录"""
     try:
@@ -721,7 +555,7 @@ def test_account(account_id):
             ).first()
 
             if not account:
-                return jsonify({'error': '账号不存在'}), 404
+                return jsonify({'success': False, 'error': '账号不存在'}), 404
 
             platform = account.platform
             username = account.username
@@ -771,14 +605,16 @@ def test_account(account_id):
                 if current_url:
                     logger.debug(f'Login landed on URL: {current_url}')
 
-                # 更新账号状态
-                for acc in accounts:
-                    if acc.get('id') == account_id:
-                        acc['status'] = 'success' if test_success else 'failed'
-                        acc['last_test'] = datetime.now().isoformat()
-                        if current_url:
-                            acc['last_login_url'] = current_url
-                save_accounts(accounts)
+                # 更新账号状态到数据库
+                db = get_db_session()
+                try:
+                    account_to_update = db.query(PlatformAccount).get(account_id)
+                    if account_to_update:
+                        account_to_update.status = 'success' if test_success else 'failed'
+                        account_to_update.last_tested = datetime.now()
+                        db.commit()
+                finally:
+                    db.close()
 
                 logger.info(f'Real login test result: {platform} - {username} - {"success" if test_success else "failed"}')
 
@@ -808,11 +644,15 @@ def test_account(account_id):
             message = f'账号信息已保存。\n注意：自动登录测试需要安装 Selenium 和 Chrome。\n请手动访问 {platform_url} 验证账号。'
 
             # 更新为未知状态
-            for acc in accounts:
-                if acc.get('id') == account_id:
-                    acc['status'] = 'unknown'
-                    acc['last_test'] = datetime.now().isoformat()
-            save_accounts(accounts)
+            db = get_db_session()
+            try:
+                account_to_update = db.query(PlatformAccount).get(account_id)
+                if account_to_update:
+                    account_to_update.status = 'unknown'
+                    account_to_update.last_tested = datetime.now()
+                    db.commit()
+            finally:
+                db.close()
 
             return jsonify({
                 'success': False,
@@ -822,22 +662,23 @@ def test_account(account_id):
 
     except Exception as e:
         logger.error(f'Test account failed: {e}', exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/accounts/import', methods=['POST'])
+@log_api_request("批量导入平台账号")
 def import_accounts():
     """批量导入账号"""
     try:
         if 'file' not in request.files:
-            return jsonify({'error': '没有文件被上传'}), 400
+            return jsonify({'success': False, 'error': '没有文件被上传'}), 400
 
         file = request.files['file']
         if file.filename == '':
-            return jsonify({'error': '文件名为空'}), 400
+            return jsonify({'success': False, 'error': '文件名为空'}), 400
 
         filename_lower = file.filename.lower()
         if not (filename_lower.endswith('.json') or filename_lower.endswith('.txt') or filename_lower.endswith('.csv')):
-            return jsonify({'error': '仅支持 JSON, TXT, CSV 格式'}), 400
+            return jsonify({'success': False, 'error': '仅支持 JSON, TXT, CSV 格式'}), 400
 
         content = file.read().decode('utf-8', errors='ignore')
 
@@ -874,7 +715,7 @@ def import_accounts():
                     })
 
         if not imported_accounts:
-            return jsonify({'error': '没有找到有效的账号信息'}), 400
+            return jsonify({'success': False, 'error': '没有找到有效的账号信息'}), 400
 
         accounts = load_accounts()
         start_id = max([acc.get('id', 0) for acc in accounts], default=0) + 1
@@ -892,13 +733,13 @@ def import_accounts():
                 'accounts': accounts
             })
         else:
-            return jsonify({'error': '保存失败'}), 500
+            return jsonify({'success': False, 'error': '保存失败'}), 500
 
     except json.JSONDecodeError as e:
-        return jsonify({'error': f'JSON格式错误: {str(e)}'}), 400
+        return jsonify({'success': False, 'error': f'JSON格式错误: {str(e)}'}), 400
     except Exception as e:
         logger.error(f'Import accounts failed: {e}', exc_info=True)
-        return jsonify({'error': f'导入失败: {str(e)}'}), 500
+        return jsonify({'success': False, 'error': f'导入失败: {str(e)}'}), 500
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -907,6 +748,37 @@ def health_check():
         'service': 'TOP_N Platform',
         'timestamp': datetime.now().isoformat()
     })
+@app.route('/api/models', methods=['GET'])
+def get_ai_models():
+    """获取支持的AI模型列表"""
+    try:
+        from config import Config
+
+        models = []
+        for model_id, model_info in Config.SUPPORTED_MODELS.items():
+            models.append({
+                'id': model_id,
+                'name': model_info['name'],
+                'description': model_info['description'],
+                'provider': model_info['provider'],
+                'max_tokens': model_info['max_tokens']
+            })
+
+        return jsonify({
+            'success': True,
+            'models': models,
+            'default': Config.DEFAULT_AI_MODEL
+        })
+    except Exception as e:
+        logger.error(f'Error getting models: {e}', exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'models': [],
+            'default': 'glm-4-flash'
+        }), 500
+
+
 
 # ============= 认证API =============
 
@@ -916,6 +788,7 @@ def login_page():
     return render_template('login.html')
 
 @app.route('/api/auth/register', methods=['POST'])
+@log_api_request("用户注册")
 def register():
     """用户注册"""
     try:
@@ -949,6 +822,7 @@ def register():
         return jsonify({'success': False, 'error': '注册失败，请稍后重试'}), 500
 
 @app.route('/api/auth/login', methods=['POST'])
+@log_api_request("用户登录")
 def login():
     """用户登录"""
     try:
@@ -1015,6 +889,7 @@ def get_current_user_info():
 
 @app.route('/api/workflow/current', methods=['GET'])
 @login_required
+@log_api_request("获取当前工作流")
 def get_current_workflow():
     """获取用户当前工作流（最新的未完成工作流）"""
     try:
@@ -1055,6 +930,7 @@ def get_current_workflow():
 
 @app.route('/api/workflow/save', methods=['POST'])
 @login_required
+@log_api_request("保存工作流")
 def save_workflow():
     """保存/更新工作流状态"""
     try:
@@ -1148,6 +1024,7 @@ def save_workflow():
 
 @app.route('/api/workflow/list', methods=['GET'])
 @login_required
+@log_api_request("获取工作流列表")
 def get_workflow_list():
     """获取用户所有工作流列表"""
     try:
@@ -1174,6 +1051,7 @@ def get_workflow_list():
 
 @app.route('/api/publish_zhihu', methods=['POST'])
 @login_required
+@log_api_request("发布文章到知乎(旧版)")
 def publish_zhihu():
     """发布文章到知乎"""
     try:
@@ -1490,6 +1368,7 @@ def csdn_check_login():
 
 @app.route('/api/csdn/publish', methods=['POST'])
 @login_required
+@log_api_request("发布文章到CSDN")
 def publish_csdn():
     """发布文章到CSDN"""
     try:
@@ -1650,6 +1529,14 @@ def get_platforms():
     except Exception as e:
         logger.error(f'Get platforms failed: {e}', exc_info=True)
         return jsonify({'success': False, 'error': '获取平台列表失败'}), 500
+
+# 注册提示词模板API蓝图
+try:
+    from blueprints.prompt_template_api import bp as prompt_template_bp
+    app.register_blueprint(prompt_template_bp)
+    logger.info('Prompt template API blueprint registered')
+except Exception as e:
+    logger.error(f'Failed to register prompt template blueprint: {e}', exc_info=True)
 
 if __name__ == '__main__':
     import sys

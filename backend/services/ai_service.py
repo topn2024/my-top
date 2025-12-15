@@ -3,11 +3,16 @@ AI服务模块
 负责与千问API交互，处理分析和文章生成
 """
 import logging
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from logger_config import setup_logger, log_service_call
 import requests
 from typing import Dict, List, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 
 def remove_markdown_and_ai_traces(text):
@@ -64,6 +69,7 @@ class AIService:
             self.model = config.QIANWEN_MODEL
             logger.info('Using Qianwen AI as default provider')
 
+    @log_service_call("AI API调用")
     def _call_api(self, messages: List[Dict], temperature: float = 0.7,
                   max_tokens: int = 2000, timeout: int = 60) -> Optional[str]:
         """
@@ -108,6 +114,7 @@ class AIService:
             logger.error(f'Unexpected error in API call: {e}', exc_info=True)
             raise
 
+    @log_service_call("分析公司信息")
     def analyze_company(self, company_name: str, company_desc: str,
                        uploaded_text: str = '') -> str:
         """
@@ -221,6 +228,7 @@ class AIService:
             logger.error(f'Failed to generate article {index+1} ({angle}): {e}', exc_info=True)
             return None
 
+    @log_service_call("生成推广文章")
     def generate_articles(self, company_name: str, analysis: str,
                          article_count: int = 3) -> List[Dict]:
         """
@@ -391,3 +399,189 @@ class AIService:
             })
 
         return platforms
+
+    def render_prompt_template(self, template_str: str, variables: Dict) -> str:
+        """
+        渲染提示词模板，替换变量
+
+        Args:
+            template_str: 模板字符串，使用{{variable}}格式
+            variables: 变量字典
+
+        Returns:
+            渲染后的提示词
+        """
+        import re
+
+        result = template_str
+        for key, value in variables.items():
+            # 支持 {{variable}} 格式
+            result = result.replace(f'{{{{{key}}}}}', str(value or ''))
+            # 支持 {% if variable %} 简单条件
+            if_pattern = f'{{%\s*if\s+{key}\s*%}}(.*?){{%\s*endif\s*%}}'
+            if value:
+                result = re.sub(if_pattern, r'\1', result, flags=re.DOTALL)
+            else:
+                result = re.sub(if_pattern, '', result, flags=re.DOTALL)
+
+        return result
+
+    @log_service_call("使用模板分析公司")
+    def analyze_company_with_template(self, company_info: Dict, template: Dict) -> str:
+        """
+        使用指定模板分析公司信息
+
+        Args:
+            company_info: 公司信息字典
+            template: 模板字典（包含prompts字段）
+
+        Returns:
+            分析结果
+        """
+        # 从模板中获取提示词
+        analysis_prompts = template.get('prompts', {}).get('analysis', {})
+
+        if not analysis_prompts:
+            # 如果没有analysis提示词，使用默认方法
+            return self.analyze_company(
+                company_info.get('company_name', ''),
+                company_info.get('company_desc', ''),
+                company_info.get('uploaded_text', '')
+            )
+
+        # 渲染用户提示词模板
+        user_prompt = self.render_prompt_template(
+            analysis_prompts.get('user_template', ''),
+            {
+                'company_name': company_info.get('company_name', ''),
+                'company_desc': company_info.get('company_desc', ''),
+                'uploaded_text': company_info.get('uploaded_text', '')
+            }
+        )
+
+        # 使用模板中的AI配置
+        ai_config = template.get('ai_config', {})
+
+        messages = [
+            {'role': 'system', 'content': analysis_prompts.get('system', '')},
+            {'role': 'user', 'content': user_prompt}
+        ]
+
+        logger.info(f'Using template for analysis: {template.get("name", "unknown")}')
+
+        return self._call_api(
+            messages,
+            temperature=ai_config.get('temperature', 0.7),
+            max_tokens=ai_config.get('max_tokens', 2000)
+        )
+
+    @log_service_call("使用模板生成文章")
+    def generate_articles_with_template(self, company_name: str, analysis: str,
+                                       template: Dict, article_count: int = 3) -> List[Dict]:
+        """
+        使用指定模板生成文章
+
+        Args:
+            company_name: 公司名称
+            analysis: 分析结果
+            template: 模板字典
+            article_count: 文章数量
+
+        Returns:
+            文章列表
+        """
+        # 从模板中获取提示词
+        generation_prompts = template.get('prompts', {}).get('article_generation', {})
+
+        if not generation_prompts:
+            # 如果没有generation提示词，使用默认方法
+            return self.generate_articles(company_name, analysis, article_count)
+
+        # 定义文章角度
+        angles = [
+            "技术创新",
+            "行业应用",
+            "用户价值",
+            "市场趋势",
+            "案例分析"
+        ]
+
+        # AI配置
+        ai_config = template.get('ai_config', {})
+
+        # 使用线程池并发生成文章
+        articles = []
+        with ThreadPoolExecutor(max_workers=article_count) as executor:
+            future_to_index = {}
+            for i in range(article_count):
+                angle = angles[i % len(angles)]
+                future = executor.submit(
+                    self._generate_single_article_with_template,
+                    company_name, analysis, angle, i, article_count,
+                    generation_prompts, ai_config
+                )
+                future_to_index[future] = i
+
+            # 收集结果
+            for future in as_completed(future_to_index):
+                article = future.result()
+                if article:
+                    articles.append(article)
+
+        # 按索引排序
+        articles.sort(key=lambda x: x.get('index', 0))
+
+        # 移除索引字段
+        for article in articles:
+            article.pop('index', None)
+
+        logger.info(f'Successfully generated {len(articles)}/{article_count} articles using template')
+        return articles
+
+    def _generate_single_article_with_template(self, company_name: str, analysis: str,
+                                              angle: str, index: int, total: int,
+                                              generation_prompts: Dict, ai_config: Dict) -> Dict:
+        """使用模板生成单篇文章"""
+        try:
+            # 渲染用户提示词
+            user_prompt = self.render_prompt_template(
+                generation_prompts.get('user_template', ''),
+                {
+                    'company_name': company_name,
+                    'analysis': analysis,
+                    'angle': angle
+                }
+            )
+
+            messages = [
+                {'role': 'system', 'content': generation_prompts.get('system', '')},
+                {'role': 'user', 'content': user_prompt}
+            ]
+
+            logger.info(f'Generating article {index+1}/{total} ({angle}) using template')
+            content = self._call_api(
+                messages,
+                temperature=ai_config.get('temperature', 0.8),
+                max_tokens=ai_config.get('max_tokens', 3000)
+            )
+
+            # 解析标题和正文
+            title, body = self._parse_article(content)
+
+            # 清理markdown格式
+            if body:
+                body = remove_markdown_and_ai_traces(body)
+
+            article = {
+                'title': title or f'{company_name} - {angle}相关内容',
+                'content': body or content,
+                'type': angle,
+                'index': index
+            }
+
+            logger.info(f'Article {index+1} ({angle}) generated successfully')
+            return article
+
+        except Exception as e:
+            logger.error(f'Failed to generate article {index+1} ({angle}): {e}', exc_info=True)
+            return None

@@ -35,7 +35,7 @@ class Config:
 
     # AI API 配置 - 默认使用智谱 AI
     # 智谱 AI 配置
-    ZHIPU_API_KEY = os.environ.get('ZHIPU_API_KEY', '')
+    ZHIPU_API_KEY = os.environ.get('ZHIPU_API_KEY', 'd6ac02f8c1f6f443cf81f3dae86fb095.7Qe6KOWcVDlDlqDJ')
     ZHIPU_API_BASE = 'https://open.bigmodel.cn/api/paas/v4'
     ZHIPU_CHAT_URL = f'{ZHIPU_API_BASE}/chat/completions'
     ZHIPU_MODEL = 'glm-4-flash'  # 可选: glm-4, glm-4-flash, glm-4-plus
@@ -48,6 +48,43 @@ class Config:
 
     # 默认 AI 服务商 (zhipu 或 qianwen)
     DEFAULT_AI_PROVIDER = os.environ.get('AI_PROVIDER', 'zhipu')
+
+    # 支持的AI模型配置
+    SUPPORTED_MODELS = {
+        'glm-4-flash': {
+            'name': '智谱AI GLM-4-Flash',
+            'description': '快速响应，适合日常对话和内容生成',
+            'provider': 'zhipu',
+            'max_tokens': 4000
+        },
+        'glm-4': {
+            'name': '智谱AI GLM-4',
+            'description': '平衡性能，适合复杂分析和推理',
+            'provider': 'zhipu',
+            'max_tokens': 8000
+        },
+        'glm-4-plus': {
+            'name': '智谱AI GLM-4-Plus',
+            'description': '最强性能，适合专业深度分析',
+            'provider': 'zhipu',
+            'max_tokens': 8000
+        },
+        'qwen-plus': {
+            'name': '千问Plus',
+            'description': '通义千问增强版，性能均衡',
+            'provider': 'qianwen',
+            'max_tokens': 6000
+        },
+        'qwen-turbo': {
+            'name': '千问Turbo',
+            'description': '快速响应版本',
+            'provider': 'qianwen',
+            'max_tokens': 6000
+        }
+    }
+
+    # 默认使用的AI模型
+    DEFAULT_AI_MODEL = os.environ.get('DEFAULT_AI_MODEL', 'glm-4-flash')
 
     # 日志配置
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'DEBUG')
