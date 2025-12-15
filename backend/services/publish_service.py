@@ -162,8 +162,14 @@ class PublishService:
             result = []
             for h in history:
                 item = h.to_dict()
-                # 添加文章标题
-                if h.article:
+
+                # 优先使用publish_history表中已存储的article_title
+                if item.get('article_title'):
+                    # 已经有标题，保持不变
+                    if not item.get('article_type'):
+                        item['article_type'] = 'temp'
+                # 如果没有标题，尝试从关联的Article表获取
+                elif h.article:
                     item['article_title'] = h.article.title
                     item['article_type'] = h.article.article_type
                 else:
