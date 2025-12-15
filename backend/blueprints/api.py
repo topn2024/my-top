@@ -38,27 +38,38 @@ def health_check():
 def upload_file():
     """文件上传"""
     from services.file_service import FileService
+    import logging
 
+    logger = logging.getLogger(__name__)
     file_service = FileService(config)
     file = request.files.get('file')
 
     if not file:
+        logger.warning("Upload attempt with no file")
         return jsonify({'error': '没有选择文件'}), 400
+
+    logger.info(f"Upload request for file: {file.filename}, size: {file.content_length}")
 
     # 保存文件
     success, message, filepath = file_service.save_file(file)
 
     if not success:
+        logger.error(f"File save failed: {message}")
         return jsonify({'error': message}), 400
+
+    logger.info(f"File saved successfully: {filepath}")
 
     # 提取文本
     text = file_service.extract_text(filepath)
 
     if text is None:
+        logger.error(f"Text extraction failed for file: {filepath}")
         return jsonify({
             'success': False,
             'error': '无法从文件中提取文本内容，请检查文件格式是否正确'
         }), 400
+
+    logger.info(f"✓ Upload complete: file={file.filename}, text_length={len(text)}")
 
     return jsonify({
         'success': True,

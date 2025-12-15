@@ -103,23 +103,30 @@ class FileService:
 
             # 安全的文件名 - 保留扩展名
             original_filename = file.filename
+            logger.info(f"Processing file upload: original filename='{original_filename}'")
+
             # 提取扩展名
             name, ext = os.path.splitext(original_filename)
+            logger.debug(f"Extracted: name='{name}', extension='{ext}'")
+
             # 安全化文件名（不含扩展名）
             safe_name = secure_filename(name)
+            logger.debug(f"Sanitized name: '{safe_name}'")
 
             # 如果安全化后文件名为空，使用时间戳
             if not safe_name:
                 import time
                 safe_name = f"upload_{int(time.time())}"
+                logger.warning(f"Filename sanitized to empty, using timestamp: '{safe_name}'")
 
             # 重新组合文件名和扩展名
             filename = safe_name + ext.lower()
             filepath = os.path.join(self.upload_folder, filename)
+            logger.info(f"Final filename: '{filename}', saving to: '{filepath}'")
 
             # 保存文件
             file.save(filepath)
-            logger.info(f"File saved successfully: {filepath}")
+            logger.info(f"✓ File saved successfully: original='{original_filename}' → saved='{filename}'")
 
             return True, '文件上传成功', filepath
 
@@ -139,30 +146,45 @@ class FileService:
         Returns:
             提取的文本内容，失败返回None
         """
+        logger.info(f"Attempting to extract text from: {filepath}")
+
         if not os.path.exists(filepath):
-            logger.error(f"File not found: {filepath}")
+            logger.error(f"✗ File not found: {filepath}")
             return None
 
         # 安全获取文件扩展名
         parts = filepath.rsplit('.', 1)
         if len(parts) < 2:
-            logger.error(f"File has no extension: {filepath}")
+            logger.error(f"✗ File has no extension: {filepath}")
             return None
         ext = parts[1].lower()
+        logger.debug(f"Detected file extension: '{ext}'")
 
         try:
+            text = None
             if ext in ['txt', 'md']:
-                return self._extract_text_file(filepath)
+                logger.info(f"Extracting text file ({ext}): {filepath}")
+                text = self._extract_text_file(filepath)
             elif ext == 'pdf':
-                return self._extract_pdf(filepath)
+                logger.info(f"Extracting PDF: {filepath}")
+                text = self._extract_pdf(filepath)
             elif ext in ['doc', 'docx']:
-                return self._extract_docx(filepath)
+                logger.info(f"Extracting DOCX: {filepath}")
+                text = self._extract_docx(filepath)
             else:
-                logger.warning(f"Unsupported file type: {ext}")
+                logger.warning(f"✗ Unsupported file type: {ext} for file: {filepath}")
                 return None
 
+            if text:
+                text_preview = text[:100] + '...' if len(text) > 100 else text
+                logger.info(f"✓ Successfully extracted {len(text)} characters. Preview: {text_preview}")
+            else:
+                logger.warning(f"✗ No text extracted from {filepath}")
+
+            return text
+
         except Exception as e:
-            logger.error(f"Error extracting text from {filepath}: {e}", exc_info=True)
+            logger.error(f"✗ Error extracting text from {filepath}: {e}", exc_info=True)
             return None
 
     def _extract_text_file(self, filepath: str) -> Optional[str]:
@@ -171,37 +193,60 @@ class FileService:
         encodings = ['utf-8', 'gbk', 'gb2312', 'gb18030', 'latin1']
         for encoding in encodings:
             try:
+                logger.debug(f"Trying encoding: {encoding}")
                 with open(filepath, 'r', encoding=encoding) as f:
-                    return f.read()
-            except UnicodeDecodeError:
+                    content = f.read()
+                    logger.info(f"✓ Successfully decoded with {encoding}, length: {len(content)}")
+                    return content
+            except UnicodeDecodeError as e:
+                logger.debug(f"Encoding {encoding} failed: {e}")
                 continue
 
-        logger.error(f"Failed to decode text file with all encodings: {filepath}")
+        logger.error(f"✗ Failed to decode text file with all encodings: {filepath}")
         return None
 
     def _extract_pdf(self, filepath: str) -> Optional[str]:
         """从PDF文件提取文本"""
         if not PDF_AVAILABLE:
-            logger.error("PyPDF2 not available")
+            logger.error("✗ PyPDF2 not available, cannot extract PDF")
             return None
 
         text = ''
         with open(filepath, 'rb') as f:
             pdf_reader = PyPDF2.PdfReader(f)
-            for page in pdf_reader.pages:
-                text += page.extract_text() + '\n'
+            page_count = len(pdf_reader.pages)
+            logger.info(f"PDF has {page_count} pages")
 
-        return text.strip() if text.strip() else None
+            for i, page in enumerate(pdf_reader.pages, 1):
+                page_text = page.extract_text()
+                text += page_text + '\n'
+                logger.debug(f"Extracted page {i}/{page_count}, length: {len(page_text)}")
+
+        result = text.strip() if text.strip() else None
+        if result:
+            logger.info(f"✓ PDF extraction successful, total length: {len(result)}")
+        else:
+            logger.warning(f"✗ PDF extraction returned empty text")
+        return result
 
     def _extract_docx(self, filepath: str) -> Optional[str]:
         """从DOCX文件提取文本"""
         if not DOCX_AVAILABLE:
-            logger.error("python-docx not available")
+            logger.error("✗ python-docx not available, cannot extract DOCX")
             return None
 
         doc = Document(filepath)
+        paragraph_count = len(doc.paragraphs)
+        logger.info(f"DOCX has {paragraph_count} paragraphs")
+
         text = '\n'.join([para.text for para in doc.paragraphs])
-        return text.strip() if text.strip() else None
+        result = text.strip() if text.strip() else None
+
+        if result:
+            logger.info(f"✓ DOCX extraction successful, total length: {len(result)}")
+        else:
+            logger.warning(f"✗ DOCX extraction returned empty text")
+        return result
 
     def delete_file(self, filepath: str) -> bool:
         """
