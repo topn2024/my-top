@@ -101,8 +101,20 @@ class FileService:
             if not is_valid:
                 return False, error_msg, None
 
-            # 安全的文件名
-            filename = secure_filename(file.filename)
+            # 安全的文件名 - 保留扩展名
+            original_filename = file.filename
+            # 提取扩展名
+            name, ext = os.path.splitext(original_filename)
+            # 安全化文件名（不含扩展名）
+            safe_name = secure_filename(name)
+
+            # 如果安全化后文件名为空，使用时间戳
+            if not safe_name:
+                import time
+                safe_name = f"upload_{int(time.time())}"
+
+            # 重新组合文件名和扩展名
+            filename = safe_name + ext.lower()
             filepath = os.path.join(self.upload_folder, filename)
 
             # 保存文件
