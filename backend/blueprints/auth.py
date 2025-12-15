@@ -10,7 +10,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from auth import create_user, authenticate_user
-from auth_decorators import login_required
+from auth_decorators import login_required, get_current_user
 from logger_config import setup_logger, log_api_request
 
 logger = setup_logger(__name__)
@@ -127,7 +127,10 @@ def logout():
         user = get_current_user()
         username = user.username if user else 'unknown'
 
+        # 清除所有 session 数据
         session.pop('user_id', None)
+        session.pop('username', None)
+        session.clear()
 
         logger.info(f'User logged out: {username}')
         return jsonify({

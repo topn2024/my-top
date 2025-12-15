@@ -30,6 +30,9 @@ def create_app(config_name='default'):
     config = get_config(config_name)
     app.config.from_object(config)
 
+    # 配置JSON编码支持中文 (Flask 3.x使用json_encoder参数)
+    app.json.ensure_ascii = False
+
     # 初始化配置（创建目录等）
     config.init_app()
 
@@ -51,6 +54,20 @@ def create_app(config_name='default'):
 
     # 注册上下文处理器
     register_context_processors(app)
+
+    # 添加 favicon 路由
+    @app.route('/favicon.ico')
+    def favicon():
+        from flask import send_from_directory, Response
+        import os
+        # 尝试从 static 目录发送 favicon.ico，如果不存在则返回 204
+        favicon_path = os.path.join(app.root_path, '..', 'static', 'favicon.ico')
+        if os.path.exists(favicon_path):
+            return send_from_directory(os.path.join(app.root_path, '..', 'static'),
+                                     'favicon.ico', mimetype='image/vnd.microsoft.icon')
+        else:
+            # 返回 204 No Content，避免 404 错误
+            return Response(status=204)
 
     return app
 
