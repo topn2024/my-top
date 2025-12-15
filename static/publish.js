@@ -159,11 +159,28 @@ async function publishBatchToZhihu(articles) {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',  // 包含session cookie
             body: JSON.stringify(requestBody)
         });
 
         const requestDuration = Date.now() - startTime;
         console.log(`[发布流程] 后端API响应完成，耗时 ${requestDuration}ms，状态码: ${response.status}`);
+
+        // 检查响应状态
+        if (response.status === 401) {
+            hideLoading();
+            alert('请先登录！');
+            window.location.href = '/login';
+            return;
+        }
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[发布流程] API返回错误:', errorText);
+            hideLoading();
+            alert(`请求失败 (${response.status}): ${errorText.substring(0, 100)}`);
+            return;
+        }
 
         const data = await response.json();
         console.log('[发布流程] 后端返回数据:', data);
