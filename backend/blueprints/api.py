@@ -54,6 +54,12 @@ def upload_file():
     # 提取文本
     text = file_service.extract_text(filepath)
 
+    if text is None:
+        return jsonify({
+            'success': False,
+            'error': '无法从文件中提取文本内容，请检查文件格式是否正确'
+        }), 400
+
     return jsonify({
         'success': True,
         'message': message,

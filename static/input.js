@@ -159,10 +159,27 @@ async function handleFileUpload(file) {
 
         const response = await fetch('/api/upload', {
             method: 'POST',
+            credentials: 'include',  // 包含session cookie
             body: formData
         });
 
+        // 检查响应状态
+        if (response.status === 401) {
+            hideLoading();
+            alert('请先登录！');
+            window.location.href = '/login';
+            return;
+        }
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            hideLoading();
+            alert(`上传失败 (${response.status}): ${errorText.substring(0, 100)}`);
+            return;
+        }
+
         const data = await response.json();
+        console.log('Upload response:', data); // 调试信息
 
         if (data.success) {
             uploadedText = data.text;
@@ -178,13 +195,17 @@ async function handleFileUpload(file) {
 
             // 将提取的文本添加到描述框
             const descTextarea = document.getElementById('company-desc');
-            if (descTextarea.value) {
-                descTextarea.value += '\n\n--- 文件内容 ---\n' + data.text;
+            if (data.text) {
+                if (descTextarea.value) {
+                    descTextarea.value += '\n\n--- 文件内容 ---\n' + data.text;
+                } else {
+                    descTextarea.value = data.text;
+                }
+                alert('文件上传成功！内容已自动填充到描述框中');
             } else {
-                descTextarea.value = data.text;
+                console.warn('Extracted text is empty');
+                alert('文件上传成功，但未能提取到文本内容');
             }
-
-            alert('文件上传成功！内容已自动填充到描述框中');
         } else {
             alert('文件上传失败: ' + data.error);
         }
