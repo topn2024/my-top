@@ -71,7 +71,7 @@ class AIService:
 
     @log_service_call("AI API调用")
     def _call_api(self, messages: List[Dict], temperature: float = 0.7,
-                  max_tokens: int = 2000, timeout: int = 60) -> Optional[str]:
+                  max_tokens: int = 2000, timeout: int = 60, model: Optional[str] = None) -> Optional[str]:
         """
         调用千问API
 
@@ -80,31 +80,35 @@ class AIService:
             temperature: 温度参数
             max_tokens: 最大token数
             timeout: 超时时间(秒)
+            model: 指定使用的模型（可选，默认使用self.model）
 
         Returns:
             API返回的文本内容，失败返回None
         """
         try:
+            # 使用传入的model参数，如果没有则使用默认的self.model
+            actual_model = model if model else self.model
+
             headers = {
                 'Authorization': f'Bearer {self.api_key}',
                 'Content-Type': 'application/json'
             }
 
             payload = {
-                'model': self.model,
+                'model': actual_model,
                 'messages': messages,
                 'temperature': temperature,
                 'max_tokens': max_tokens
             }
 
-            logger.info(f'Calling {self.provider.upper()} API with model: {self.model}')
+            logger.info(f'Calling {self.provider.upper()} API with model: {actual_model} (requested: {model}, default: {self.model})')
             response = requests.post(self.chat_url, headers=headers,
                                    json=payload, timeout=timeout)
             response.raise_for_status()
 
             result = response.json()
             content = result['choices'][0]['message']['content'].strip()
-            logger.info(f'{self.provider.upper()} API call successful')
+            logger.info(f'{self.provider.upper()} API call successful with model: {actual_model}')
             return content
 
         except requests.exceptions.RequestException as e:
