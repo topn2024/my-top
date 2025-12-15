@@ -116,7 +116,7 @@ class AIService:
 
     @log_service_call("分析公司信息")
     def analyze_company(self, company_name: str, company_desc: str,
-                       uploaded_text: str = '') -> str:
+                       uploaded_text: str = '', model: Optional[str] = None) -> str:
         """
         分析公司/产品信息
 
@@ -124,6 +124,7 @@ class AIService:
             company_name: 公司/产品名称
             company_desc: 公司/产品描述
             uploaded_text: 上传的文档内容(可选)
+            model: 指定使用的AI模型（可选）
 
         Returns:
             分析结果文本
@@ -156,8 +157,8 @@ class AIService:
             {'role': 'user', 'content': prompt}
         ]
 
-        logger.info(f'Analyzing company: {company_name}')
-        return self._call_api(messages, temperature=0.7, max_tokens=2000)
+        logger.info(f'Analyzing company: {company_name}, model: {model or "default"}')
+        return self._call_api(messages, temperature=0.7, max_tokens=2000, model=model)
 
     def _generate_single_article(self, company_name: str, analysis: str,
                                 angle: str, index: int, total: int) -> Dict:
@@ -427,13 +428,14 @@ class AIService:
         return result
 
     @log_service_call("使用模板分析公司")
-    def analyze_company_with_template(self, company_info: Dict, template: Dict) -> str:
+    def analyze_company_with_template(self, company_info: Dict, template: Dict, model: Optional[str] = None) -> str:
         """
         使用指定模板分析公司信息
 
         Args:
             company_info: 公司信息字典
             template: 模板字典（包含prompts字段）
+            model: 指定使用的AI模型（可选）
 
         Returns:
             分析结果
@@ -446,7 +448,8 @@ class AIService:
             return self.analyze_company(
                 company_info.get('company_name', ''),
                 company_info.get('company_desc', ''),
-                company_info.get('uploaded_text', '')
+                company_info.get('uploaded_text', ''),
+                model=model
             )
 
         # 渲染用户提示词模板
@@ -467,12 +470,13 @@ class AIService:
             {'role': 'user', 'content': user_prompt}
         ]
 
-        logger.info(f'Using template for analysis: {template.get("name", "unknown")}')
+        logger.info(f'Using template for analysis: {template.get("name", "unknown")}, model: {model or "default"}')
 
         return self._call_api(
             messages,
             temperature=ai_config.get('temperature', 0.7),
-            max_tokens=ai_config.get('max_tokens', 2000)
+            max_tokens=ai_config.get('max_tokens', 2000),
+            model=model
         )
 
     @log_service_call("使用模板生成文章")

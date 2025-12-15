@@ -97,6 +97,11 @@ def analyze_company():
         return jsonify({'error': '请输入公司名称'}), 400
 
     try:
+        # 获取用户选择的AI模型
+        ai_model = data.get('ai_model')
+        if ai_model:
+            logger.info(f'User selected AI model: {ai_model}')
+
         # 检查是否使用新的三模块提示词系统
         analysis_prompt_id = data.get('analysis_prompt_id')
 
@@ -116,7 +121,8 @@ def analyze_company():
                 'company_desc': data.get('company_desc', ''),
                 'uploaded_text': data.get('uploaded_text', '')
             }
-            analysis = ai_service_v2.analyze_with_prompt(company_info, analysis_prompt)
+            # 传递AI模型参数
+            analysis = ai_service_v2.analyze_with_prompt(company_info, analysis_prompt, model=ai_model)
 
             # 更新使用统计
             AnalysisPromptService.increment_usage(analysis_prompt_id)
@@ -141,12 +147,13 @@ def analyze_company():
                     'company_desc': data.get('company_desc', ''),
                     'uploaded_text': data.get('uploaded_text', '')
                 }
-                analysis = ai_service.analyze_company_with_template(company_info, template)
+                analysis = ai_service.analyze_company_with_template(company_info, template, model=ai_model)
             else:
                 analysis = ai_service.analyze_company(
                     company_name=data.get('company_name'),
                     company_desc=data.get('company_desc', ''),
-                    uploaded_text=data.get('uploaded_text', '')
+                    uploaded_text=data.get('uploaded_text', ''),
+                    model=ai_model
                 )
 
         # 保存工作流（包含新的prompt IDs）

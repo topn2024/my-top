@@ -23,13 +23,14 @@ class AIServiceV2(AIService):
 
 
     @log_service_call("使用新提示词分析")
-    def analyze_with_prompt(self, company_info: Dict, analysis_prompt: Dict) -> str:
+    def analyze_with_prompt(self, company_info: Dict, analysis_prompt: Dict, model: Optional[str] = None) -> str:
         """
         使用分析提示词分析公司信息
 
         Args:
             company_info: 公司信息 {company_name, company_desc, uploaded_text}
             analysis_prompt: 分析提示词字典
+            model: 指定使用的AI模型（可选）
 
         Returns:
             分析结果文本
@@ -49,12 +50,13 @@ class AIServiceV2(AIService):
             {'role': 'user', 'content': user_prompt}
         ]
 
-        logger.info(f"Using analysis prompt: {analysis_prompt['name']}")
+        logger.info(f"Using analysis prompt: {analysis_prompt['name']}, model: {model or 'default'}")
 
         return self._call_api(
             messages,
             temperature=analysis_prompt.get('temperature', 0.7),
-            max_tokens=analysis_prompt.get('max_tokens', 2000)
+            max_tokens=analysis_prompt.get('max_tokens', 2000),
+            model=model
         )
 
     def generate_article_with_prompt(

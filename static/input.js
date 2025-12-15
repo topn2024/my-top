@@ -32,6 +32,9 @@ window.addEventListener('load', () => {
 
     // 加载可用模板
     loadAvailableTemplates();
+
+    // 加载可用AI模型
+    loadAvailableModels();
 });
 
 // 加载可用模板
@@ -59,6 +62,42 @@ async function loadAvailableTemplates() {
         }
     } catch (error) {
         console.error('Failed to load templates:', error);
+    }
+}
+
+// 加载可用AI模型
+async function loadAvailableModels() {
+    const modelSelect = document.getElementById('ai-model-select');
+    if (!modelSelect) return;
+
+    try {
+        const response = await fetch('/api/models');
+        const data = await response.json();
+
+        if (data.success && data.models) {
+            modelSelect.innerHTML = '';
+
+            data.models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                option.textContent = `${model.name} - ${model.description}`;
+
+                // 设置默认选项
+                if (model.id === data.default) {
+                    option.selected = true;
+                }
+
+                modelSelect.appendChild(option);
+            });
+
+            console.log('AI models loaded successfully');
+        } else {
+            console.error('Failed to load AI models:', data);
+            modelSelect.innerHTML = '<option value="">加载失败，使用默认模型</option>';
+        }
+    } catch (error) {
+        console.error('Error loading AI models:', error);
+        modelSelect.innerHTML = '<option value="">加载失败，使用默认模型</option>';
     }
 }
 
@@ -268,6 +307,13 @@ document.getElementById('company-form').addEventListener('submit', async (e) => 
     }
     if (platformStyleId) {
         formData.platform_style_prompt_id = parseInt(platformStyleId);
+    }
+
+    // 获取选中的AI模型
+    const aiModelSelect = document.getElementById('ai-model-select');
+    if (aiModelSelect && aiModelSelect.value) {
+        formData.ai_model = aiModelSelect.value;
+        console.log('Selected AI model:', aiModelSelect.value);
     }
 
     // 保存到状态
