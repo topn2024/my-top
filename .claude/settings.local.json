@@ -63,7 +63,16 @@
       "Bash(echo:*)",
       "Bash(\"./venv/Scripts/python.exe\" test_blueprints_app.py)",
       "Bash(iconv:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(./check_sync.sh:*)",
+      "Bash(taskkill:*)",
+      "Bash(wmic process:*)",
+      "Bash(start /B ./venv/Scripts/python.exe backend/app_with_upload.py 3001)",
+      "Bash(start /B D:Python3.13.1python.exe:*)",
+      "Bash(sqlite3:*)",
+      "Bash(D:Python3.13.1python.exe:*)",
+      "Bash(\"D:\\Python3.13.1\\python.exe\":*)",
+      "Bash(rm -f nul)"
     ],
     "deny": [],
     "ask": []

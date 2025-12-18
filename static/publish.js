@@ -178,7 +178,8 @@ async function publishBatchToZhihu(articles) {
             const errorText = await response.text();
             console.error('[发布流程] API返回错误:', errorText);
             hideLoading();
-            alert(`请求失败 (${response.status}): ${errorText.substring(0, 100)}`);
+            const errorMsg = errorText ? errorText.substring(0, 100) : '未知错误';
+            alert(`请求失败 (${response.status}): ${errorMsg}`);
             return;
         }
 
@@ -202,12 +203,17 @@ async function publishBatchToZhihu(articles) {
             // 显示详细结果
             if (data.results && data.results.length > 0) {
                 message += '详细结果：\n';
-                data.results.forEach((result, index) => {
+                data.results.forEach((item, index) => {
+                    // 适配后端返回格式：{article_title: '', result: {success: bool, ...}}
+                    const result = item.result || item;
+                    let title = item.article_title || item.title || '未知标题';
+                    // 确保title是字符串
+                    title = String(title || '未知标题');
                     const status = result.success ? '✓' : '✗';
-                    const title = result.title.substring(0, 30) + (result.title.length > 30 ? '...' : '');
-                    message += `${status} ${title}\n`;
-                    if (!result.success && result.message) {
-                        message += `   错误: ${result.message}\n`;
+                    const displayTitle = title.length > 30 ? title.substring(0, 30) + '...' : title;
+                    message += `${status} ${displayTitle}\n`;
+                    if (!result.success && (result.message || result.error)) {
+                        message += `   错误: ${result.message || result.error}\n`;
                     }
                 });
             }
@@ -630,9 +636,12 @@ async function refreshTaskMonitor() {
                 allCompleted = false;
             }
 
+            const taskTitle = task.article_title || '未知标题';
+            const displayTaskTitle = taskTitle.length > 30 ? taskTitle.substring(0, 30) + '...' : taskTitle;
+
             html += `
                 <div style="padding: 10px; margin: 5px 0; border: 1px solid ${statusColor}; border-radius: 5px; background: ${statusColor}15;">
-                    <div style="font-weight: bold; margin-bottom: 5px;">${task.article_title.substring(0, 30)}${task.article_title.length > 30 ? '...' : ''}</div>
+                    <div style="font-weight: bold; margin-bottom: 5px;">${displayTaskTitle}</div>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>
                         ${task.progress ? `<span style="color: #666; font-size: 12px;">${task.progress}%</span>` : ''}

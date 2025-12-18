@@ -1297,30 +1297,174 @@ def publish_zhihu():
             'message': f'发布失败: {str(e)}'
         }), 500
 
-@app.route('/api/publish_history', methods=['GET'])
+# 注意：/api/publish_history 路由已在 blueprints/api.py 中定义
+# 该版本使用 PublishService，支持从多个表聚合数据
+
+@app.route('/api/retry_publish/<int:history_id>', methods=['POST'])
 @login_required
-def get_publish_history():
-    """获取发布历史"""
+@log_api_request("重试发布文章")
+def retry_publish(history_id):
+    """重试发布失败的文章"""
     try:
         user = get_current_user()
         db = get_db_session()
 
         try:
-            # 获取最近50条发布历史
+            # 获取发布历史记录
             history = db.query(PublishHistory).filter_by(
-                user_id=user.id
-            ).order_by(PublishHistory.published_at.desc()).limit(50).all()
+                id=history_id,
+                user_id=user.id  # 确保只能重试自己的记录
+            ).first()
 
-            return jsonify({
-                'success': True,
-                'history': [record.to_dict() for record in history]
-            })
+            if not history:
+                return jsonify({'success': False, 'error': '发布记录不存在'}), 404
+
+            # 检查平台
+            if history.platform != '知乎':
+                return jsonify({'success': False, 'error': f'暂不支持重试{history.platform}平台'}), 400
+
+            # 准备重新发布
+            title = history.article_title
+            content = history.article_content
+            article_id = history.article_id
+
+            # 如果有关联文章，从文章中获取内容
+            if history.article:
+                title = history.article.title
+                content = history.article.content
+                article_id = history.article.id
+            elif not content:
+                # 临时发布的文章且没有内容，无法重试
+                return jsonify({
+                    'success': False,
+                    'error': '该记录无可用内容，无法重试。请重新选择文章发布'
+                }), 400
+
+            logger.info(f'Retry publishing article: {title} to 知乎 (history_id={history_id}) for user {user.username}')
+
         finally:
             db.close()
 
+        # 导入知乎发布模块
+        try:
+            from zhihu_auto_post_enhanced import post_article_to_zhihu
+            zhihu_publisher_available = True
+        except ImportError as e:
+            logger.error(f'Failed to import zhihu_auto_post: {e}', exc_info=True)
+            return jsonify({
+                'success': False,
+                'error': '知乎发布模块不可用，请联系管理员'
+            }), 500
+
+        # 获取用户的知乎账号
+        db = get_db_session()
+        try:
+            zhihu_account = db.query(PlatformAccount).filter_by(
+                user_id=user.id,
+                platform='知乎',
+                status='active'
+            ).first()
+
+            if not zhihu_account:
+                return jsonify({
+                    'success': False,
+                    'error': '未找到已配置的知乎账号，请先在账号管理中添加知乎账号'
+                }), 400
+
+            username = zhihu_account.username
+            password = decrypt_password(zhihu_account.password_encrypted) if zhihu_account.password_encrypted else ''
+
+            if not password:
+                return jsonify({
+                    'success': False,
+                    'error': '知乎账号密码未设置，请在账号管理中完善信息'
+                }), 400
+
+        finally:
+            db.close()
+
+        # 执行发布
+        try:
+            result = post_article_to_zhihu(
+                username=username,
+                title=title,
+                content=content,
+                topics=None,
+                password=password,
+                draft=False
+            )
+
+            success = result.get('success', False)
+            message = result.get('message', '重新发布完成')
+            article_url = result.get('url', '')
+
+            # 保存发布历史到数据库
+            db = get_db_session()
+            try:
+                publish_record = PublishHistory(
+                    user_id=user.id,
+                    article_id=article_id,
+                    article_title=title,
+                    article_content=content,
+                    platform='知乎',
+                    status='success' if success else 'failed',
+                    url=article_url if success else '',
+                    message=message
+                )
+                db.add(publish_record)
+                db.commit()
+                logger.info(f'Retry publish history saved: {publish_record.id}')
+            except Exception as e:
+                db.rollback()
+                logger.error(f'Failed to save retry publish history: {e}', exc_info=True)
+            finally:
+                db.close()
+
+            if success:
+                return jsonify({
+                    'success': True,
+                    'message': message or '重新发布成功',
+                    'url': article_url
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': message or '重新发布失败'
+                }), 500
+
+        except Exception as e:
+            logger.error(f'Zhihu retry publish exception: {type(e).__name__}: {str(e)}', exc_info=True)
+
+            # 保存失败记录
+            db = get_db_session()
+            try:
+                publish_record = PublishHistory(
+                    user_id=user.id,
+                    article_id=article_id,
+                    article_title=title,
+                    article_content=content,
+                    platform='知乎',
+                    status='failed',
+                    message=f'重新发布失败: {str(e)}'
+                )
+                db.add(publish_record)
+                db.commit()
+            except:
+                db.rollback()
+            finally:
+                db.close()
+
+            return jsonify({
+                'success': False,
+                'error': f'重新发布过程中发生错误: {str(e)}'
+            }), 500
+
     except Exception as e:
-        logger.error(f'Get publish history failed: {e}', exc_info=True)
-        return jsonify({'success': False, 'error': '获取发布历史失败'}), 500
+        logger.error(f'Retry publish failed: {e}', exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': f'重新发布失败: {str(e)}'
+        }), 500
 
 # ============= CSDN发布API =============
 
@@ -1608,6 +1752,14 @@ def get_platforms():
     except Exception as e:
         logger.error(f'Get platforms failed: {e}', exc_info=True)
         return jsonify({'success': False, 'error': '获取平台列表失败'}), 500
+
+# 注册API蓝图
+try:
+    from blueprints.api import api_bp
+    app.register_blueprint(api_bp)
+    logger.info('API blueprint registered')
+except Exception as e:
+    logger.error(f'Failed to register API blueprint: {e}', exc_info=True)
 
 # 注册提示词模板API蓝图
 try:
