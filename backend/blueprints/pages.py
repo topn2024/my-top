@@ -3,7 +3,7 @@
 处理页面渲染
 """
 from flask import Blueprint, render_template
-from auth_decorators import login_required, admin_required
+from auth import login_required, admin_required
 import logging
 
 logger = logging.getLogger(__name__)

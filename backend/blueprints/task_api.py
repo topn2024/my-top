@@ -11,24 +11,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.task_queue_manager import get_task_manager
 from logger_config import setup_logger, log_api_request
+from auth import login_required
 
 logger = setup_logger(__name__)
 
 # 创建Blueprint
 task_bp = Blueprint('task_api', __name__)
-
-
-def login_required(f):
-    """登录验证装饰器"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return jsonify({
-                'success': False,
-                'error': '未登录'
-            }), 401
-        return f(*args, **kwargs)
-    return decorated_function
 
 
 @task_bp.route('/create', methods=['POST'])

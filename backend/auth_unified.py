@@ -7,7 +7,7 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask import session, jsonify, request, redirect, url_for
-from models import User, get_db_session
+from models_unified import User, get_db_session
 from datetime import datetime
 
 

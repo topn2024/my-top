@@ -10,7 +10,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from auth import create_user, authenticate_user
-from auth_decorators import login_required, get_current_user
+from auth import login_required, get_current_user
 from logger_config import setup_logger, log_api_request
 
 logger = setup_logger(__name__)
@@ -149,7 +149,7 @@ def logout():
 def get_current_user_info():
     """获取当前用户信息"""
     try:
-        from auth_decorators import get_current_user as get_user_with_role
+        from auth import get_current_user as get_user_with_role
         user = get_user_with_role()
 
         if user:
