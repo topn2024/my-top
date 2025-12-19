@@ -74,7 +74,8 @@
       "Bash(\"D:\\Python3.13.1\\python.exe\":*)",
       "Bash(rm -f nul)",
       "Bash(git push origin main)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(xargs -I {} mv {} backend/scripts/ echo \"Scripts moved to backend/scripts/\")"
     ],
     "deny": [],
     "ask": []

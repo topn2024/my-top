@@ -111,9 +111,9 @@ def main():
 
     # 定义所有测试套件
     test_suites = {
-        "模型系统测试": "backend/test_unified_models.py",
-        "认证系统测试": "backend/test_auth_unified.py",
-        "集成测试": "backend/final_integration_test.py"
+        "模型系统测试": "backend/tests/test_unified_models.py",
+        "认证系统测试": "backend/tests/test_auth_unified.py",
+        "集成测试": "backend/tests/final_integration_test.py"
     }
 
     # 运行所有测试

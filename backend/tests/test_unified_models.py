@@ -14,8 +14,8 @@ if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
-# 添加父目录到路径
-sys.path.insert(0, str(Path(__file__).parent))
+# 添加backend目录到路径
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 def test_model_import():
