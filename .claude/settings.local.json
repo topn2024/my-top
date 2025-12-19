@@ -75,7 +75,11 @@
       "Bash(rm -f nul)",
       "Bash(git push origin main)",
       "Bash(pkill:*)",
-      "Bash(xargs -I {} mv {} backend/scripts/ echo \"Scripts moved to backend/scripts/\")"
+      "Bash(xargs -I {} mv {} backend/scripts/ echo \"Scripts moved to backend/scripts/\")",
+      "Bash(rsync -avz --delete --exclude='__pycache__' --exclude='*.pyc' --exclude='venv' --exclude='data/' --exclude='logs/' backend/ u_topn@39.105.12.124:~/TOP_N/backend/)",
+      "Bash(git remote -v origin)",
+      "Bash(git remote set-url origin https://github.com/topn2024/my-top.git)",
+      "Bash(git pull origin main)"
     ],
     "deny": [],
     "ask": []
