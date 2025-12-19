@@ -1,0 +1,79 @@
+{
+  "web": {
+    "base_url": "http://localhost:3001",
+    "timeout": 30,
+    "retry": 3
+  },
+  "api": {
+    "base_url": "http://localhost:3001/api",
+    "timeout": 30,
+    "retry": 2,
+    "headers": {
+      "User-Agent": "TOP-N-Test-Client/1.0",
+      "Accept": "application/json, text/html",
+      "Content-Type": "application/json"
+    }
+  },
+  "database": {
+    "url": "sqlite:///test_topn.db",
+    "echo": false,
+    "pool_size": 5,
+    "max_overflow": 10
+  },
+  "ui": {
+    "headless": true,
+    "implicit_wait": 10,
+    "page_load_timeout": 30,
+    "browser": "chrome",
+    "window_size": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  "test": {
+    "parallel": false,
+    "coverage": true,
+    "retry": 1,
+    "timeout": 300,
+    "slow_test_threshold": 10
+  },
+  "ai": {
+    "provider": "zhipu",
+    "model": "glm-4-plus",
+    "api_key": "",
+    "timeout": 60,
+    "max_tokens": 2000,
+    "temperature": 0.7
+  },
+  "reporting": {
+    "format": ["html", "json", "xml"],
+    "output_dir": "reports",
+    "include_screenshots": true,
+    "include_logs": true,
+    "archive_results": true
+  },
+  "fixtures": {
+    "auto_cleanup": true,
+    "cleanup_delay": 60,
+    "create_test_data": true
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file": "tests/logs/test.log",
+    "max_size": "10MB",
+    "backup_count": 5
+  },
+  "performance": {
+    "response_time_threshold": 2000,
+    "memory_threshold": "512MB",
+    "cpu_threshold": 80
+  },
+  "security": {
+    "test_sql_injection": true,
+    "test_xss": true,
+    "test_csrf": true,
+    "test_authentication": true,
+    "test_authorization": true
+  }
+}

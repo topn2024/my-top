@@ -1,0 +1,28 @@
+{
+  "web": {
+    "base_url": "http://staging.example.com:3001",
+    "timeout": 30
+  },
+  "api": {
+    "base_url": "http://staging.example.com:3001/api",
+    "timeout": 30
+  },
+  "database": {
+    "url": "sqlite:///staging_topn.db",
+    "echo": false
+  },
+  "ui": {
+    "headless": false,
+    "implicit_wait": 15
+  },
+  "test": {
+    "parallel": true,
+    "coverage": true,
+    "retry": 2
+  },
+  "ai": {
+    "provider": "zhipu",
+    "model": "glm-4-plus",
+    "api_key": ""
+  }
+}

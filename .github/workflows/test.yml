@@ -1,0 +1,476 @@
+name: 🧪 Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # 每天凌晨2点运行完整测试
+    - cron: '0 2 * * *'
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+
+jobs:
+  # 后端单元测试
+  backend-unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: 📦 Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.local/share/virtualenvs
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', 'tests/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r tests/requirements.txt
+
+    - name: 🧪 Run unit tests
+      run: |
+        python tests/run_all_tests.py --type unit --coverage
+
+    - name: 📊 Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./tests/reports/coverage_unit.xml
+        flags: unit
+        name: backend-unit-coverage
+
+    - name: 📤 Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: backend-unit-results-py${{ matrix.python-version }}
+        path: |
+          tests/reports/report_unit.html
+          tests/reports/report_unit.json
+          tests/reports/coverage_unit/
+
+  # API集成测试
+  api-tests:
+    runs-on: ubuntu-latest
+    needs: backend-unit-tests
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+          POSTGRES_DB: test_topn
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: 📦 Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/pip
+        key: ${{ runner.os }}-api-tests-${{ hashFiles('**/requirements.txt', 'tests/requirements.txt') }}
+
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r tests/requirements.txt
+
+    - name: 🔧 Setup environment
+      run: |
+        cp tests/config/staging_config.json tests/config/local_config.json
+        echo "TEST_ENVIRONMENT=staging" >> $GITHUB_ENV
+        echo "TEST_DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_topn" >> $GITHUB_ENV
+        echo "TEST_REDIS_URL=redis://localhost:6379/0" >> $GITHUB_ENV
+        echo "AI_API_KEY=test_key_123456" >> $GITHUB_ENV
+
+    - name: 🗄️ Setup database
+      run: |
+        python backend/init_database.py
+
+    - name: 🚀 Start application
+      run: |
+        python backend/app_with_upload.py &
+        sleep 10
+
+    - name: 🧪 Run API tests
+      run: |
+        python tests/run_all_tests.py --type api --coverage --parallel
+
+    - name: 📊 Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./tests/reports/coverage_api.xml
+        flags: api
+        name: api-coverage
+
+    - name: 📤 Upload API test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: api-test-results
+        path: |
+          tests/reports/report_api.html
+          tests/reports/report_api.json
+          tests/reports/coverage_api/
+
+  # UI测试
+  ui-tests:
+    runs-on: ubuntu-latest
+    needs: backend-unit-tests
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r tests/requirements.txt
+
+        # 安装前端依赖
+        if [ -f "package.json" ]; then
+          npm ci
+        fi
+
+    - name: 🔧 Setup test environment
+      run: |
+        # 安装Chrome
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+
+        # 设置ChromeDriver
+        pip install webdriver-manager
+
+        # 配置测试环境
+        echo "TEST_HEADLESS=true" >> $GITHUB_ENV
+        echo "TEST_BASE_URL=http://localhost:3001" >> $GITHUB_ENV
+
+    - name: 🚀 Start application
+      run: |
+        python backend/app_with_upload.py &
+        sleep 10
+
+        # 启动前端服务（如果存在）
+        if [ -f "package.json" ]; then
+          npm run build &
+          npm run preview &
+          sleep 10
+        fi
+
+    - name: 🧪 Run UI tests
+      run: |
+        python tests/run_all_tests.py --type ui
+
+    - name: 📤 Upload UI test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: ui-test-results
+        path: |
+          tests/reports/report_ui.html
+          tests/reports/report_ui.json
+          tests/screenshots/
+
+  # 端到端测试
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [api-tests, ui-tests]
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r tests/requirements.txt
+
+        if [ -f "package.json" ]; then
+          npm ci
+        fi
+
+    - name: 🔧 Setup complete environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+
+        # 启动所有服务
+        python backend/app_with_upload.py &
+        sleep 10
+
+        if [ -f "package.json" ]; then
+          npm run build &
+          npm run preview &
+          sleep 10
+        fi
+
+        # 配置环境
+        echo "TEST_HEADLESS=true" >> $GITHUB_ENV
+        echo "TEST_BASE_URL=http://localhost:3001" >> $GITHUB_ENV
+
+    - name: 🧪 Run E2E tests
+      run: |
+        python tests/run_all_tests.py --type e2e
+
+    - name: 📤 Upload E2E test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: e2e-test-results
+        path: |
+          tests/reports/report_e2e.html
+          tests/reports/report_e2e.json
+          tests/screenshots/
+
+  # 性能测试
+  performance-tests:
+    runs-on: ubuntu-latest
+    needs: api-tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r tests/requirements.txt
+        pip install locust
+
+    - name: 🚀 Start application
+      run: |
+        python backend/app_with_upload.py &
+        sleep 10
+
+    - name: 🚀 Run performance tests
+      run: |
+        locust --headless --host http://localhost:3001 \
+               --users 50 --spawn-rate 5 --run-time 60s \
+               -f tests/performance/locustfile.py \
+               --html tests/reports/performance_report.html
+
+    - name: 📤 Upload performance report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-report
+        path: tests/reports/performance_report.html
+
+  # 安全扫描
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: backend-unit-tests
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: 📦 Install security tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit safety
+
+    - name: 🔒 Run security scan
+      run: |
+        # Bandit security scan
+        bandit -r backend/ -f json -o tests/reports/bandit_report.json || true
+
+        # Safety dependency scan
+        safety check --json --output tests/reports/safety_report.json || true
+
+    - name: 📤 Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          tests/reports/bandit_report.json
+          tests/reports/safety_report.json
+
+  # 测试报告汇总
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: [backend-unit-tests, api-tests, ui-tests, e2e-tests]
+    if: always()
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 📥 Download all artifacts
+      uses: actions/download-artifact@v3
+
+    - name: 📊 Generate summary report
+      run: |
+        python tests/generate_summary_report.py
+
+    - name: 📤 Upload summary report
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-summary
+        path: tests/reports/summary_report.html
+
+    - name: 💬 Comment PR with test results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+
+          // 读取测试摘要
+          const summaryPath = 'test-summary/summary_report.html';
+          let summary = '';
+
+          if (fs.existsSync(summaryPath)) {
+            summary = fs.readFileSync(summaryPath, 'utf8');
+          }
+
+          // 构建PR评论
+          const comment = `
+          ## 🧪 测试结果摘要
+
+          ${summary}
+
+          ---
+
+          📊 **详细报告**: 请查看Actions中的Artifacts部分获取完整测试报告。
+          `;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+  # 部署到测试环境
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [api-tests, ui-tests]
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🚀 Deploy to staging
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.STAGING_HOST }}
+        username: ${{ secrets.STAGING_USER }}
+        key: ${{ secrets.STAGING_SSH_KEY }}
+        script: |
+          cd /var/www/topn-staging
+          git pull origin develop
+          python -m pip install -r requirements.txt
+          ./restart_services.sh
+
+    - name: 🧪 Post-deployment tests
+      run: |
+        sleep 30
+        python tests/run_all_tests.py --type integration --environment staging
+
+  # 部署到生产环境
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [api-tests, ui-tests, e2e-tests, performance-tests, security-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🚀 Deploy to production
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.PRODUCTION_HOST }}
+        username: ${{ secrets.PRODUCTION_USER }}
+        key: ${{ secrets.PRODUCTION_SSH_KEY }}
+        script: |
+          cd /var/www/topn
+          git pull origin main
+          python -m pip install -r requirements.txt
+          ./restart_services.sh
+
+    - name: 🧪 Post-deployment smoke tests
+      run: |
+        sleep 60
+        python tests/run_all_tests.py --type integration --environment production
