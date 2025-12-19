@@ -14,7 +14,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models import SessionLocal
-from models_prompt_v2 import PromptCombinationLog
+from models import PromptCombinationLog
 from services.analysis_prompt_service import AnalysisPromptService
 from services.article_prompt_service import ArticlePromptService
 from services.platform_style_service import PlatformStyleService

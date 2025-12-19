@@ -14,7 +14,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models import SessionLocal
-from models_prompt_v2 import AnalysisPrompt
+from models import AnalysisPrompt
 
 try:
     from logger_config import log_service_call

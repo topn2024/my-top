@@ -22,7 +22,7 @@ def test_imports():
     """测试模块导入"""
     print("测试 1: 导入统一认证模块...")
     try:
-        from auth_unified import (
+        from auth import (
             ROLE_GUEST, ROLE_USER, ROLE_ADMIN,
             hash_password, verify_password,
             create_user, authenticate_user, get_current_user, get_user_role, is_admin,
@@ -42,7 +42,7 @@ def test_password_functions():
     """测试密码功能"""
     print("\n测试 2: 密码哈希和验证...")
     try:
-        from auth_unified import hash_password, verify_password
+        from auth import hash_password, verify_password
 
         # 测试密码哈希
         password = "TestPassword123!"
@@ -78,7 +78,7 @@ def test_role_constants():
     """测试角色常量"""
     print("\n测试 3: 角色常量定义...")
     try:
-        from auth_unified import ROLE_GUEST, ROLE_USER, ROLE_ADMIN
+        from auth import ROLE_GUEST, ROLE_USER, ROLE_ADMIN
 
         if ROLE_GUEST == 'guest':
             print("  ✓ ROLE_GUEST = 'guest'")
@@ -108,7 +108,7 @@ def test_decorators_exist():
     """测试装饰器定义"""
     print("\n测试 4: 装饰器定义...")
     try:
-        from auth_unified import login_required, admin_required, role_required
+        from auth import login_required, admin_required, role_required
         import inspect
 
         if callable(login_required):
@@ -139,7 +139,7 @@ def test_page_permissions():
     """测试页面权限配置"""
     print("\n测试 5: 页面权限配置...")
     try:
-        from auth_unified import PAGE_PERMISSIONS
+        from auth import PAGE_PERMISSIONS
 
         required_keys = ['public', 'user', 'admin']
 
@@ -179,7 +179,7 @@ def test_admin_check():
     """测试管理员检查逻辑"""
     print("\n测试 6: 管理员检查逻辑...")
     try:
-        from auth_unified import is_admin, ADMIN_USERNAMES, ADMIN_ROLES
+        from auth import is_admin, ADMIN_USERNAMES, ADMIN_ROLES
 
         # 测试管理员用户名列表
         expected_usernames = ['admin', 'administrator', 'superuser', 'root']
@@ -211,7 +211,7 @@ def test_backward_compatibility():
     """测试向后兼容性"""
     print("\n测试 7: 向后兼容性...")
     try:
-        from auth_unified import __all__
+        from auth import __all__
 
         required_exports = [
             'hash_password', 'verify_password',

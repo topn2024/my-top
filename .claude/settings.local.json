@@ -73,7 +73,8 @@
       "Bash(D:Python3.13.1python.exe:*)",
       "Bash(\"D:\\Python3.13.1\\python.exe\":*)",
       "Bash(rm -f nul)",
-      "Bash(git push origin main)"
+      "Bash(git push origin main)",
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []

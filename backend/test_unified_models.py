@@ -22,7 +22,7 @@ def test_model_import():
     """测试模型导入"""
     print("测试 1: 导入统一模型...")
     try:
-        from models_unified import (
+        from models import (
             Base, engine, SessionLocal,
             User, Workflow, Article, PlatformAccount,
             PublishHistory, PublishTask,
@@ -41,7 +41,7 @@ def test_model_tables():
     """测试模型表名"""
     print("\n测试 2: 验证表名...")
     try:
-        from models_unified import (
+        from models import (
             User, Workflow, Article, PlatformAccount,
             PublishHistory, PublishTask,
             AnalysisPrompt, ArticlePrompt, PlatformStylePrompt,
@@ -81,7 +81,7 @@ def test_model_methods():
     """测试模型方法"""
     print("\n测试 3: 验证模型方法...")
     try:
-        from models_unified import User, Workflow, Article
+        from models import User, Workflow, Article
 
         # 测试 to_dict 方法
         models_to_test = [User, Workflow, Article]
@@ -103,7 +103,7 @@ def test_database_connection():
     """测试数据库连接"""
     print("\n测试 4: 验证数据库连接...")
     try:
-        from models_unified import engine
+        from models import engine
         from sqlalchemy import text
 
         with engine.connect() as conn:
@@ -119,7 +119,7 @@ def test_table_creation():
     """测试表创建"""
     print("\n测试 5: 测试表创建（不修改现有表）...")
     try:
-        from models_unified import Base, engine
+        from models import Base, engine
         from sqlalchemy import inspect
 
         # 获取现有表
@@ -155,7 +155,7 @@ def test_model_relationships():
     """测试模型关系"""
     print("\n测试 6: 验证模型关系...")
     try:
-        from models_unified import User, Workflow, Article
+        from models import User, Workflow, Article
 
         # 检查关系定义
         if hasattr(User, 'workflows'):
@@ -186,7 +186,7 @@ def test_session_factory():
     """测试会话工厂"""
     print("\n测试 7: 验证会话工厂...")
     try:
-        from models_unified import get_db_session, SessionLocal
+        from models import get_db_session, SessionLocal
 
         # 测试 get_db_session
         session = get_db_session()

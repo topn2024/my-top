@@ -14,7 +14,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models import SessionLocal
-from models_prompt_v2 import PlatformStylePrompt
+from models import PlatformStylePrompt
 
 
 class PlatformStyleService:
