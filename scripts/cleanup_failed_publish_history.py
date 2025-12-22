@@ -18,7 +18,7 @@ from sqlalchemy import or_
 
 def cleanup_failed_publish_history(dry_run=True):
     """
-    清理发布失败且没有文章标题的记录
+    清理发布失败且标题为"历史发布记录"的测试记录
 
     Args:
         dry_run: 如果为True，只统计不删除；如果为False，执行删除
@@ -26,13 +26,10 @@ def cleanup_failed_publish_history(dry_run=True):
     db = get_db_session()
 
     try:
-        # 查询条件：status='failed' 且 (article_title为NULL 或 article_title为空字符串)
+        # 查询条件：status='failed' 且 article_title='历史发布记录'
         query = db.query(PublishHistory).filter(
             PublishHistory.status == 'failed',
-            or_(
-                PublishHistory.article_title.is_(None),
-                PublishHistory.article_title == ''
-            )
+            PublishHistory.article_title == '历史发布记录'
         )
 
         # 统计数量
@@ -65,6 +62,7 @@ def cleanup_failed_publish_history(dry_run=True):
         if dry_run:
             print(f"[预览模式] 如果执行删除，将删除以上 {count} 条记录")
             print("\n提示: 使用 --execute 参数执行实际删除")
+            return count
         else:
             # 确认删除
             confirm = input(f"\n[WARNING] 确认要删除这 {count} 条记录吗? (yes/no): ")
