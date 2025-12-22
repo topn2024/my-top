@@ -5,8 +5,9 @@
 from app_factory import create_app
 import os
 
-# 创建应用实例（使用production配置）
-app = create_app('production')
+# 创建应用实例（从环境变量读取配置）
+config_name = os.environ.get('FLASK_ENV', 'production')
+app = create_app(config_name)
 
 # 注意：所有路由现在都在 blueprints 中定义
 # pages_bp: 页面路由 (/, /platform, /analysis, /articles, /publish, /login, /templates)
