@@ -208,7 +208,10 @@ def register_context_processors(app):
 
 
 # 创建应用实例（用于向后兼容）
-app = create_app('production')
+# 从环境变量读取配置，默认为production
+import os
+_config_name = os.environ.get('FLASK_ENV', 'production')
+app = create_app(_config_name)
 
 
 if __name__ == '__main__':
