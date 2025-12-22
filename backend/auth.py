@@ -494,6 +494,35 @@ def init_auth(app):
 # 向后兼容性导出
 # ============================================================================
 
+def init_permissions(app):
+    """
+    初始化权限系统（兼容性函数）
+
+    这是一个兼容性函数，用于支持从 auth_decorators 模块的导入。
+    实际的权限系统已集成在统一的 auth.py 模块中。
+
+    Args:
+        app: Flask应用实例
+
+    Returns:
+        bool: 初始化成功返回True
+
+    Note:
+        此函数与 init_auth() 功能相同，提供了统一的权限管理：
+        - 页面级权限控制
+        - 用户角色管理
+        - 模板上下文注入
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # 调用实际的初始化函数
+    init_auth(app)
+
+    logger.info("权限系统已初始化（使用统一认证模块）")
+    return True
+
+
 # 为了保持与现有代码的兼容性，导出常用函数
 __all__ = [
     # 角色常量
@@ -507,7 +536,7 @@ __all__ = [
     # 装饰器
     'login_required', 'admin_required', 'role_required',
     # 权限检查
-    'check_page_permission', 'init_auth',
+    'check_page_permission', 'init_auth', 'init_permissions',
     # 页面权限配置
     'PAGE_PERMISSIONS',
 ]

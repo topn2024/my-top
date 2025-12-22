@@ -394,6 +394,208 @@ def delete_account(account_id):
         logger.error(f'Delete account failed: {e}', exc_info=True)
         return jsonify({'error': str(e)}), 500
 
+# ============ 账号测试与导入 ============
+@api_bp.route('/api/accounts/<int:account_id>/test', methods=['POST'])
+@login_required
+@log_api_request("测试平台账号连接")
+def test_account(account_id):
+    """测试账号登录 - 使用真实的网站登录"""
+    try:
+        user = get_current_user()
+        db = get_db_session()
+
+        try:
+            account = db.query(PlatformAccount).filter_by(
+                id=account_id,
+                user_id=user.id
+            ).first()
+
+            if not account:
+                return jsonify({'success': False, 'error': '账号不存在'}), 404
+
+            platform = account.platform
+            username = account.username
+            password = decrypt_password(account.password_encrypted) if account.password_encrypted else ''
+
+            logger.info(f'Testing account login: {platform} - {username}')
+            logger.debug(f'Account ID: {account_id}, has password: {bool(password)}')
+
+            if not username or not password:
+                logger.warning(f'Incomplete account info - username: {bool(username)}, password: {bool(password)}')
+                account.status = 'failed'
+                account.last_tested = datetime.now()
+                db.commit()
+
+                return jsonify({
+                    'success': False,
+                    'message': '账号信息不完整，请填写用户名和密码'
+                })
+        finally:
+            db.close()
+
+        # 尝试导入登录测试模块
+        try:
+            logger.debug('Attempting to import login_tester module...')
+            from login_tester import test_account_login
+            selenium_available = True
+            logger.info('login_tester module imported successfully')
+        except ImportError as e:
+            selenium_available = False
+            logger.error(f'Failed to import login_tester: {e}', exc_info=True)
+            logger.warning('Selenium not available, using mock login test')
+        except Exception as e:
+            selenium_available = False
+            logger.error(f'Unexpected error importing login_tester: {e}', exc_info=True)
+
+        # 如果Selenium可用，使用真实登录测试
+        if selenium_available:
+            try:
+                logger.info(f'Starting real login test for {platform} - {username}')
+                # 执行真实的登录测试
+                result = test_account_login(platform, username, password, headless=True)
+                test_success = result.get('success', False)
+                message = result.get('message', '登录测试完成')
+                current_url = result.get('current_url', '')
+
+                logger.info(f'Login test completed - success: {test_success}, message: {message}')
+                if current_url:
+                    logger.debug(f'Login landed on URL: {current_url}')
+
+                # 更新账号状态到数据库
+                db = get_db_session()
+                try:
+                    account_to_update = db.query(PlatformAccount).get(account_id)
+                    if account_to_update:
+                        account_to_update.status = 'success' if test_success else 'failed'
+                        account_to_update.last_tested = datetime.now()
+                        db.commit()
+                finally:
+                    db.close()
+
+                logger.info(f'Real login test result: {platform} - {username} - {"success" if test_success else "failed"}')
+
+                return jsonify({
+                    'success': test_success,
+                    'message': message,
+                    'current_url': current_url
+                })
+
+            except Exception as e:
+                logger.error(f'Selenium login test exception: {type(e).__name__}: {str(e)}', exc_info=True)
+                logger.error(f'Exception details - Platform: {platform}, Username: {username}')
+                # Selenium测试失败，回退到基本验证
+                selenium_available = False
+
+        # 如果Selenium不可用或失败，使用基本验证
+        if not selenium_available:
+            platform_urls = {
+                '知乎': 'https://www.zhihu.com',
+                'CSDN': 'https://www.csdn.net',
+                '掘金': 'https://juejin.cn',
+                '简书': 'https://www.jianshu.com',
+                '今日头条': 'https://www.toutiao.com'
+            }
+
+            platform_url = platform_urls.get(platform, '')
+            message = f'账号信息已保存。\n注意：自动登录测试需要安装 Selenium 和 Chrome。\n请手动访问 {platform_url} 验证账号。'
+
+            # 更新为未知状态
+            db = get_db_session()
+            try:
+                account_to_update = db.query(PlatformAccount).get(account_id)
+                if account_to_update:
+                    account_to_update.status = 'unknown'
+                    account_to_update.last_tested = datetime.now()
+                    db.commit()
+            finally:
+                db.close()
+
+            return jsonify({
+                'success': False,
+                'message': message,
+                'platform_url': platform_url
+            })
+
+    except Exception as e:
+        logger.error(f'Test account failed: {e}', exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@api_bp.route('/api/accounts/import', methods=['POST'])
+@log_api_request("批量导入平台账号")
+def import_accounts():
+    """批量导入账号"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': '没有文件被上传'}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': '文件名为空'}), 400
+
+        filename_lower = file.filename.lower()
+        if not (filename_lower.endswith('.json') or filename_lower.endswith('.txt') or filename_lower.endswith('.csv')):
+            return jsonify({'success': False, 'error': '仅支持 JSON, TXT, CSV 格式'}), 400
+
+        content = file.read().decode('utf-8', errors='ignore')
+
+        imported_accounts = []
+
+        if filename_lower.endswith('.json'):
+            imported_accounts = json.loads(content)
+        elif filename_lower.endswith('.csv'):
+            lines = content.strip().split('\n')
+            for i, line in enumerate(lines):
+                if i == 0 and ('平台' in line or 'platform' in line.lower()):
+                    continue
+                parts = line.split(',')
+                if len(parts) >= 2:
+                    imported_accounts.append({
+                        'platform': parts[0].strip(),
+                        'username': parts[1].strip(),
+                        'password': parts[2].strip() if len(parts) > 2 else '',
+                        'notes': parts[3].strip() if len(parts) > 3 else ''
+                    })
+        else:
+            lines = content.strip().split('\n')
+            for line in lines:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                parts = line.split()
+                if len(parts) >= 2:
+                    imported_accounts.append({
+                        'platform': parts[0],
+                        'username': parts[1],
+                        'password': parts[2] if len(parts) > 2 else '',
+                        'notes': ' '.join(parts[3:]) if len(parts) > 3 else ''
+                    })
+
+        if not imported_accounts:
+            return jsonify({'success': False, 'error': '没有找到有效的账号信息'}), 400
+
+        accounts = load_accounts()
+        start_id = max([acc.get('id', 0) for acc in accounts], default=0) + 1
+
+        for i, acc in enumerate(imported_accounts):
+            acc['id'] = start_id + i
+            acc['created_at'] = datetime.now().isoformat()
+            accounts.append(acc)
+
+        if save_accounts(accounts):
+            logger.info(f'Imported {len(imported_accounts)} accounts')
+            return jsonify({
+                'success': True,
+                'count': len(imported_accounts),
+                'accounts': accounts
+            })
+        else:
+            return jsonify({'success': False, 'error': '保存失败'}), 500
+
+    except json.JSONDecodeError as e:
+        return jsonify({'success': False, 'error': f'JSON格式错误: {str(e)}'}), 400
+    except Exception as e:
+        logger.error(f'Import accounts failed: {e}', exc_info=True)
+        return jsonify({'success': False, 'error': f'导入失败: {str(e)}'}), 500
 
 @api_bp.route('/publish_zhihu', methods=['POST'])
 @login_required
@@ -863,3 +1065,287 @@ def get_user_articles():
         return jsonify({'error': str(e)}), 500
     finally:
         db.close()
+# ============ CSDN 平台管理 ============
+@api_bp.route('/api/csdn/login', methods=['POST'])
+@login_required
+def csdn_login():
+    """CSDN账号密码登录"""
+    try:
+        user = get_current_user()
+        data = request.json
+        username = data.get('username', '')
+        password = data.get('password', '')
+
+        if not username or not password:
+            return jsonify({'success': False, 'message': '用户名和密码不能为空'}), 400
+
+        logger.info(f'CSDN login attempt for user: {user.username}, csdn account: {username}')
+
+        # 导入CSDN发布器
+        try:
+            from publishers import PlatformPublisherFactory
+
+            # 创建CSDN发布器实例
+            publisher = PlatformPublisherFactory.create_publisher('csdn')
+
+            # 执行登录
+            success, message = publisher.login(username, password)
+
+            # 关闭浏览器
+            publisher.close()
+
+            if success:
+                logger.info(f'CSDN login successful for: {username}')
+                return jsonify({
+                    'success': True,
+                    'message': 'CSDN登录成功，Cookie已保存'
+                })
+            else:
+                logger.warning(f'CSDN login failed: {message}')
+                return jsonify({
+                    'success': False,
+                    'message': f'登录失败: {message}'
+                }), 400
+
+        except ImportError as e:
+            logger.error(f'Failed to import CSDN publisher: {e}')
+            return jsonify({
+                'success': False,
+                'message': 'CSDN发布器模块未安装，请联系管理员'
+            }), 500
+        except Exception as e:
+            logger.error(f'CSDN login error: {e}', exc_info=True)
+            return jsonify({
+                'success': False,
+                'message': f'登录异常: {str(e)}'
+            }), 500
+
+    except Exception as e:
+        logger.error(f'CSDN login handler failed: {e}', exc_info=True)
+        return jsonify({'success': False, 'message': f'请求失败: {str(e)}'}), 500
+
+
+@api_bp.route('/api/csdn/check_login', methods=['POST'])
+@login_required
+def csdn_check_login():
+    """检查CSDN登录状态"""
+    try:
+        user = get_current_user()
+        data = request.json
+        username = data.get('username', '')
+
+        if not username:
+            return jsonify({'success': False, 'message': '用户名不能为空'}), 400
+
+        # 导入CSDN发布器
+        try:
+            from publishers import PlatformPublisherFactory
+
+            # 创建CSDN发布器实例
+            publisher = PlatformPublisherFactory.create_publisher('csdn')
+
+            # 检查Cookie是否存在
+            cookie_exists = publisher.cookies_exist(username)
+
+            if not cookie_exists:
+                publisher.close()
+                return jsonify({
+                    'success': False,
+                    'logged_in': False,
+                    'message': 'Cookie不存在，请先登录'
+                })
+
+            # 加载Cookie并检查登录状态
+            cookies = publisher.load_cookies(username)
+            if cookies:
+                # 这里可以进一步验证Cookie是否有效
+                # 暂时返回Cookie存在即表示已登录
+                publisher.close()
+                return jsonify({
+                    'success': True,
+                    'logged_in': True,
+                    'message': 'Cookie已加载'
+                })
+            else:
+                publisher.close()
+                return jsonify({
+                    'success': False,
+                    'logged_in': False,
+                    'message': 'Cookie加载失败'
+                })
+
+        except Exception as e:
+            logger.error(f'CSDN check login error: {e}', exc_info=True)
+            return jsonify({
+                'success': False,
+                'logged_in': False,
+                'message': f'检查登录状态失败: {str(e)}'
+            }), 500
+
+    except Exception as e:
+        logger.error(f'CSDN check login handler failed: {e}', exc_info=True)
+        return jsonify({'success': False, 'message': f'请求失败: {str(e)}'}), 500
+
+
+@api_bp.route('/api/csdn/publish', methods=['POST'])
+@login_required
+@log_api_request("发布文章到CSDN")
+def publish_csdn():
+    """发布文章到CSDN"""
+    try:
+        user = get_current_user()
+        data = request.json
+        title = data.get('title', '')
+        content = data.get('content', '')
+        category = data.get('category', '其他')
+        tags = data.get('tags', [])
+        article_type = data.get('article_type', 'original')
+
+        if not title or not content:
+            return jsonify({'success': False, 'message': '标题和内容不能为空'}), 400
+
+        logger.info(f'Publishing to CSDN: {title} for user {user.username}')
+
+        # 获取用户的CSDN账号
+        db = get_db_session()
+        try:
+            csdn_account = db.query(PlatformAccount).filter_by(
+                user_id=user.id,
+                platform='CSDN',
+                status='active'
+            ).first()
+
+            if not csdn_account:
+                return jsonify({
+                    'success': False,
+                    'message': '未找到已配置的CSDN账号，请先在账号管理中添加CSDN账号'
+                }), 400
+
+            username = csdn_account.username
+
+        finally:
+            db.close()
+
+        # 导入CSDN发布器
+        try:
+            from publishers import PlatformPublisherFactory
+
+            # 创建CSDN发布器实例
+            publisher = PlatformPublisherFactory.create_publisher('csdn')
+
+            # 加载Cookie
+            cookies = publisher.load_cookies(username)
+            if not cookies:
+                publisher.close()
+                return jsonify({
+                    'success': False,
+                    'message': 'Cookie不存在或已过期，请重新登录'
+                }), 400
+
+            # 执行发布
+            success, message, article_url = publisher.publish_article(
+                title=title,
+                content=content,
+                category=category,
+                tags=tags,
+                article_type=article_type
+            )
+
+            # 关闭浏览器
+            publisher.close()
+
+            # 保存发布历史到数据库
+            db = get_db_session()
+            try:
+                publish_record = PublishHistory(
+                    user_id=user.id,
+                    platform='CSDN',
+                    status='success' if success else 'failed',
+                    url=article_url if success else '',
+                    message=message
+                )
+                db.add(publish_record)
+                db.commit()
+            except:
+                db.rollback()
+            finally:
+                db.close()
+
+            if success:
+                logger.info(f'CSDN publish successful: {article_url}')
+                return jsonify({
+                    'success': True,
+                    'message': message,
+                    'url': article_url
+                })
+            else:
+                logger.warning(f'CSDN publish failed: {message}')
+                return jsonify({
+                    'success': False,
+                    'message': message
+                }), 400
+
+        except ImportError as e:
+            logger.error(f'Failed to import CSDN publisher: {e}')
+            return jsonify({
+                'success': False,
+                'message': 'CSDN发布器模块未安装，请联系管理员'
+            }), 500
+        except Exception as e:
+            logger.error(f'CSDN publish error: {e}', exc_info=True)
+
+            # 记录发布失败
+            db = get_db_session()
+            try:
+                publish_record = PublishHistory(
+                    user_id=user.id,
+                    platform='CSDN',
+                    status='failed',
+                    message=f'发布异常: {str(e)}'
+                )
+                db.add(publish_record)
+                db.commit()
+            except:
+                db.rollback()
+            finally:
+                db.close()
+
+            return jsonify({
+                'success': False,
+                'message': f'发布异常: {str(e)}'
+            }), 500
+
+    except Exception as e:
+        logger.error(f'CSDN publish handler failed: {e}', exc_info=True)
+        return jsonify({'success': False, 'message': f'请求失败: {str(e)}'}), 500
+# ============ 平台管理 ============
+@api_bp.route('/api/platforms', methods=['GET'])
+@login_required
+def get_platforms():
+    """获取支持的发布平台列表"""
+    try:
+        from publishers import PlatformPublisherFactory
+
+        platforms = PlatformPublisherFactory.get_supported_platforms()
+
+        # 获取每个平台的详细信息
+        platform_info = []
+        for platform in platforms:
+            try:
+                info = PlatformPublisherFactory.get_platform_info(platform)
+                platform_info.append({
+                    'id': platform,
+                    'name': info['name'],
+                    'features': info.get('features', {})
+                })
+            except:
+                continue
+
+        return jsonify({
+            'success': True,
+            'platforms': platform_info
+        })
+
+    except Exception as e:
+        logger.error(f'Get platforms failed: {e}', exc_info=True)
+        return jsonify({'success': False, 'error': '获取平台列表失败'}), 500

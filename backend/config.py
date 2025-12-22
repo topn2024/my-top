@@ -114,6 +114,87 @@ class ProductionConfig(Config):
     DEBUG = False
     LOG_LEVEL = 'INFO'
 
+    @classmethod
+    def validate_config(cls):
+        """
+        验证生产环境必需的配置项
+
+        检查关键配置是否已设置，避免使用默认值导致安全问题
+
+        Raises:
+            RuntimeError: 当缺少必需的配置项时
+
+        Returns:
+            bool: 验证通过返回 True
+        """
+        import sys
+
+        # 必需的环境变量
+        required_vars = {
+            'TOPN_SECRET_KEY': '应用密钥（用于session加密）',
+            'ZHIPU_API_KEY': '智谱AI API密钥',
+        }
+
+        # 推荐设置的环境变量
+        recommended_vars = {
+            'ENCRYPTION_KEY': '账号密码加密密钥',
+            'DATABASE_URL': '数据库连接URL',
+        }
+
+        missing_required = []
+        missing_recommended = []
+
+        # 检查必需变量
+        for var, description in required_vars.items():
+            value = os.environ.get(var)
+            if not value:
+                missing_required.append(f"  - {var}: {description}")
+            elif value == getattr(cls, var.replace('TOPN_', '').replace('ZHIPU_', ''), None):
+                # 检查是否使用了默认值
+                missing_required.append(f"  - {var}: {description} (当前使用默认值，不安全)")
+
+        # 检查推荐变量
+        for var, description in recommended_vars.items():
+            value = os.environ.get(var)
+            if not value:
+                missing_recommended.append(f"  - {var}: {description}")
+
+        # 如果有缺失的必需变量，抛出异常
+        if missing_required:
+            error_msg = (
+                "\n" + "="*70 + "\n"
+                "❌ 生产环境配置验证失败\n"
+                "="*70 + "\n\n"
+                "缺少以下必需的环境变量:\n"
+                + "\n".join(missing_required) + "\n\n"
+                "请按以下步骤修复:\n"
+                "1. 复制 .env.template 为 .env\n"
+                "2. 填入实际的配置值\n"
+                "3. 确保 .env 文件在项目根目录\n"
+                "4. 重启应用\n\n"
+                "提示: 使用 python -c \"import secrets; print(secrets.token_hex(32))\" 生成密钥\n"
+                "="*70 + "\n"
+            )
+
+            # 打印到标准错误
+            print(error_msg, file=sys.stderr)
+            raise RuntimeError(error_msg)
+
+        # 警告推荐变量缺失（不阻止启动）
+        if missing_recommended:
+            warning_msg = (
+                "\n" + "="*70 + "\n"
+                "⚠️  生产环境配置警告\n"
+                "="*70 + "\n\n"
+                "建议设置以下环境变量以提高安全性:\n"
+                + "\n".join(missing_recommended) + "\n\n"
+                "这些变量不是必需的，但强烈建议在生产环境中设置。\n"
+                "="*70 + "\n"
+            )
+            print(warning_msg, file=sys.stderr)
+
+        return True
+
 
 class TestConfig(Config):
     """测试环境配置"""

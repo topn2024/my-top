@@ -36,6 +36,15 @@ def create_app(config_name='default'):
     # 初始化配置（创建目录等）
     config.init_app()
 
+    # 生产环境配置验证
+    if config_name == 'production' and hasattr(config, 'validate_config'):
+        try:
+            config.validate_config()
+        except RuntimeError as e:
+            # 配置验证失败，记录错误并退出
+            logging.error(f"Configuration validation failed: {e}")
+            raise
+
     # 配置CORS
     CORS(app)
 
@@ -43,7 +52,7 @@ def create_app(config_name='default'):
     setup_logging(config)
 
     # 初始化权限系统
-    from auth_decorators import init_permissions
+    from auth import init_permissions
     init_permissions(app)
 
     # 注册蓝图
