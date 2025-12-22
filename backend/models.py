@@ -620,6 +620,27 @@ def get_db_session():
     return SessionLocal()
 
 
+# ============================================================================
+# 导入扩展模型以确保它们被Base.metadata识别
+# ============================================================================
+from models_prompt_template import (
+    PromptTemplateCategory,
+    PromptTemplate,
+    PromptTemplateUsageLog,
+    PromptTemplateAuditLog,
+    PromptExampleLibrary
+)
+
+# 导出所有模型
+__all__ = [
+    'Base', 'engine', 'SessionLocal', 'get_db_session',
+    'User', 'Workflow', 'Article', 'PlatformAccount', 'PublishHistory', 'PublishTask',
+    'AnalysisPrompt', 'ArticlePrompt', 'PlatformStylePrompt', 'PromptCombinationLog',
+    'PromptTemplateCategory', 'PromptTemplate', 'PromptTemplateUsageLog',
+    'PromptTemplateAuditLog', 'PromptExampleLibrary',
+]
+
+
 def init_models():
     """初始化所有模型（创建所有表）"""
     Base.metadata.create_all(bind=engine)

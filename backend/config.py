@@ -5,6 +5,15 @@
 import os
 from pathlib import Path
 
+# 加载.env文件
+try:
+    from dotenv import load_dotenv
+    env_path = Path(__file__).resolve().parent / '.env'
+    if env_path.exists():
+        load_dotenv(env_path)
+except ImportError:
+    pass  # dotenv未安装，跳过
+
 # 项目根目录
 BASE_DIR = Path(__file__).resolve().parent.parent
 

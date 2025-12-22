@@ -395,7 +395,7 @@ def delete_account(account_id):
         return jsonify({'error': str(e)}), 500
 
 # ============ 账号测试与导入 ============
-@api_bp.route('/api/accounts/<int:account_id>/test', methods=['POST'])
+@api_bp.route('/accounts/<int:account_id>/test', methods=['POST'])
 @login_required
 @log_api_request("测试平台账号连接")
 def test_account(account_id):
@@ -520,7 +520,7 @@ def test_account(account_id):
         logger.error(f'Test account failed: {e}', exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@api_bp.route('/api/accounts/import', methods=['POST'])
+@api_bp.route('/accounts/import', methods=['POST'])
 @log_api_request("批量导入平台账号")
 def import_accounts():
     """批量导入账号"""
@@ -1066,7 +1066,7 @@ def get_user_articles():
     finally:
         db.close()
 # ============ CSDN 平台管理 ============
-@api_bp.route('/api/csdn/login', methods=['POST'])
+@api_bp.route('/csdn/login', methods=['POST'])
 @login_required
 def csdn_login():
     """CSDN账号密码登录"""
@@ -1125,7 +1125,7 @@ def csdn_login():
         return jsonify({'success': False, 'message': f'请求失败: {str(e)}'}), 500
 
 
-@api_bp.route('/api/csdn/check_login', methods=['POST'])
+@api_bp.route('/csdn/check_login', methods=['POST'])
 @login_required
 def csdn_check_login():
     """检查CSDN登录状态"""
@@ -1187,7 +1187,7 @@ def csdn_check_login():
         return jsonify({'success': False, 'message': f'请求失败: {str(e)}'}), 500
 
 
-@api_bp.route('/api/csdn/publish', methods=['POST'])
+@api_bp.route('/csdn/publish', methods=['POST'])
 @login_required
 @log_api_request("发布文章到CSDN")
 def publish_csdn():
@@ -1319,7 +1319,7 @@ def publish_csdn():
         logger.error(f'CSDN publish handler failed: {e}', exc_info=True)
         return jsonify({'success': False, 'message': f'请求失败: {str(e)}'}), 500
 # ============ 平台管理 ============
-@api_bp.route('/api/platforms', methods=['GET'])
+@api_bp.route('/platforms', methods=['GET'])
 @login_required
 def get_platforms():
     """获取支持的发布平台列表"""
