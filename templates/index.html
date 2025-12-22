@@ -219,7 +219,9 @@
         // 页面加载时检查登录状态
         async function checkLoginStatus() {
             try {
-                const response = await fetch('/api/auth/me');
+                const response = await fetch('/api/auth/me', {
+                    credentials: 'same-origin'
+                });
                 const data = await response.json();
 
                 if (data.success && data.user) {
@@ -263,7 +265,8 @@
         async function handleLogout() {
             try {
                 const response = await fetch('/api/auth/logout', {
-                    method: 'POST'
+                    method: 'POST',
+                    credentials: 'same-origin'
                 });
                 const data = await response.json();
 

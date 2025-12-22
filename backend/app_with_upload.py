@@ -1736,5 +1736,5 @@ except Exception as e:
 
 if __name__ == '__main__':
     import sys
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 3001
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
     app.run(host='0.0.0.0', port=port, debug=True)

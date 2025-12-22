@@ -392,7 +392,9 @@
         // 检查管理员权限
         async function checkAdminAuth() {
             try {
-                const response = await fetch('/api/auth/me');
+                const response = await fetch('/api/auth/me', {
+                    credentials: 'same-origin'
+                });
                 const data = await response.json();
 
                 if (!data.success || !data.user || data.user.username !== 'admin') {
@@ -636,6 +638,7 @@
                 const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
+                    credentials: 'same-origin',
                     body: JSON.stringify(data)
                 });
 

@@ -559,6 +559,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'same-origin',
                     body: JSON.stringify({ username, password })
                 });
 
@@ -658,6 +659,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'same-origin',
                     body: JSON.stringify(registerData)
                 });
 
@@ -684,7 +686,9 @@
         // 检查是否已登录（不自动跳转，仅显示提示）
         async function checkAuth() {
             try {
-                const response = await fetch('/api/auth/me');
+                const response = await fetch('/api/auth/me', {
+                    credentials: 'same-origin'
+                });
                 const data = await response.json();
 
                 if (data.success) {
@@ -721,7 +725,10 @@
         // 退出登录函数
         async function logout() {
             try {
-                await fetch('/api/auth/logout', { method: 'POST' });
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
                 window.location.reload();
             } catch (error) {
                 console.error('登出失败:', error);
