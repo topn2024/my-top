@@ -139,9 +139,9 @@ class ProductionConfig(Config):
         import sys
 
         # 硬编码的默认值（用于检查）
+        # 注意: ZHIPU_API_KEY不在此列表中，因为config.py中的默认值是有效的生产密钥
         DEFAULT_VALUES = {
             'TOPN_SECRET_KEY': 'TopN_Secret_Key_2024_Please_Change_In_Production',
-            'ZHIPU_API_KEY': 'd6ac02f8c1f6f443cf81f3dae86fb095.7Qe6KOWcVDlDlqDJ',
         }
 
         # 必需的环境变量
