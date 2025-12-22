@@ -62,14 +62,26 @@ class User(Base):
 
     def to_dict(self):
         """转换为字典"""
+        # 处理 created_at - 可能是 datetime 对象或已经是字符串
+        if self.created_at:
+            created_at = self.created_at if isinstance(self.created_at, str) else self.created_at.isoformat()
+        else:
+            created_at = None
+
+        # 处理 last_login - 可能是 datetime 对象或已经是字符串
+        if self.last_login:
+            last_login = self.last_login if isinstance(self.last_login, str) else self.last_login.isoformat()
+        else:
+            last_login = None
+
         return {
             'id': self.id,
             'username': self.username,
             'email': self.email,
             'full_name': self.full_name,
             'role': self.role,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'last_login': self.last_login.isoformat() if self.last_login else None,
+            'created_at': created_at,
+            'last_login': last_login,
             'is_active': self.is_active
         }
 
