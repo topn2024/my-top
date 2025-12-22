@@ -138,6 +138,12 @@ class ProductionConfig(Config):
         """
         import sys
 
+        # 硬编码的默认值（用于检查）
+        DEFAULT_VALUES = {
+            'TOPN_SECRET_KEY': 'TopN_Secret_Key_2024_Please_Change_In_Production',
+            'ZHIPU_API_KEY': 'd6ac02f8c1f6f443cf81f3dae86fb095.7Qe6KOWcVDlDlqDJ',
+        }
+
         # 必需的环境变量
         required_vars = {
             'TOPN_SECRET_KEY': '应用密钥（用于session加密）',
@@ -158,7 +164,7 @@ class ProductionConfig(Config):
             value = os.environ.get(var)
             if not value:
                 missing_required.append(f"  - {var}: {description}")
-            elif value == getattr(cls, var.replace('TOPN_', '').replace('ZHIPU_', ''), None):
+            elif var in DEFAULT_VALUES and value == DEFAULT_VALUES[var]:
                 # 检查是否使用了默认值
                 missing_required.append(f"  - {var}: {description} (当前使用默认值，不安全)")
 
