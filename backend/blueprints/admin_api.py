@@ -1170,3 +1170,163 @@ def export_logs():
     except Exception as e:
         logger.error(f"导出日志失败: {str(e)}")
         return jsonify({'success': False, 'error': '导出日志失败'}), 500
+
+
+# ============================================================================
+# 任务维护 API
+# ============================================================================
+
+@admin_bp.route('/tasks/maintenance', methods=['POST'])
+@admin_required
+@log_api_request("执行任务维护")
+def run_task_maintenance():
+    """
+    执行任务维护：同步状态、清理失败任务、清理过期任务
+    """
+    try:
+        from services.task_queue_manager import get_task_manager
+        manager = get_task_manager()
+        result = manager.run_maintenance()
+
+        return jsonify({
+            'success': True,
+            'data': result
+        })
+
+    except Exception as e:
+        logger.error(f"执行任务维护失败: {str(e)}")
+        return jsonify({'success': False, 'error': '执行任务维护失败'}), 500
+
+
+@admin_bp.route('/tasks/sync-status', methods=['POST'])
+@admin_required
+@log_api_request("同步任务状态")
+def sync_task_status():
+    """
+    同步数据库任务状态与Redis任务状态
+    """
+    try:
+        from services.task_queue_manager import get_task_manager
+        manager = get_task_manager()
+        result = manager.sync_task_status_with_redis()
+
+        return jsonify({
+            'success': True,
+            'data': result
+        })
+
+    except Exception as e:
+        logger.error(f"同步任务状态失败: {str(e)}")
+        return jsonify({'success': False, 'error': '同步任务状态失败'}), 500
+
+
+@admin_bp.route('/tasks/cleanup-failed', methods=['POST'])
+@admin_required
+@log_api_request("清理失败任务")
+def cleanup_failed_tasks():
+    """
+    清理Redis中的失败任务
+    """
+    try:
+        from services.task_queue_manager import get_task_manager
+        manager = get_task_manager()
+        result = manager.cleanup_redis_failed_jobs()
+
+        return jsonify({
+            'success': True,
+            'data': result
+        })
+
+    except Exception as e:
+        logger.error(f"清理失败任务失败: {str(e)}")
+        return jsonify({'success': False, 'error': '清理失败任务失败'}), 500
+
+
+@admin_bp.route('/tasks/cleanup-expired', methods=['POST'])
+@admin_required
+@log_api_request("清理过期任务")
+def cleanup_expired_tasks():
+    """
+    清理过期任务记录
+    """
+    data = request.json or {}
+    max_age_days = data.get('max_age_days', 7)
+
+    try:
+        from services.task_queue_manager import get_task_manager
+        manager = get_task_manager()
+        result = manager.cleanup_expired_tasks(max_age_days=max_age_days)
+
+        return jsonify({
+            'success': True,
+            'data': result
+        })
+
+    except Exception as e:
+        logger.error(f"清理过期任务失败: {str(e)}")
+        return jsonify({'success': False, 'error': '清理过期任务失败'}), 500
+
+
+@admin_bp.route('/tasks/stats', methods=['GET'])
+@admin_required
+@log_api_request("获取任务统计")
+def get_task_stats():
+    """
+    获取任务队列统计信息
+    """
+    try:
+        from services.task_queue_manager import get_task_manager
+        manager = get_task_manager()
+
+        db = SessionLocal()
+        try:
+            # 按状态统计任务数
+            from sqlalchemy import func
+            from models import PublishTask
+
+            stats = {
+                'by_status': {},
+                'total': 0,
+                'recent_failed': []
+            }
+
+            # 各状态统计
+            status_counts = db.query(
+                PublishTask.status,
+                func.count(PublishTask.id)
+            ).group_by(PublishTask.status).all()
+
+            for status, count in status_counts:
+                stats['by_status'][status] = count
+                stats['total'] += count
+
+            # 最近失败的任务
+            recent_failed = db.query(PublishTask).filter(
+                PublishTask.status == 'failed'
+            ).order_by(PublishTask.created_at.desc()).limit(10).all()
+
+            stats['recent_failed'] = [
+                {
+                    'id': task.id,
+                    'task_id': task.task_id,
+                    'title': task.article_title[:50] if task.article_title else '',
+                    'error': task.error_message,
+                    'created_at': task.created_at.isoformat() if task.created_at else None
+                }
+                for task in recent_failed
+            ]
+
+            # 队列统计
+            stats['queue'] = manager.get_queue_stats()
+
+            return jsonify({
+                'success': True,
+                'data': stats
+            })
+
+        finally:
+            db.close()
+
+    except Exception as e:
+        logger.error(f"获取任务统计失败: {str(e)}")
+        return jsonify({'success': False, 'error': '获取任务统计失败'}), 500

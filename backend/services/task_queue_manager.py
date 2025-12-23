@@ -675,6 +675,254 @@ class TaskQueueManager:
             }
 
 
+    @log_service_call("同步任务状态")
+    def sync_task_status_with_redis(self) -> Dict:
+        """
+        同步数据库任务状态与Redis中的RQ任务状态
+        处理那些在数据库中标记为queued/running但实际上已在Redis中失败或消失的任务
+
+        Returns:
+            同步结果
+        """
+        try:
+            db = get_db_session()
+            try:
+                synced_count = 0
+                error_count = 0
+
+                # 查找所有queued或running状态的任务
+                stuck_tasks = db.query(PublishTask).filter(
+                    PublishTask.status.in_(['queued', 'running'])
+                ).all()
+
+                logger.info(f"[任务同步] 发现 {len(stuck_tasks)} 个待检查任务")
+
+                for task in stuck_tasks:
+                    try:
+                        # 检查Redis中的任务状态
+                        try:
+                            job = Job.fetch(task.task_id, connection=self.redis)
+                            job_status = job.get_status()
+
+                            # 如果RQ任务已失败
+                            if job_status == 'failed':
+                                task.status = 'failed'
+                                task.error_message = '任务执行失败(RQ)'
+                                task.completed_at = datetime.now()
+                                synced_count += 1
+                                logger.info(f"[任务同步] 任务 {task.task_id} 状态同步: queued/running -> failed")
+
+                            # 如果RQ任务已完成但数据库未更新
+                            elif job_status == 'finished':
+                                task.status = 'success'
+                                task.completed_at = datetime.now()
+                                synced_count += 1
+                                logger.info(f"[任务同步] 任务 {task.task_id} 状态同步: queued/running -> success")
+
+                        except Exception as e:
+                            # 任务在Redis中不存在，可能已被清理
+                            # 检查任务创建时间，如果超过1小时还在queued/running，标记为失败
+                            if task.created_at:
+                                age_hours = (datetime.now() - task.created_at).total_seconds() / 3600
+                                if age_hours > 1:
+                                    task.status = 'failed'
+                                    task.error_message = '任务超时或Worker异常'
+                                    task.completed_at = datetime.now()
+                                    synced_count += 1
+                                    logger.info(f"[任务同步] 任务 {task.task_id} 超时标记为失败 (已等待 {age_hours:.1f} 小时)")
+
+                    except Exception as e:
+                        logger.error(f"[任务同步] 处理任务 {task.task_id} 失败: {e}")
+                        error_count += 1
+
+                db.commit()
+
+                logger.info(f"[任务同步] 完成: 同步 {synced_count} 个, 错误 {error_count} 个")
+
+                return {
+                    'success': True,
+                    'synced_count': synced_count,
+                    'error_count': error_count,
+                    'message': f'同步了 {synced_count} 个任务状态'
+                }
+
+            finally:
+                db.close()
+
+        except Exception as e:
+            logger.error(f"[任务同步] 失败: {e}", exc_info=True)
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    @log_service_call("清理过期任务")
+    def cleanup_expired_tasks(
+        self,
+        max_age_days: int = 7,
+        status_filter: List[str] = None
+    ) -> Dict:
+        """
+        清理过期的任务记录
+
+        Args:
+            max_age_days: 任务最大保留天数，超过此天数的任务将被清理
+            status_filter: 要清理的状态列表，默认为 ['success', 'failed', 'cancelled']
+
+        Returns:
+            清理结果
+        """
+        from datetime import timedelta
+
+        if status_filter is None:
+            status_filter = ['success', 'failed', 'cancelled']
+
+        try:
+            db = get_db_session()
+            try:
+                cutoff_date = datetime.now() - timedelta(days=max_age_days)
+
+                # 查找过期任务
+                expired_tasks = db.query(PublishTask).filter(
+                    PublishTask.status.in_(status_filter),
+                    PublishTask.created_at < cutoff_date
+                ).all()
+
+                deleted_count = 0
+                redis_cleaned = 0
+
+                for task in expired_tasks:
+                    try:
+                        # 尝试清理Redis中的任务数据
+                        try:
+                            job = Job.fetch(task.task_id, connection=self.redis)
+                            job.delete()
+                            redis_cleaned += 1
+                        except:
+                            pass  # 任务可能已不在Redis中
+
+                        # 删除数据库记录
+                        db.delete(task)
+                        deleted_count += 1
+
+                    except Exception as e:
+                        logger.error(f"[清理任务] 删除任务 {task.task_id} 失败: {e}")
+
+                db.commit()
+
+                logger.info(f"[清理任务] 完成: 删除 {deleted_count} 个过期任务, Redis清理 {redis_cleaned} 个")
+
+                return {
+                    'success': True,
+                    'deleted_count': deleted_count,
+                    'redis_cleaned': redis_cleaned,
+                    'cutoff_date': cutoff_date.isoformat(),
+                    'message': f'清理了 {deleted_count} 个超过 {max_age_days} 天的任务'
+                }
+
+            finally:
+                db.close()
+
+        except Exception as e:
+            logger.error(f"[清理任务] 失败: {e}", exc_info=True)
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    @log_service_call("清理Redis失败队列")
+    def cleanup_redis_failed_jobs(self) -> Dict:
+        """
+        清理Redis中的失败任务队列
+
+        Returns:
+            清理结果
+        """
+        try:
+            cleaned_count = 0
+            queues_cleaned = []
+
+            # 获取所有失败队列
+            failed_keys = self.redis.keys('rq:failed:*')
+
+            for key in failed_keys:
+                try:
+                    key_str = key.decode('utf-8') if isinstance(key, bytes) else key
+                    # 获取失败队列中的任务数
+                    count = self.redis.zcard(key_str)
+
+                    if count > 0:
+                        # 清空失败队列
+                        self.redis.delete(key_str)
+                        cleaned_count += count
+                        queues_cleaned.append({
+                            'queue': key_str,
+                            'count': count
+                        })
+                        logger.info(f"[Redis清理] 清理失败队列 {key_str}: {count} 个任务")
+
+                except Exception as e:
+                    logger.error(f"[Redis清理] 清理队列 {key} 失败: {e}")
+
+            # 清理孤立的任务结果
+            result_keys = self.redis.keys('rq:results:*')
+            result_cleaned = 0
+            for key in result_keys:
+                try:
+                    self.redis.delete(key)
+                    result_cleaned += 1
+                except:
+                    pass
+
+            logger.info(f"[Redis清理] 完成: 清理 {cleaned_count} 个失败任务, {result_cleaned} 个结果记录")
+
+            return {
+                'success': True,
+                'failed_jobs_cleaned': cleaned_count,
+                'results_cleaned': result_cleaned,
+                'queues': queues_cleaned,
+                'message': f'清理了 {cleaned_count} 个Redis失败任务'
+            }
+
+        except Exception as e:
+            logger.error(f"[Redis清理] 失败: {e}", exc_info=True)
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    def run_maintenance(self) -> Dict:
+        """
+        运行完整的维护任务：
+        1. 同步任务状态
+        2. 清理Redis失败队列
+        3. 清理过期任务（默认7天）
+
+        Returns:
+            维护结果汇总
+        """
+        logger.info("[维护任务] ========== 开始执行维护任务 ==========")
+
+        results = {}
+
+        # 1. 同步任务状态
+        results['sync'] = self.sync_task_status_with_redis()
+
+        # 2. 清理Redis失败队列
+        results['redis_cleanup'] = self.cleanup_redis_failed_jobs()
+
+        # 3. 清理过期任务
+        results['expired_cleanup'] = self.cleanup_expired_tasks(max_age_days=7)
+
+        logger.info("[维护任务] ========== 维护任务执行完成 ==========")
+
+        return {
+            'success': True,
+            'timestamp': datetime.now().isoformat(),
+            'results': results
+        }
+
+
 # 全局TaskQueueManager实例
 _task_manager = None
 
@@ -695,3 +943,11 @@ def get_task_manager(redis_client: redis.Redis = None) -> TaskQueueManager:
         _task_manager = TaskQueueManager(redis_client)
 
     return _task_manager
+
+
+def run_scheduled_maintenance():
+    """
+    定期维护任务的入口函数（供RQ Scheduler调用）
+    """
+    manager = get_task_manager()
+    return manager.run_maintenance()
