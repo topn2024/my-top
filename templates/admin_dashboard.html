@@ -1048,6 +1048,11 @@
                             </tbody>
                         </table>
                     </div>
+                    <!-- 分页 -->
+                    <div id="usersPagination" class="admin-pagination" style="display: none;">
+                        <div id="usersPageInfo" class="admin-pagination-info"></div>
+                        <div id="usersPageButtons" class="admin-pagination-buttons"></div>
+                    </div>
                 </div>
             </div>
 
@@ -1205,6 +1210,11 @@
                                 <!-- 工作流数据将在这里显示 -->
                             </tbody>
                         </table>
+                    </div>
+                    <!-- 分页 -->
+                    <div id="workflowsPagination" class="admin-pagination" style="display: none;">
+                        <div id="workflowsPageInfo" class="admin-pagination-info"></div>
+                        <div id="workflowsPageButtons" class="admin-pagination-buttons"></div>
                     </div>
                 </div>
             </div>
@@ -1864,6 +1874,19 @@
         }
 
         // ============================================================================
+        // 通用分页变量
+        // ============================================================================
+        let usersCurrentPage = 1;
+        let usersPageSize = 10;
+        let usersTotalPages = 1;
+        let usersTotal = 0;
+
+        let workflowsCurrentPage = 1;
+        let workflowsPageSize = 10;
+        let workflowsTotalPages = 1;
+        let workflowsTotal = 0;
+
+        // ============================================================================
         // 发布管理功能
         // ============================================================================
         let publishingCurrentPage = 1;
@@ -1973,14 +1996,26 @@
             }).join('');
         }
 
-        // 渲染分页
-        function renderPublishingPagination(total, currentPage, totalPages) {
-            const pageInfo = document.getElementById('publishingPageInfo');
-            const pageButtons = document.getElementById('publishingPageButtons');
+        // ============================================================================
+        // 通用分页渲染函数
+        // ============================================================================
+        function renderPagination(prefix, total, currentPage, totalPages, pageSize, goToPageFunc) {
+            const pageInfo = document.getElementById(`${prefix}PageInfo`);
+            const pageButtons = document.getElementById(`${prefix}PageButtons`);
+            const pagination = document.getElementById(`${prefix}Pagination`);
+
+            // 如果总数小于等于10，隐藏分页
+            if (total <= 10) {
+                if (pagination) pagination.style.display = 'none';
+                return;
+            }
+
+            // 显示分页
+            if (pagination) pagination.style.display = 'flex';
 
             if (pageInfo) {
-                const start = (currentPage - 1) * publishingPageSize + 1;
-                const end = Math.min(currentPage * publishingPageSize, total);
+                const start = (currentPage - 1) * pageSize + 1;
+                const end = Math.min(currentPage * pageSize, total);
                 pageInfo.textContent = `显示 ${start}-${end} 条，共 ${total} 条`;
             }
 
@@ -1989,13 +2024,13 @@
 
                 // 上一页
                 buttonsHtml += `<button class="admin-page-btn" ${currentPage <= 1 ? 'disabled' : ''}
-                    onclick="goToPublishingPage(${currentPage - 1})">上一页</button>`;
+                    onclick="${goToPageFunc}(${currentPage - 1})">上一页</button>`;
 
                 // 页码
                 for (let i = 1; i <= totalPages; i++) {
                     if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
                         buttonsHtml += `<button class="admin-page-btn ${i === currentPage ? 'active' : ''}"
-                            onclick="goToPublishingPage(${i})">${i}</button>`;
+                            onclick="${goToPageFunc}(${i})">${i}</button>`;
                     } else if (i === currentPage - 3 || i === currentPage + 3) {
                         buttonsHtml += `<span style="padding: 0 8px;">...</span>`;
                     }
@@ -2003,10 +2038,15 @@
 
                 // 下一页
                 buttonsHtml += `<button class="admin-page-btn" ${currentPage >= totalPages ? 'disabled' : ''}
-                    onclick="goToPublishingPage(${currentPage + 1})">下一页</button>`;
+                    onclick="${goToPageFunc}(${currentPage + 1})">下一页</button>`;
 
                 pageButtons.innerHTML = buttonsHtml;
             }
+        }
+
+        // 渲染发布历史分页
+        function renderPublishingPagination(total, currentPage, totalPages) {
+            renderPagination('publishing', total, currentPage, totalPages, publishingPageSize, 'goToPublishingPage');
         }
 
         // 跳转到指定页
@@ -2894,7 +2934,7 @@
         }
 
         // 加载用户数据
-        async function loadUsersData(page = 1, limit = 20) {
+        async function loadUsersData(page = 1, limit = usersPageSize) {
             const loading = document.getElementById('usersLoading');
             const content = document.getElementById('usersContent');
 
@@ -2914,6 +2954,9 @@
                 }
 
                 const users = result.users;
+                usersTotal = result.total || users.length;
+                usersTotalPages = result.pages || Math.ceil(usersTotal / usersPageSize);
+                usersCurrentPage = page;
 
                 if (loading) loading.style.display = 'none';
                 if (content) {
@@ -2937,6 +2980,9 @@
                             </tr>
                         `).join('');
                     }
+
+                    // 渲染分页
+                    renderUsersPagination(usersTotal, usersCurrentPage, usersTotalPages);
                 }
 
             } catch (error) {
@@ -2949,6 +2995,17 @@
                 }
                 showNotification('加载用户数据失败: ' + error.message, 'error');
             }
+        }
+
+        // 渲染用户分页
+        function renderUsersPagination(total, currentPage, totalPages) {
+            renderPagination('users', total, currentPage, totalPages, usersPageSize, 'goToUsersPage');
+        }
+
+        // 跳转到用户指定页
+        function goToUsersPage(page) {
+            if (page < 1 || page > usersTotalPages) return;
+            loadUsersData(page);
         }
 
         // 编辑用户
@@ -2998,7 +3055,7 @@
         // ========================================================================
 
         // 加载工作流数据
-        async function loadWorkflowsData(page = 1, limit = 20) {
+        async function loadWorkflowsData(page = 1, limit = workflowsPageSize) {
             const loading = document.getElementById('workflowsLoading');
             const content = document.getElementById('workflowsContent');
 
@@ -3018,6 +3075,9 @@
                 }
 
                 const workflows = result.workflows;
+                workflowsTotal = result.total || workflows.length;
+                workflowsTotalPages = result.pages || Math.ceil(workflowsTotal / workflowsPageSize);
+                workflowsCurrentPage = page;
 
                 if (loading) loading.style.display = 'none';
                 if (content) {
@@ -3050,6 +3110,9 @@
                             `;
                         }).join('');
                     }
+
+                    // 渲染分页
+                    renderWorkflowsPagination(workflowsTotal, workflowsCurrentPage, workflowsTotalPages);
                 }
 
             } catch (error) {
@@ -3062,6 +3125,17 @@
                 }
                 showNotification('加载工作流数据失败: ' + error.message, 'error');
             }
+        }
+
+        // 渲染工作流分页
+        function renderWorkflowsPagination(total, currentPage, totalPages) {
+            renderPagination('workflows', total, currentPage, totalPages, workflowsPageSize, 'goToWorkflowsPage');
+        }
+
+        // 跳转到工作流指定页
+        function goToWorkflowsPage(page) {
+            if (page < 1 || page > workflowsTotalPages) return;
+            loadWorkflowsData(page);
         }
 
         // 查看工作流详情
