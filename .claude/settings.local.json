@@ -81,7 +81,9 @@
       "Bash(git remote set-url origin https://github.com/topn2024/my-top.git)",
       "Bash(git pull origin main)",
       "Bash(git config --global http.sslverify false)",
-      "Bash(git remote set-url origin git@github.com:topn2024/my-top.git)"
+      "Bash(git remote set-url origin git@github.com:topn2024/my-top.git)",
+      "Bash(git -C \"D:\\\\code\\\\TOP_N\" status --short)",
+      "Bash(git -C:*)"
     ],
     "deny": [],
     "ask": []

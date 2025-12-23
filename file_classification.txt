@@ -1,0 +1,256 @@
+# 根目录文件分类
+
+## 1. 文档类 - 移到 docs/
+
+### docs/deployment/ (部署相关文档)
+DEPLOYMENT_GUIDE.md
+DEPLOYMENT_INSTRUCTIONS.md
+DEPLOYMENT_PACKAGE.md
+DEPLOYMENT_REPORT.md
+DEPLOYMENT_REPORT_20251222.md
+DEPLOYMENT_SUCCESS_REPORT.md
+DEPLOYMENT_SUMMARY.md
+DEPLOYMENT_SUMMARY.txt
+SERVER_DEPLOYMENT_GUIDE.md
+PRODUCTION_MONITORING_GUIDE.md
+MONITORING_CHECKLIST.md
+MONITORING_SCHEDULE.md
+MONITORING_REPORT_0H.md
+monitoring_log_20251222.md
+
+### docs/architecture/ (架构设计文档)
+ARCHITECTURE_CLEANUP_COMPLETE_REPORT.md
+ARCHITECTURE_FIX_SUMMARY.md
+FINAL_ARCHITECTURE_VERIFICATION.md
+API_ROUTING_REFACTORING.md
+REFACTORING_PLAN.md
+REFACTORING_PROGRESS.md
+REFACTORING_COMPLETE.md
+REFACTORING_EXECUTION_SUMMARY.md
+REFACTORING_STAGE1_COMPLETE.md
+REFACTORING_STAGE2_COMPLETE.md
+REFACTORING_ACCEPTANCE_REPORT.md
+REFACTORING_SUMMARY.md
+MIGRATION_COMPLETE_REPORT.md
+AUTH_MIGRATION_GUIDE.md
+
+### docs/reports/ (各种报告)
+BUG_FIX_REPORT_20251210.md
+CODE_CONFLICTS_REPORT.md
+CRITICAL_CONFLICTS_REPORT.md
+POST_MIGRATION_VERIFICATION_REPORT.md
+FINAL_TESTING_REPORT.md
+FINAL_DEPLOYMENT_REPORT.md
+FINAL_CONSISTENCY_CHECK.md
+FINAL_SOLUTION.md
+ISSUE_SUMMARY_20251210.md
+ISSUE_REPORT_*.md (全部)
+SERVER_WORKER_FIX_REPORT.md
+WORKER_ISSUE_FINAL_SUMMARY.md
+WORKER_ISSUE_REPORT.md
+DATABASE_INTEGRITY_REPORT.md
+FILE_UPLOAD_LOGGING_GUIDE.md
+PUBLISH_HISTORY_ISSUE_ANALYSIS.md
+PUBLISH_HISTORY_DATA_FLOW.md
+PUBLISH_STUCK_DIAGNOSIS.md
+ENHANCED_PUBLISH_SYSTEM.md
+CONCURRENT_SYSTEM_*.md (全部)
+
+### docs/guides/ (使用指南)
+DEVELOPMENT_WORKFLOW.md
+TESTING_GUIDE.md
+QUICK_REFERENCE.md
+QUICK_DEPLOY.md
+QUICK_DEPLOYMENT_STEPS.md
+QUICK_FIX_REFERENCE.md
+SYSTEM_USER_GUIDE.md
+GITHUB_SETUP_GUIDE.md
+SSH_SETUP_README.md
+PUSH_INSTRUCTIONS.md
+MYSQL_MIGRATION_README.md
+DATA_MIGRATION_GUIDE.md
+ZHIPU_AI_MIGRATION.md
+CONFIGURATION_GUIDE.md
+FRONTEND_STRUCTURE.md
+SERVICE_LAYER_CLEANUP.md
+
+### docs/backup/ (备份相关)
+BACKUP_20251215.md
+BACKUP_INFO.md
+BACKUP_README_20251215.md
+BACKUP_RECORD_20251218.md
+COMPLETE_BACKUP_REPORT_20251218.md
+
+### docs/misc/ (其他文档)
+PROJECT_CONFIG.md
+PROJECT_STATUS_SUMMARY.md
+P6_ARCHIVE_PLAN.md
+CODE_CLEANUP_CHECKLIST.md
+CODE_SYNC_ISSUE_ROOT_CAUSE.md
+SERVER_CODE_SYNC_REPORT.md
+DIRECTORY_INDEX.md
+DIRECTORY_STANDARD.md
+SERVER_ADDRESS_AUDIT.md
+ALL_LOG_CONFIGURATION.md
+CONSOLIDATED_LOG_FORMAT.md
+SERVER_DEBUG_LOG_ENABLED.md
+SYNC_OPERATION_REPORT.md
+TEMPLATE_MANAGEMENT_INTEGRATION_REPORT.md
+THREE_MODULE_PROMPT_SYSTEM_IMPLEMENTATION_STATUS.md
+ASYNC_PUBLISH_COMPLETE.md
+DATA_CONSOLIDATION_SUMMARY.md
+blueprints_fix_summary.md
+
+## 2. 脚本类 - 移到 scripts/
+
+### scripts/deployment/
+deploy_to_production.sh
+rollback_deployment.sh
+verify_production.sh
+deploy_to_server.sh
+deploy_to_server.bat
+deploy_fix_to_server.sh
+quick_deploy.sh
+push_to_github.sh
+server_backup.sh
+server_backup.ps1
+server_backup_simple.sh
+check_sync.sh
+
+### scripts/database/
+init_database.py
+migrate_publish_history.py
+
+### scripts/testing/
+check_and_fix_server_worker.py
+diagnose_worker_issue.py
+test_admin.py
+test_admin_simple.py
+test_api_simple.sh
+test_api.ps1
+test_async_publish.py
+test_blueprints_app.py
+test_browser_admin.py
+test_clear_tasks.py
+test_concurrent_system.sh
+test_encoding.py
+test_publish_debug.py
+test_session_debug.py
+test_task_api.py
+test_user_display.py
+test_zhipu_config.py
+
+### scripts/utils/
+add_publish_history_save.py
+add_user_display_batch.py
+fix_input_ai_models.py
+fix_platform_html.py
+fix_service_imports.py
+publish_fix.py
+deploy_async_publish.py
+deploy_enhanced_worker.py
+deploy_publish_fix.py
+cleanup_old_system.sh
+
+## 3. 临时/调试文件 - 移到 archive/temp/
+admin_dashboard_test.html
+admin_cookies.txt
+cookies.txt
+debug_admin.html
+debug_frontend.html
+debug_page.html
+debug_publish.html
+verify_clear_buttons.html
+publish.js.bak
+publish.js.fixed
+publish_worker_fixed.py
+test_consolidated_logs.md
+test_output.txt
+server.log
+nul
+_nul
+D:codeTOP_Nintegrity_check_report.txt
+D:workcodeTOP_Nbackendzhihu_auto_post.py
+D:workcodeTOP_Nplatform.html.bak
+frontend_integration_example.js
+
+## 4. 归档文件 - archive/backups/
+backup_local_20251209_234331.tar.gz
+
+## 5. 保留在根目录
+README.md
+.gitignore
+.env.example
+.env.template
+requirements.txt
+requirements_new.txt
+公司介绍.docx
+AI生成内容识别清单.docx
+readme-new.md.txt
+start.sh
+start_service.sh
+start_worker.bat
+CLEANUP_PLAN.md (当前文件)
+
+## 6. Backend目录需要清理的文件
+
+### 移到 scripts/deployment/
+deploy_auto_login.sh
+deploy_auto_login_ssh.sh
+deploy_auto_login_to_server.sh
+deploy_to_server.sh
+
+### 移到 scripts/database/
+init_db.py
+init_prompt_template_system.py
+init_prompt_template_system_fixed.py
+init_prompt_v2_db.py
+init_rbac_db.py
+create_admin.py
+
+### 移到 scripts/utils/
+comprehensive_code_check.py
+system_health_check.py
+upgrade_logging.py
+test_routes.py
+
+### 移到 docs/backend/
+DEPLOYMENT_GUIDE.md
+IMPLEMENTATION_SUMMARY.md
+MODIFICATION_SUMMARY.md
+VERIFICATION_CHECKLIST.md
+FILES_DELIVERED.txt
+部署完成确认单.md
+简易部署说明.txt
+
+### 保留在backend根目录
+app.py
+app_factory.py
+config.py
+models.py
+models_prompt_template.py
+auth.py
+database.py
+encryption.py
+logger_config.py
+gunicorn_config.py
+.env
+.env.example
+
+### 移到 backend/archive/legacy/
+app_with_upload.py
+app_with_upload.py.backup
+
+### 移到 backend/archive/old_code/
+enterprise_api.py (如果不再使用)
+csdn_wechat_login.py (如果不再使用)
+rbac_permissions.py (如果不再使用)
+
+### 移到 backend/scripts/
+start_workers.sh
+test_production_import.py
+run_migration.bat
+
+### 移到 backend/publishers/ (如果不在)
+zhihu_auto_post_enhanced.py
+zhihu_qr_login.py

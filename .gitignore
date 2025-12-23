@@ -80,3 +80,21 @@ chromedriver-*/
 
 # Archive
 archive/
+
+# Additional backup patterns
+*.backup_*
+*.before_*
+*.old
+*.fixed
+
+# Temporary files
+nul
+_nul
+*.tmp
+*.temp
+test_output.txt
+
+# Debug files
+debug_*.html
+admin_cookies.txt
+cookies.txt

@@ -1,0 +1,48 @@
+{
+  "web": {
+    "base_url": "http://39.105.12.124:3001",
+    "timeout": 60,
+    "retry": 3
+  },
+  "api": {
+    "base_url": "http://39.105.12.124:3001/api",
+    "timeout": 60,
+    "retry": 3,
+    "headers": {
+      "User-Agent": "TOP-N-Test-Client/1.0",
+      "Accept": "application/json, text/html",
+      "Content-Type": "application/json"
+    }
+  },
+  "database": {
+    "url": "sqlite:///test_topn.db",
+    "echo": false,
+    "pool_size": 5,
+    "max_overflow": 10
+  },
+  "ui": {
+    "headless": true,
+    "implicit_wait": 15,
+    "page_load_timeout": 60,
+    "browser": "chrome",
+    "window_size": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  "test": {
+    "parallel": false,
+    "coverage": false,
+    "retry": 2,
+    "timeout": 600,
+    "slow_test_threshold": 30
+  },
+  "ai": {
+    "provider": "zhipu",
+    "model": "glm-4-plus",
+    "api_key": "d6ac02f8c1f6f443cf81f3dae86fb095.7Qe6KOWcVDlDlqDJ",
+    "timeout": 120,
+    "max_tokens": 2000,
+    "temperature": 0.7
+  }
+}
