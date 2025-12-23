@@ -1262,7 +1262,9 @@ def publish_csdn():
                     platform='CSDN',
                     status='success' if success else 'failed',
                     url=article_url if success else '',
-                    message=message
+                    message=message,
+                    article_title=title,
+                    article_content=content
                 )
                 db.add(publish_record)
                 db.commit()
@@ -1301,7 +1303,9 @@ def publish_csdn():
                     user_id=user.id,
                     platform='CSDN',
                     status='failed',
-                    message=f'发布异常: {str(e)}'
+                    message=f'发布异常: {str(e)}',
+                    article_title=title,
+                    article_content=content
                 )
                 db.add(publish_record)
                 db.commit()

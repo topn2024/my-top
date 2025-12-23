@@ -399,7 +399,9 @@ def execute_publish_task(task_db_id: int) -> Dict:
                         platform=platform,
                         status='success',
                         url=result.get('url'),
-                        message='发布成功'
+                        message='发布成功',
+                        article_title=task_info.get('article_title'),
+                        article_content=task_info.get('article_content')
                     )
                     db.add(history_record)
                     db.commit()

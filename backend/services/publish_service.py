@@ -75,7 +75,9 @@ class PublishService:
                 platform='知乎',
                 status='success' if result.get('success') else 'failed',
                 url=result.get('url'),
-                message=result.get('message') or result.get('error')
+                message=result.get('message') or result.get('error'),
+                article_title=title,
+                article_content=content
             )
 
             logger.info(f'Published to Zhihu: {title}')
@@ -90,7 +92,9 @@ class PublishService:
                 article_id=article_id,
                 platform='知乎',
                 status='failed',
-                message=str(e)
+                message=str(e),
+                article_title=title,
+                article_content=content
             )
 
             raise
@@ -98,7 +102,9 @@ class PublishService:
     def _save_publish_history(self, user_id: int, article_id: int,
                              platform: str, status: str,
                              url: Optional[str] = None,
-                             message: Optional[str] = None):
+                             message: Optional[str] = None,
+                             article_title: Optional[str] = None,
+                             article_content: Optional[str] = None):
         """保存发布历史"""
         db = get_db_session()
         try:
@@ -112,7 +118,9 @@ class PublishService:
                 platform=platform,
                 status=status,
                 url=url,
-                message=message
+                message=message,
+                article_title=article_title,
+                article_content=article_content
             )
             db.add(history)
             db.commit()
