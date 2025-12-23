@@ -253,9 +253,54 @@
             margin-bottom: 24px;
         }
 
+        /* 图表容器样式 */
+        .chart-container {
+            position: relative;
+            height: 320px;
+            padding: 16px 0;
+        }
+
+        .chart-container canvas {
+            transition: opacity 0.3s ease;
+        }
+
+        .chart-container .admin-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
         @media (max-width: 1200px) {
             .admin-content-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                height: 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 240px;
+                padding: 12px 0;
+            }
+
+            .admin-card {
+                padding: 16px;
+            }
+
+            .admin-card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .admin-card-actions {
+                width: 100%;
+                justify-content: flex-start;
             }
         }
 
@@ -302,6 +347,13 @@
             background: #f8fafc;
             border-color: #3b82f6;
             color: #3b82f6;
+        }
+
+        .admin-card-action.active-period {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+            font-weight: 600;
         }
 
         .admin-table {
@@ -493,6 +545,245 @@
                 text-align: center;
             }
         }
+
+        /* 表单输入样式 */
+        .admin-input {
+            padding: 10px 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #1e293b;
+            background: white;
+            transition: all 0.3s ease;
+            min-width: 140px;
+        }
+
+        .admin-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .admin-input::placeholder {
+            color: #94a3b8;
+        }
+
+        /* 模态框样式 */
+        .admin-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .admin-modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .admin-modal-content {
+            position: relative;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .admin-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f8fafc;
+        }
+
+        .admin-modal-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .admin-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #64748b;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .admin-modal-close:hover {
+            background: #e5e7eb;
+            color: #1e293b;
+        }
+
+        .admin-modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            max-height: calc(85vh - 140px);
+        }
+
+        .admin-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 24px;
+            border-top: 1px solid #e5e7eb;
+            background: #f8fafc;
+        }
+
+        /* 分页样式 */
+        .admin-pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 16px;
+        }
+
+        .admin-pagination-info {
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        .admin-pagination-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .admin-page-btn {
+            padding: 8px 14px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            color: #475569;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .admin-page-btn:hover:not(:disabled) {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .admin-page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .admin-page-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        /* 筛选工具栏样式 */
+        .admin-filter-toolbar {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .admin-filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .admin-filter-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        .admin-filter-actions {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        /* 发布状态样式 */
+        .admin-status-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .admin-status-failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .admin-status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        /* 操作按钮组 */
+        .admin-action-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .admin-action-btn {
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .admin-action-btn:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .admin-action-btn.primary {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .admin-action-btn.primary:hover {
+            background: #2563eb;
+        }
     </style>
 </head>
 <body>
@@ -664,14 +955,20 @@
                 <div class="admin-content-grid">
                     <div class="admin-card">
                         <div class="admin-card-header">
-                            <h3 class="admin-card-title">文章生成趋势</h3>
+                            <h3 class="admin-card-title">📈 文章生成趋势</h3>
                             <div class="admin-card-actions">
-                                <button class="admin-card-action" onclick="changeChartPeriod('week')">周</button>
-                                <button class="admin-card-action" onclick="changeChartPeriod('month')">月</button>
-                                <button class="admin-card-action" onclick="changeChartPeriod('year')">年</button>
+                                <button class="admin-card-action active-period" data-period="week" onclick="changeChartPeriod('week')">周</button>
+                                <button class="admin-card-action" data-period="month" onclick="changeChartPeriod('month')">月</button>
+                                <button class="admin-card-action" data-period="year" onclick="changeChartPeriod('year')">年</button>
                             </div>
                         </div>
-                        <canvas id="articleChart" width="400" height="200"></canvas>
+                        <div class="chart-container">
+                            <div id="chartLoading" class="admin-loading" style="display: none;">
+                                <div class="admin-spinner"></div>
+                                <p style="margin-top: 12px; color: #64748b; font-size: 0.9rem;">加载中...</p>
+                            </div>
+                            <canvas id="articleChart"></canvas>
+                        </div>
                     </div>
 
                     <div class="admin-card">
@@ -914,131 +1211,146 @@
 
             <div id="publishing" class="admin-section" style="display: none;">
                 <!-- 发布统计卡片 -->
-                <div class="admin-stats-grid" style="margin-bottom: 24px;">
+                <div class="admin-stats-grid" style="margin-bottom: 20px;">
                     <div class="admin-stat-card">
-                        <div class="admin-stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">📊</div>
-                        <div class="admin-stat-content">
-                            <div class="admin-stat-value" id="publishTotalAttempts">0</div>
-                            <div class="admin-stat-label">总发布次数</div>
+                        <div class="admin-stat-header">
+                            <div class="admin-stat-title">总发布次数</div>
+                            <div class="admin-stat-icon" style="background: #dbeafe; color: #1e40af;">📊</div>
+                        </div>
+                        <div class="admin-stat-value" id="publishTotalAttempts">0</div>
+                        <div class="admin-stat-change positive" id="publishTotalChange">
+                            <span>-</span> 本周数据
                         </div>
                     </div>
+
                     <div class="admin-stat-card">
-                        <div class="admin-stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">✅</div>
-                        <div class="admin-stat-content">
-                            <div class="admin-stat-value" id="publishSuccessCount">0</div>
-                            <div class="admin-stat-label">发布成功</div>
+                        <div class="admin-stat-header">
+                            <div class="admin-stat-title">发布成功</div>
+                            <div class="admin-stat-icon" style="background: #dcfce7; color: #166534;">✅</div>
+                        </div>
+                        <div class="admin-stat-value" id="publishSuccessCount">0</div>
+                        <div class="admin-stat-change positive" id="publishSuccessChange">
+                            <span>-</span> 本周数据
                         </div>
                     </div>
+
                     <div class="admin-stat-card">
-                        <div class="admin-stat-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">❌</div>
-                        <div class="admin-stat-content">
-                            <div class="admin-stat-value" id="publishFailedCount">0</div>
-                            <div class="admin-stat-label">发布失败</div>
+                        <div class="admin-stat-header">
+                            <div class="admin-stat-title">发布失败</div>
+                            <div class="admin-stat-icon" style="background: #fee2e2; color: #991b1b;">❌</div>
+                        </div>
+                        <div class="admin-stat-value" id="publishFailedCount">0</div>
+                        <div class="admin-stat-change negative" id="publishFailedChange">
+                            <span>-</span> 本周数据
                         </div>
                     </div>
+
                     <div class="admin-stat-card">
-                        <div class="admin-stat-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">📈</div>
-                        <div class="admin-stat-content">
-                            <div class="admin-stat-value" id="publishSuccessRate">0%</div>
-                            <div class="admin-stat-label">成功率</div>
+                        <div class="admin-stat-header">
+                            <div class="admin-stat-title">成功率</div>
+                            <div class="admin-stat-icon" style="background: #f3e8ff; color: #7c3aed;">📈</div>
+                        </div>
+                        <div class="admin-stat-value" id="publishSuccessRate">0%</div>
+                        <div class="admin-stat-change positive" id="publishRateChange">
+                            <span>-</span> 本周数据
                         </div>
                     </div>
                 </div>
 
                 <!-- 筛选工具栏 -->
-                <div class="admin-card" style="margin-bottom: 24px;">
+                <div class="admin-card" style="margin-bottom: 20px;">
                     <div class="admin-card-header">
-                        <h3>筛选条件</h3>
+                        <h3 class="admin-card-title">筛选条件</h3>
+                        <div class="admin-card-actions">
+                            <button class="admin-card-action" onclick="resetPublishFilters()">重置</button>
+                        </div>
                     </div>
-                    <div class="admin-card-body">
-                        <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
-                            <div>
-                                <label style="font-size: 0.875rem; color: #64748b;">平台</label>
-                                <select id="publishPlatformFilter" class="admin-input" style="margin-top: 4px; min-width: 120px;">
-                                    <option value="">全部平台</option>
-                                    <option value="知乎">知乎</option>
-                                    <option value="zhihu">zhihu</option>
-                                    <option value="CSDN">CSDN</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="font-size: 0.875rem; color: #64748b;">状态</label>
-                                <select id="publishStatusFilter" class="admin-input" style="margin-top: 4px; min-width: 120px;">
-                                    <option value="">全部状态</option>
-                                    <option value="success">成功</option>
-                                    <option value="failed">失败</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="font-size: 0.875rem; color: #64748b;">开始日期</label>
-                                <input type="date" id="publishDateFrom" class="admin-input" style="margin-top: 4px;">
-                            </div>
-                            <div>
-                                <label style="font-size: 0.875rem; color: #64748b;">结束日期</label>
-                                <input type="date" id="publishDateTo" class="admin-input" style="margin-top: 4px;">
-                            </div>
-                            <div style="display: flex; gap: 8px; margin-top: 20px;">
-                                <button onclick="searchPublishHistory()" class="admin-btn admin-btn-primary">🔍 搜索</button>
-                                <button onclick="resetPublishFilters()" class="admin-btn admin-btn-secondary">🔄 重置</button>
-                            </div>
+                    <div class="admin-filter-toolbar">
+                        <div class="admin-filter-group">
+                            <label class="admin-filter-label">平台</label>
+                            <select id="publishPlatformFilter" class="admin-input">
+                                <option value="">全部平台</option>
+                                <option value="知乎">知乎</option>
+                                <option value="zhihu">zhihu</option>
+                                <option value="CSDN">CSDN</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-group">
+                            <label class="admin-filter-label">状态</label>
+                            <select id="publishStatusFilter" class="admin-input">
+                                <option value="">全部状态</option>
+                                <option value="success">成功</option>
+                                <option value="failed">失败</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-group">
+                            <label class="admin-filter-label">开始日期</label>
+                            <input type="date" id="publishDateFrom" class="admin-input">
+                        </div>
+                        <div class="admin-filter-group">
+                            <label class="admin-filter-label">结束日期</label>
+                            <input type="date" id="publishDateTo" class="admin-input">
+                        </div>
+                        <div class="admin-filter-actions">
+                            <button onclick="searchPublishHistory()" class="admin-btn admin-btn-primary">搜索</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- 发布历史表格 -->
                 <div class="admin-card">
-                    <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3>📋 发布历史记录</h3>
-                        <button onclick="refreshPublishingData()" class="admin-btn admin-btn-secondary">🔄 刷新</button>
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">发布历史记录</h3>
+                        <div class="admin-card-actions">
+                            <button class="admin-card-action" onclick="refreshPublishingData()">刷新</button>
+                        </div>
                     </div>
-                    <div class="admin-card-body">
-                        <div id="publishingLoading" class="admin-loading" style="display: none;">
-                            <div class="admin-loading-spinner"></div>
-                            <span>加载中...</span>
-                        </div>
-                        <div id="publishingContent">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 5%;">ID</th>
-                                        <th style="width: 25%;">文章标题</th>
-                                        <th style="width: 10%;">用户</th>
-                                        <th style="width: 10%;">平台</th>
-                                        <th style="width: 10%;">状态</th>
-                                        <th style="width: 20%;">发布时间</th>
-                                        <th style="width: 20%;">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="publishHistoryTableBody">
-                                    <tr>
-                                        <td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;">
-                                            暂无发布记录
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <!-- 分页 -->
-                        <div id="publishingPagination" class="admin-pagination" style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center;">
-                            <div id="publishingPageInfo" style="color: #64748b; font-size: 0.875rem;"></div>
-                            <div id="publishingPageButtons" style="display: flex; gap: 8px;"></div>
-                        </div>
+                    <div class="admin-loading" id="publishingLoading" style="display: none;">
+                        <div class="admin-spinner"></div>
+                    </div>
+                    <div id="publishingContent">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>文章标题</th>
+                                    <th>用户</th>
+                                    <th>平台</th>
+                                    <th>状态</th>
+                                    <th>发布时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="publishHistoryTableBody">
+                                <tr>
+                                    <td colspan="7" class="admin-empty-state" style="padding: 40px;">
+                                        <div class="admin-empty-state-icon">📤</div>
+                                        <p>暂无发布记录</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- 分页 -->
+                    <div id="publishingPagination" class="admin-pagination">
+                        <div id="publishingPageInfo" class="admin-pagination-info"></div>
+                        <div id="publishingPageButtons" class="admin-pagination-buttons"></div>
                     </div>
                 </div>
 
                 <!-- 文章内容查看模态框 -->
                 <div id="publishContentModal" class="admin-modal" style="display: none;">
                     <div class="admin-modal-overlay" onclick="closePublishContentModal()"></div>
-                    <div class="admin-modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+                    <div class="admin-modal-content" style="max-width: 800px;">
                         <div class="admin-modal-header">
                             <h3 id="publishContentModalTitle">文章内容</h3>
                             <button class="admin-modal-close" onclick="closePublishContentModal()">&times;</button>
                         </div>
                         <div class="admin-modal-body">
-                            <div id="publishContentModalBody" style="white-space: pre-wrap; line-height: 1.8; padding: 16px; background: #f8fafc; border-radius: 8px;"></div>
+                            <div id="publishContentModalBody" style="white-space: pre-wrap; line-height: 1.8;"></div>
                         </div>
                         <div class="admin-modal-footer">
-                            <button onclick="copyPublishContent()" class="admin-btn admin-btn-secondary">📋 复制内容</button>
+                            <button onclick="copyPublishContent()" class="admin-btn admin-btn-secondary">复制内容</button>
                             <button onclick="closePublishContentModal()" class="admin-btn admin-btn-primary">关闭</button>
                         </div>
                     </div>
@@ -1549,6 +1861,221 @@
 
         function exportAnalytics() {
             showNotification('数据分析导出功能开发中...', 'info');
+        }
+
+        // ============================================================================
+        // 发布管理功能
+        // ============================================================================
+        let publishingCurrentPage = 1;
+        let publishingPageSize = 20;
+        let publishingTotalPages = 1;
+        let publishingHistoryData = [];
+        let currentPublishContent = null;
+
+        // 加载发布数据
+        async function loadPublishingData() {
+            const loading = document.getElementById('publishingLoading');
+            const content = document.getElementById('publishingContent');
+
+            if (loading) loading.style.display = 'flex';
+
+            try {
+                // 获取筛选条件
+                const platform = document.getElementById('publishPlatformFilter')?.value || '';
+                const status = document.getElementById('publishStatusFilter')?.value || '';
+                const dateFrom = document.getElementById('publishDateFrom')?.value || '';
+                const dateTo = document.getElementById('publishDateTo')?.value || '';
+
+                // 构建查询参数
+                const params = new URLSearchParams({
+                    page: publishingCurrentPage,
+                    limit: publishingPageSize
+                });
+                if (platform) params.append('platform', platform);
+                if (status) params.append('status', status);
+                if (dateFrom) params.append('date_from', dateFrom);
+                if (dateTo) params.append('date_to', dateTo);
+
+                // 并行加载历史记录和统计数据
+                const [historyRes, statsRes] = await Promise.all([
+                    fetch(`/api/admin/publishing/history?${params}`),
+                    fetch('/api/admin/publishing/stats?period=all')
+                ]);
+
+                const historyData = await historyRes.json();
+                const statsData = await statsRes.json();
+
+                if (loading) loading.style.display = 'none';
+
+                // 更新统计卡片
+                if (statsData.success && statsData.data) {
+                    document.getElementById('publishTotalAttempts').textContent = statsData.data.total_attempts || 0;
+                    document.getElementById('publishSuccessCount').textContent = statsData.data.successful || 0;
+                    document.getElementById('publishFailedCount').textContent = statsData.data.failed || 0;
+                    document.getElementById('publishSuccessRate').textContent = (statsData.data.success_rate || 0) + '%';
+                }
+
+                // 更新表格
+                if (historyData.success && historyData.history) {
+                    publishingHistoryData = historyData.history;
+                    publishingTotalPages = historyData.pages || 1;
+                    renderPublishHistoryTable(historyData.history);
+                    renderPublishingPagination(historyData.total, historyData.page, historyData.pages);
+                } else {
+                    renderPublishHistoryTable([]);
+                }
+
+            } catch (error) {
+                console.error('加载发布数据失败:', error);
+                if (loading) loading.style.display = 'none';
+                showNotification('加载发布数据失败', 'error');
+            }
+        }
+
+        // 渲染发布历史表格
+        function renderPublishHistoryTable(history) {
+            const tbody = document.getElementById('publishHistoryTableBody');
+            if (!tbody) return;
+
+            if (!history || history.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="admin-empty-state" style="padding: 40px;">
+                            <div class="admin-empty-state-icon">📤</div>
+                            <p>暂无发布记录</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = history.map(item => {
+                const statusClass = item.status === 'success' ? 'admin-status-success' : 'admin-status-failed';
+                const statusText = item.status === 'success' ? '成功' : '失败';
+                const publishTime = item.published_at ? new Date(item.published_at).toLocaleString('zh-CN') : 'N/A';
+                const title = item.article_title || '未知标题';
+                const displayTitle = title.length > 30 ? title.substring(0, 30) + '...' : title;
+
+                return `
+                    <tr>
+                        <td>${item.id}</td>
+                        <td title="${escapeHtml(title)}">${escapeHtml(displayTitle)}</td>
+                        <td>${escapeHtml(item.username || 'N/A')}</td>
+                        <td>${escapeHtml(item.platform || 'N/A')}</td>
+                        <td><span class="admin-status-badge ${statusClass}">${statusText}</span></td>
+                        <td>${publishTime}</td>
+                        <td class="admin-action-group">
+                            ${item.article_content ? `<button onclick="viewPublishContent(${item.id})" class="admin-action-btn">查看</button>` : ''}
+                            ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" class="admin-action-btn primary">链接</a>` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 渲染分页
+        function renderPublishingPagination(total, currentPage, totalPages) {
+            const pageInfo = document.getElementById('publishingPageInfo');
+            const pageButtons = document.getElementById('publishingPageButtons');
+
+            if (pageInfo) {
+                const start = (currentPage - 1) * publishingPageSize + 1;
+                const end = Math.min(currentPage * publishingPageSize, total);
+                pageInfo.textContent = `显示 ${start}-${end} 条，共 ${total} 条`;
+            }
+
+            if (pageButtons) {
+                let buttonsHtml = '';
+
+                // 上一页
+                buttonsHtml += `<button class="admin-page-btn" ${currentPage <= 1 ? 'disabled' : ''}
+                    onclick="goToPublishingPage(${currentPage - 1})">上一页</button>`;
+
+                // 页码
+                for (let i = 1; i <= totalPages; i++) {
+                    if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                        buttonsHtml += `<button class="admin-page-btn ${i === currentPage ? 'active' : ''}"
+                            onclick="goToPublishingPage(${i})">${i}</button>`;
+                    } else if (i === currentPage - 3 || i === currentPage + 3) {
+                        buttonsHtml += `<span style="padding: 0 8px;">...</span>`;
+                    }
+                }
+
+                // 下一页
+                buttonsHtml += `<button class="admin-page-btn" ${currentPage >= totalPages ? 'disabled' : ''}
+                    onclick="goToPublishingPage(${currentPage + 1})">下一页</button>`;
+
+                pageButtons.innerHTML = buttonsHtml;
+            }
+        }
+
+        // 跳转到指定页
+        function goToPublishingPage(page) {
+            if (page < 1 || page > publishingTotalPages) return;
+            publishingCurrentPage = page;
+            loadPublishingData();
+        }
+
+        // 搜索发布历史
+        function searchPublishHistory() {
+            publishingCurrentPage = 1;
+            loadPublishingData();
+        }
+
+        // 重置筛选条件
+        function resetPublishFilters() {
+            document.getElementById('publishPlatformFilter').value = '';
+            document.getElementById('publishStatusFilter').value = '';
+            document.getElementById('publishDateFrom').value = '';
+            document.getElementById('publishDateTo').value = '';
+            publishingCurrentPage = 1;
+            loadPublishingData();
+        }
+
+        // 刷新发布数据
+        function refreshPublishingData() {
+            loadPublishingData();
+            showNotification('发布数据已刷新', 'success');
+        }
+
+        // 查看发布内容
+        function viewPublishContent(id) {
+            const item = publishingHistoryData.find(h => h.id === id);
+            if (!item || !item.article_content) {
+                showNotification('没有文章内容', 'warning');
+                return;
+            }
+
+            currentPublishContent = item.article_content;
+            document.getElementById('publishContentModalTitle').textContent = item.article_title || '文章内容';
+            document.getElementById('publishContentModalBody').textContent = item.article_content;
+            document.getElementById('publishContentModal').style.display = 'flex';
+        }
+
+        // 关闭内容模态框
+        function closePublishContentModal() {
+            document.getElementById('publishContentModal').style.display = 'none';
+            currentPublishContent = null;
+        }
+
+        // 复制发布内容
+        function copyPublishContent() {
+            if (!currentPublishContent) return;
+
+            navigator.clipboard.writeText(currentPublishContent).then(() => {
+                showNotification('内容已复制到剪贴板', 'success');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                showNotification('复制失败', 'error');
+            });
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         // 切换分析图表周期
@@ -2161,28 +2688,97 @@
                         borderColor: '#3b82f6',
                         backgroundColor: 'rgba(59, 130, 246, 0.1)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        borderWidth: 3,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: '#3b82f6',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverBackgroundColor: '#2563eb',
+                        pointHoverBorderColor: '#fff',
+                        pointHoverBorderWidth: 3
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            borderColor: '#3b82f6',
+                            borderWidth: 1,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return '生成文章数: ' + context.parsed.y + ' 篇';
+                                }
+                            }
                         }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
                             grid: {
-                                borderDash: [5, 5]
+                                borderDash: [5, 5],
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                font: {
+                                    size: 12
+                                },
+                                color: '#64748b',
+                                padding: 8,
+                                stepSize: 20,
+                                callback: function(value) {
+                                    return value + ' 篇';
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: '生成数量',
+                                font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                },
+                                color: '#475569',
+                                padding: 10
                             }
                         },
                         x: {
                             grid: {
                                 display: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 12
+                                },
+                                color: '#64748b',
+                                padding: 8
                             }
+                        }
+                    },
+                    layout: {
+                        padding: {
+                            top: 10,
+                            right: 10,
+                            bottom: 5,
+                            left: 5
                         }
                     }
                 }
@@ -2193,7 +2789,14 @@
         async function updateChartData(period = 'week') {
             if (!articleChart) return;
 
+            const chartLoading = document.getElementById('chartLoading');
+            const canvas = document.getElementById('articleChart');
+
             try {
+                // 显示加载状态
+                if (chartLoading) chartLoading.style.display = 'flex';
+                if (canvas) canvas.style.opacity = '0.3';
+
                 // 调用真实API获取图表数据
                 const response = await fetch(`/api/admin/stats/charts?period=${period}`);
                 if (!response.ok) {
@@ -2206,9 +2809,11 @@
                 }
 
                 const chartData = result.data;
+
+                // 平滑动画更新数据
                 articleChart.data.labels = chartData.labels;
                 articleChart.data.datasets[0].data = chartData.article_generation;
-                articleChart.update();
+                articleChart.update('active');
 
             } catch (error) {
                 console.error('更新图表数据失败:', error);
@@ -2223,14 +2828,20 @@
                         data: [0, 0, 0, 0]
                     },
                     year: {
-                        labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
-                        data: [0, 0, 0, 0, 0, 0]
+                        labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+                        data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                     }
                 };
                 const selectedData = fallbackData[period] || fallbackData.week;
                 articleChart.data.labels = selectedData.labels;
                 articleChart.data.datasets[0].data = selectedData.data;
-                articleChart.update();
+                articleChart.update('active');
+            } finally {
+                // 隐藏加载状态
+                setTimeout(() => {
+                    if (chartLoading) chartLoading.style.display = 'none';
+                    if (canvas) canvas.style.opacity = '1';
+                }, 300);
             }
         }
 
@@ -2540,6 +3151,13 @@
 
         // 切换图表周期
         function changeChartPeriod(period) {
+            // 更新按钮状态
+            document.querySelectorAll('[data-period]').forEach(btn => {
+                btn.classList.remove('active-period');
+            });
+            document.querySelector(`[data-period="${period}"]`).classList.add('active-period');
+
+            // 更新图表数据
             updateChartData(period);
         }
 
