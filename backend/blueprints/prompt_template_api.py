@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-提示词模板API
+提示词模板API（旧版本 - 已废弃）
+
+⚠️ DEPRECATED: 此模块已废弃，保留仅用于向后兼容。
+新功能请使用三模块提示词系统：
+- analysis_prompt_api.py - 分析提示词
+- article_prompt_api.py - 文章提示词
+- platform_style_api.py - 平台风格
+
 提供模板管理和使用的HTTP接口
 """
 from flask import Blueprint, jsonify, request, session as flask_session

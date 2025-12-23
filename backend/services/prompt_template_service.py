@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-提示词模板服务
+提示词模板服务（旧版本 - 已废弃）
+
+⚠️ DEPRECATED: 此模块已废弃，保留仅用于向后兼容。
+新功能请使用三模块提示词服务：
+- analysis_prompt_service.py - 分析提示词服务
+- article_prompt_service.py - 文章提示词服务
+- platform_style_service.py - 平台风格服务
+
 提供模板的CRUD操作和管理功能
 """
 import logging

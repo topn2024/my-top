@@ -913,10 +913,135 @@
             </div>
 
             <div id="publishing" class="admin-section" style="display: none;">
-                <div class="admin-empty-state">
-                    <div class="admin-empty-state-icon">📤</div>
-                    <h3>发布管理</h3>
-                    <p>发布管理功能正在开发中...</p>
+                <!-- 发布统计卡片 -->
+                <div class="admin-stats-grid" style="margin-bottom: 24px;">
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">📊</div>
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-value" id="publishTotalAttempts">0</div>
+                            <div class="admin-stat-label">总发布次数</div>
+                        </div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">✅</div>
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-value" id="publishSuccessCount">0</div>
+                            <div class="admin-stat-label">发布成功</div>
+                        </div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">❌</div>
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-value" id="publishFailedCount">0</div>
+                            <div class="admin-stat-label">发布失败</div>
+                        </div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">📈</div>
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-value" id="publishSuccessRate">0%</div>
+                            <div class="admin-stat-label">成功率</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 筛选工具栏 -->
+                <div class="admin-card" style="margin-bottom: 24px;">
+                    <div class="admin-card-header">
+                        <h3>筛选条件</h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
+                            <div>
+                                <label style="font-size: 0.875rem; color: #64748b;">平台</label>
+                                <select id="publishPlatformFilter" class="admin-input" style="margin-top: 4px; min-width: 120px;">
+                                    <option value="">全部平台</option>
+                                    <option value="知乎">知乎</option>
+                                    <option value="zhihu">zhihu</option>
+                                    <option value="CSDN">CSDN</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.875rem; color: #64748b;">状态</label>
+                                <select id="publishStatusFilter" class="admin-input" style="margin-top: 4px; min-width: 120px;">
+                                    <option value="">全部状态</option>
+                                    <option value="success">成功</option>
+                                    <option value="failed">失败</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.875rem; color: #64748b;">开始日期</label>
+                                <input type="date" id="publishDateFrom" class="admin-input" style="margin-top: 4px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.875rem; color: #64748b;">结束日期</label>
+                                <input type="date" id="publishDateTo" class="admin-input" style="margin-top: 4px;">
+                            </div>
+                            <div style="display: flex; gap: 8px; margin-top: 20px;">
+                                <button onclick="searchPublishHistory()" class="admin-btn admin-btn-primary">🔍 搜索</button>
+                                <button onclick="resetPublishFilters()" class="admin-btn admin-btn-secondary">🔄 重置</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 发布历史表格 -->
+                <div class="admin-card">
+                    <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>📋 发布历史记录</h3>
+                        <button onclick="refreshPublishingData()" class="admin-btn admin-btn-secondary">🔄 刷新</button>
+                    </div>
+                    <div class="admin-card-body">
+                        <div id="publishingLoading" class="admin-loading" style="display: none;">
+                            <div class="admin-loading-spinner"></div>
+                            <span>加载中...</span>
+                        </div>
+                        <div id="publishingContent">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 5%;">ID</th>
+                                        <th style="width: 25%;">文章标题</th>
+                                        <th style="width: 10%;">用户</th>
+                                        <th style="width: 10%;">平台</th>
+                                        <th style="width: 10%;">状态</th>
+                                        <th style="width: 20%;">发布时间</th>
+                                        <th style="width: 20%;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="publishHistoryTableBody">
+                                    <tr>
+                                        <td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;">
+                                            暂无发布记录
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- 分页 -->
+                        <div id="publishingPagination" class="admin-pagination" style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+                            <div id="publishingPageInfo" style="color: #64748b; font-size: 0.875rem;"></div>
+                            <div id="publishingPageButtons" style="display: flex; gap: 8px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文章内容查看模态框 -->
+                <div id="publishContentModal" class="admin-modal" style="display: none;">
+                    <div class="admin-modal-overlay" onclick="closePublishContentModal()"></div>
+                    <div class="admin-modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+                        <div class="admin-modal-header">
+                            <h3 id="publishContentModalTitle">文章内容</h3>
+                            <button class="admin-modal-close" onclick="closePublishContentModal()">&times;</button>
+                        </div>
+                        <div class="admin-modal-body">
+                            <div id="publishContentModalBody" style="white-space: pre-wrap; line-height: 1.8; padding: 16px; background: #f8fafc; border-radius: 8px;"></div>
+                        </div>
+                        <div class="admin-modal-footer">
+                            <button onclick="copyPublishContent()" class="admin-btn admin-btn-secondary">📋 复制内容</button>
+                            <button onclick="closePublishContentModal()" class="admin-btn admin-btn-primary">关闭</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1362,6 +1487,9 @@
                     break;
                 case 'publishing-performance':
                     loadPublishingPerformanceData();
+                    break;
+                case 'publishing':
+                    loadPublishingData();
                     break;
             }
         }

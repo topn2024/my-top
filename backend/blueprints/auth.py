@@ -154,6 +154,13 @@ def get_current_user_info():
 
         if user:
             role = getattr(user, 'role', 'user')
+            # 处理 created_at 字段，可能是 datetime 对象或字符串
+            created_at = None
+            if hasattr(user, 'created_at') and user.created_at:
+                if hasattr(user.created_at, 'isoformat'):
+                    created_at = user.created_at.isoformat()
+                else:
+                    created_at = str(user.created_at)
             return jsonify({
                 'success': True,
                 'user': {
@@ -161,7 +168,7 @@ def get_current_user_info():
                     'username': user.username,
                     'email': user.email,
                     'role': role,
-                    'created_at': user.created_at.isoformat() if hasattr(user, 'created_at') else None
+                    'created_at': created_at
                 }
             })
         else:

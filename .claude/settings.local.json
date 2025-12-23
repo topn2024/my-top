@@ -83,7 +83,14 @@
       "Bash(git config --global http.sslverify false)",
       "Bash(git remote set-url origin git@github.com:topn2024/my-top.git)",
       "Bash(git -C \"D:\\\\code\\\\TOP_N\" status --short)",
-      "Bash(git -C:*)"
+      "Bash(git -C:*)",
+      "Bash(\"D:\\\\Python3.13.1\\\\python.exe\":*)",
+      "Bash(rsync:*)",
+      "Bash(\"D:\\\\Python3.13.1\\\\python.exe\" backend/tests/test_logger.py)",
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(\"D:\\\\Python3.13.1\\\\python.exe\" backend/app.py)",
+      "Bash(wc:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []
