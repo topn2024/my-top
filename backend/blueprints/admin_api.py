@@ -874,3 +874,299 @@ def get_content_analytics():
         return jsonify({'success': False, 'error': '获取内容分析失败'}), 500
     finally:
         db.close()
+
+
+# ============================================================================
+# 日志监控 API
+# ============================================================================
+
+@admin_bp.route('/logs/files', methods=['GET'])
+@admin_required
+@log_api_request("获取日志文件列表")
+def get_log_files():
+    """获取所有日志文件列表"""
+    try:
+        from services.log_service import get_log_service
+        log_service = get_log_service()
+        files = log_service.get_log_files()
+
+        return jsonify({
+            'success': True,
+            'files': files
+        })
+
+    except Exception as e:
+        logger.error(f"获取日志文件列表失败: {str(e)}")
+        return jsonify({'success': False, 'error': '获取日志文件列表失败'}), 500
+
+
+@admin_bp.route('/logs/tail', methods=['GET'])
+@admin_required
+@log_api_request("获取日志尾部")
+def get_log_tail():
+    """获取日志尾部内容"""
+    log_file = request.args.get('file', 'all.log', type=str)
+    lines = request.args.get('lines', 100, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    level = request.args.get('level', 'ALL', type=str)
+
+    # 限制行数
+    lines = min(lines, 1000)
+
+    try:
+        from services.log_service import get_log_service
+        log_service = get_log_service()
+        result = log_service.tail_logs(log_file, lines, offset, level)
+
+        return jsonify({
+            'success': True,
+            **result
+        })
+
+    except Exception as e:
+        logger.error(f"获取日志尾部失败: {str(e)}")
+        return jsonify({'success': False, 'error': '获取日志尾部失败'}), 500
+
+
+@admin_bp.route('/logs/search', methods=['GET'])
+@admin_required
+@log_api_request("搜索日志")
+def search_logs():
+    """搜索日志内容"""
+    keyword = request.args.get('keyword', '', type=str)
+    log_file = request.args.get('file', 'all.log', type=str)
+    level = request.args.get('level', 'ALL', type=str)
+    start_time = request.args.get('start', None, type=str)
+    end_time = request.args.get('end', None, type=str)
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 50, type=int)
+
+    if not keyword:
+        return jsonify({'success': False, 'error': '请提供搜索关键词'}), 400
+
+    # 限制每页数量
+    limit = min(limit, 200)
+
+    try:
+        from services.log_service import get_log_service
+        log_service = get_log_service()
+        result = log_service.search_logs(
+            keyword=keyword,
+            log_file=log_file,
+            level=level,
+            start_time=start_time,
+            end_time=end_time,
+            page=page,
+            limit=limit
+        )
+
+        return jsonify({
+            'success': True,
+            **result
+        })
+
+    except Exception as e:
+        logger.error(f"搜索日志失败: {str(e)}")
+        return jsonify({'success': False, 'error': '搜索日志失败'}), 500
+
+
+@admin_bp.route('/logs/request/<request_id>', methods=['GET'])
+@admin_required
+@log_api_request("追踪请求日志")
+def trace_request_logs(request_id):
+    """根据请求ID追踪完整请求链路"""
+    log_file = request.args.get('file', 'all.log', type=str)
+
+    try:
+        from services.log_service import get_log_service
+        log_service = get_log_service()
+        result = log_service.search_by_request_id(request_id, log_file)
+
+        return jsonify({
+            'success': True,
+            **result
+        })
+
+    except Exception as e:
+        logger.error(f"追踪请求日志失败: {str(e)}")
+        return jsonify({'success': False, 'error': '追踪请求日志失败'}), 500
+
+
+@admin_bp.route('/logs/stats/errors', methods=['GET'])
+@admin_required
+@log_api_request("获取错误统计")
+def get_error_stats():
+    """获取错误统计数据"""
+    hours = request.args.get('hours', 24, type=int)
+
+    # 限制时间范围
+    hours = min(hours, 168)  # 最多7天
+
+    try:
+        from services.log_service import get_log_service
+        log_service = get_log_service()
+        result = log_service.get_error_stats(hours)
+
+        return jsonify({
+            'success': True,
+            **result
+        })
+
+    except Exception as e:
+        logger.error(f"获取错误统计失败: {str(e)}")
+        return jsonify({'success': False, 'error': '获取错误统计失败'}), 500
+
+
+@admin_bp.route('/logs/stats/performance', methods=['GET'])
+@admin_required
+@log_api_request("获取性能统计")
+def get_performance_stats():
+    """获取性能统计数据"""
+    hours = request.args.get('hours', 24, type=int)
+
+    # 限制时间范围
+    hours = min(hours, 168)  # 最多7天
+
+    try:
+        from services.log_service import get_log_service
+        log_service = get_log_service()
+        result = log_service.get_performance_stats(hours)
+
+        return jsonify({
+            'success': True,
+            **result
+        })
+
+    except Exception as e:
+        logger.error(f"获取性能统计失败: {str(e)}")
+        return jsonify({'success': False, 'error': '获取性能统计失败'}), 500
+
+
+@admin_bp.route('/logs/stats/slow', methods=['GET'])
+@admin_required
+@log_api_request("获取慢查询统计")
+def get_slow_query_stats():
+    """获取慢查询统计数据"""
+    hours = request.args.get('hours', 24, type=int)
+
+    # 限制时间范围
+    hours = min(hours, 168)  # 最多7天
+
+    try:
+        from services.log_service import get_log_service
+        log_service = get_log_service()
+        result = log_service.get_slow_queries(hours)
+
+        return jsonify({
+            'success': True,
+            **result
+        })
+
+    except Exception as e:
+        logger.error(f"获取慢查询统计失败: {str(e)}")
+        return jsonify({'success': False, 'error': '获取慢查询统计失败'}), 500
+
+
+@admin_bp.route('/logs/stream', methods=['GET'])
+@admin_required
+def stream_logs():
+    """SSE实时日志流"""
+    from flask import Response, stream_with_context
+    import time
+    import json
+
+    log_file = request.args.get('file', 'all.log', type=str)
+    level = request.args.get('level', 'ALL', type=str)
+
+    def generate():
+        from services.log_service import get_log_service
+        log_service = get_log_service()
+
+        # 获取初始位置
+        last_line_count = 0
+        log_path = log_service.log_dir / log_file
+
+        while True:
+            try:
+                if log_path.exists():
+                    with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        all_lines = f.readlines()
+
+                    current_count = len(all_lines)
+
+                    # 如果有新行
+                    if current_count > last_line_count:
+                        new_lines = all_lines[last_line_count:]
+                        for line in new_lines:
+                            parsed = log_service._parse_log_line(line)
+                            if parsed:
+                                # 级别过滤
+                                if level != 'ALL' and parsed['level'] not in log_service._get_levels_from(level):
+                                    continue
+                                yield f"data: {json.dumps(parsed, ensure_ascii=False)}\n\n"
+
+                        last_line_count = current_count
+
+                # 心跳
+                yield f": heartbeat\n\n"
+                time.sleep(1)
+
+            except GeneratorExit:
+                break
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
+                time.sleep(5)
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no'
+        }
+    )
+
+
+@admin_bp.route('/logs/export', methods=['POST'])
+@admin_required
+@log_api_request("导出日志")
+def export_logs():
+    """导出日志文件"""
+    from flask import Response
+
+    data = request.json or {}
+    log_file = data.get('file', 'all.log')
+    start_time = data.get('start')
+    end_time = data.get('end')
+    level = data.get('level', 'ALL')
+    export_format = data.get('format', 'txt')
+
+    try:
+        from services.log_service import get_log_service
+        log_service = get_log_service()
+        content, filename = log_service.export_logs(
+            log_file=log_file,
+            start_time=start_time,
+            end_time=end_time,
+            level=level,
+            format=export_format
+        )
+
+        # 设置响应头
+        mimetype = 'application/json' if export_format == 'json' else 'text/plain'
+
+        return Response(
+            content,
+            mimetype=mimetype,
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"',
+                'Content-Type': f'{mimetype}; charset=utf-8'
+            }
+        )
+
+    except FileNotFoundError as e:
+        return jsonify({'success': False, 'error': str(e)}), 404
+    except Exception as e:
+        logger.error(f"导出日志失败: {str(e)}")
+        return jsonify({'success': False, 'error': '导出日志失败'}), 500
