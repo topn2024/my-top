@@ -213,7 +213,8 @@ async function handleFileUpload(file) {
         if (!response.ok) {
             const errorText = await response.text();
             hideLoading();
-            alert(`上传失败 (${response.status}): ${errorText.substring(0, 100)}`);
+            const errorMsg = errorText ? String(errorText).substring(0, 100) : '未知错误';
+            alert(`上传失败 (${response.status}): ${errorMsg}`);
             return;
         }
 

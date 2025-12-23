@@ -178,7 +178,7 @@ async function publishBatchToZhihu(articles) {
             const errorText = await response.text();
             console.error('[发布流程] API返回错误:', errorText);
             hideLoading();
-            const errorMsg = errorText ? errorText.substring(0, 100) : '未知错误';
+            const errorMsg = errorText ? String(errorText).substring(0, 100) : '未知错误';
             alert(`请求失败 (${response.status}): ${errorMsg}`);
             return;
         }
@@ -636,7 +636,7 @@ async function refreshTaskMonitor() {
                 allCompleted = false;
             }
 
-            const taskTitle = task.article_title || '未知标题';
+            const taskTitle = String(task.article_title || '未知标题');
             const displayTaskTitle = taskTitle.length > 30 ? taskTitle.substring(0, 30) + '...' : taskTitle;
 
             html += `

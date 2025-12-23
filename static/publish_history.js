@@ -111,7 +111,7 @@ class PublishHistoryManager {
         }) : 'N/A';
 
         // 文章标题（处理长标题）
-        const title = item.article_title || '未知';
+        const title = String(item.article_title || '未知');
         const displayTitle = title.length > 40 ? title.substring(0, 40) + '...' : title;
 
         row.innerHTML = `
