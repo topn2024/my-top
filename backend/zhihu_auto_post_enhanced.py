@@ -29,6 +29,11 @@ class ZhihuAutoPost:
             # 服务器环境检测：如果没有显示器则使用headless模式
             import os
             is_server = not os.environ.get('DISPLAY')
+            import shutil
+            # 明确指定Chrome浏览器路径（修复DrissionPage找不到chrome的问题）
+            chrome_path = shutil.which("google-chrome") or shutil.which("chrome") or "/usr/bin/google-chrome"
+            co.set_browser_path(chrome_path)
+            logger.info(f"使用Chrome路径: {chrome_path}")
 
             if is_server:
                 logger.info("检测到服务器环境，使用headless模式")
