@@ -879,12 +879,36 @@
                 </div>
             </div>
 
-            <!-- 其他部分占位符 -->
+            <!-- 工作流管理 -->
             <div id="workflows" class="admin-section" style="display: none;">
-                <div class="admin-empty-state">
-                    <div class="admin-empty-state-icon">⚙️</div>
-                    <h3>工作流管理</h3>
-                    <p>工作流管理功能正在开发中...</p>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">⚙️ 工作流管理</h3>
+                        <div class="admin-card-actions">
+                            <button class="admin-card-action" onclick="refreshWorkflows()">刷新</button>
+                        </div>
+                    </div>
+                    <div class="admin-loading" id="workflowsLoading">
+                        <div class="admin-spinner"></div>
+                    </div>
+                    <div id="workflowsContent" style="display: none;">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>公司名称</th>
+                                    <th>用户</th>
+                                    <th>文章数</th>
+                                    <th>状态</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="workflowsTableBody">
+                                <!-- 工作流数据将在这里显示 -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -1315,14 +1339,17 @@
         // 加载部分数据
         function loadSectionData(section) {
             switch(section) {
+                case 'overview':
+                    loadDashboardData();
+                    break;
                 case 'users':
                     loadUsersData();
                     break;
+                case 'workflows':
+                    loadWorkflowsData();
+                    break;
                 case 'templates':
                     loadTemplatesData();
-                    break;
-                case 'overview':
-                    loadDashboardData();
                     break;
                 case 'analytics':
                     loadAnalyticsData();
@@ -1951,37 +1978,37 @@
         // 加载仪表板数据
         async function loadDashboardData() {
             try {
-                // 模拟API调用
-                const mockData = {
-                    totalUsers: 128,
-                    activeUsers: 42,
-                    todayArticles: 156,
-                    todayPublishes: 89,
-                    systemStatus: {
-                        cpu: 45,
-                        memory: 62,
-                        disk: 38,
-                        network: 'good'
-                    }
-                };
+                // 调用真实API获取概览统计
+                const response = await fetch('/api/admin/stats/overview');
+                if (!response.ok) {
+                    throw new Error('获取统计数据失败');
+                }
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || '获取统计数据失败');
+                }
+
+                const data = result.data;
 
                 // 更新统计卡片
-                updateStatCard('totalUsers', mockData.totalUsers);
-                updateStatCard('activeUsers', mockData.activeUsers);
-                updateStatCard('todayArticles', mockData.todayArticles);
-                updateStatCard('todayPublishes', mockData.todayPublishes);
+                updateStatCard('totalUsers', data.total_users);
+                updateStatCard('activeUsers', data.active_users);
+                updateStatCard('todayArticles', data.today_articles);
+                updateStatCard('todayPublishes', data.today_publishes);
 
                 // 更新用户数量徽章
-                document.getElementById('userCount').textContent = mockData.totalUsers;
+                document.getElementById('userCount').textContent = data.total_users;
 
                 // 加载图表数据
-                updateChartData();
+                await updateChartData();
 
-                // 更新系统状态
-                updateSystemStatus(mockData.systemStatus);
+                // 加载系统状态
+                await refreshSystemStatus();
 
             } catch (error) {
                 console.error('加载仪表板数据失败:', error);
+                showNotification('加载数据失败: ' + error.message, 'error');
             }
         }
 
@@ -2035,28 +2062,48 @@
         }
 
         // 更新图表数据
-        function updateChartData(period = 'week') {
+        async function updateChartData(period = 'week') {
             if (!articleChart) return;
 
-            const data = {
-                week: {
-                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-                    data: [65, 78, 90, 81, 156, 125, 98]
-                },
-                month: {
-                    labels: ['第1周', '第2周', '第3周', '第4周'],
-                    data: [420, 532, 485, 612]
-                },
-                year: {
-                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
-                    data: [1200, 1890, 1560, 2140, 2380, 2750]
+            try {
+                // 调用真实API获取图表数据
+                const response = await fetch(`/api/admin/stats/charts?period=${period}`);
+                if (!response.ok) {
+                    throw new Error('获取图表数据失败');
                 }
-            };
 
-            const selectedData = data[period] || data.week;
-            articleChart.data.labels = selectedData.labels;
-            articleChart.data.datasets[0].data = selectedData.data;
-            articleChart.update();
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || '获取图表数据失败');
+                }
+
+                const chartData = result.data;
+                articleChart.data.labels = chartData.labels;
+                articleChart.data.datasets[0].data = chartData.article_generation;
+                articleChart.update();
+
+            } catch (error) {
+                console.error('更新图表数据失败:', error);
+                // 出错时使用默认数据
+                const fallbackData = {
+                    week: {
+                        labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                        data: [0, 0, 0, 0, 0, 0, 0]
+                    },
+                    month: {
+                        labels: ['第1周', '第2周', '第3周', '第4周'],
+                        data: [0, 0, 0, 0]
+                    },
+                    year: {
+                        labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                        data: [0, 0, 0, 0, 0, 0]
+                    }
+                };
+                const selectedData = fallbackData[period] || fallbackData.week;
+                articleChart.data.labels = selectedData.labels;
+                articleChart.data.datasets[0].data = selectedData.data;
+                articleChart.update();
+            }
         }
 
         // 更新系统状态
@@ -2108,40 +2155,215 @@
         }
 
         // 加载用户数据
-        async function loadUsersData() {
+        async function loadUsersData(page = 1, limit = 20) {
             const loading = document.getElementById('usersLoading');
             const content = document.getElementById('usersContent');
 
-            if (loading) loading.style.display = 'flex';
+            try {
+                if (loading) loading.style.display = 'flex';
+                if (content) content.style.display = 'none';
 
-            // 模拟API调用
-            setTimeout(() => {
-                const mockUsers = [
-                    { id: 1, username: 'admin', email: 'admin@example.com', role: 'admin', registerTime: '2024-01-01', lastLogin: '2025-12-15 10:30', status: 'online' },
-                    { id: 2, username: 'user1', email: 'user1@example.com', role: 'user', registerTime: '2024-02-15', lastLogin: '2025-12-14 15:22', status: 'online' },
-                    { id: 3, username: 'user2', email: 'user2@example.com', role: 'user', registerTime: '2024-03-20', lastLogin: '2025-12-13 09:15', status: 'offline' }
-                ];
+                // 调用真实API获取用户列表
+                const response = await fetch(`/api/admin/users?page=${page}&limit=${limit}`);
+                if (!response.ok) {
+                    throw new Error('获取用户列表失败');
+                }
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || '获取用户列表失败');
+                }
+
+                const users = result.users;
 
                 if (loading) loading.style.display = 'none';
                 if (content) {
                     content.style.display = 'block';
                     const tbody = document.getElementById('usersTableBody');
-                    tbody.innerHTML = mockUsers.map(user => `
-                        <tr>
-                            <td>${user.username}</td>
-                            <td>${user.email}</td>
-                            <td><span class="admin-status-badge ${user.role === 'admin' ? 'admin-status-warning' : 'admin-status-online'}">${user.role}</span></td>
-                            <td>${user.registerTime}</td>
-                            <td>${user.lastLogin}</td>
-                            <td><span class="admin-status-badge admin-status-${user.status}">${user.status === 'online' ? '在线' : '离线'}</span></td>
-                            <td>
-                                <button class="admin-card-action" onclick="editUser(${user.id})">编辑</button>
-                                <button class="admin-card-action" onclick="deleteUser(${user.id})">删除</button>
-                            </td>
-                        </tr>
-                    `).join('');
+                    if (users.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">暂无用户数据</td></tr>';
+                    } else {
+                        tbody.innerHTML = users.map(user => `
+                            <tr>
+                                <td>${user.username}</td>
+                                <td>${user.email}</td>
+                                <td><span class="admin-status-badge ${user.role === 'admin' ? 'admin-status-warning' : 'admin-status-online'}">${user.role}</span></td>
+                                <td>${user.created_at ? user.created_at.split('T')[0] : 'N/A'}</td>
+                                <td>${user.last_login ? user.last_login.split('T').join(' ').substring(0, 16) : '从未登录'}</td>
+                                <td><span class="admin-status-badge ${user.is_active ? 'admin-status-online' : 'admin-status-offline'}">${user.is_active ? '激活' : '禁用'}</span></td>
+                                <td>
+                                    <button class="admin-card-action" onclick="editUser(${user.id})">编辑</button>
+                                    <button class="admin-card-action" onclick="deleteUser(${user.id}, '${user.username}')">删除</button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
                 }
-            }, 1000);
+
+            } catch (error) {
+                console.error('加载用户数据失败:', error);
+                if (loading) loading.style.display = 'none';
+                if (content) {
+                    content.style.display = 'block';
+                    const tbody = document.getElementById('usersTableBody');
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #ef4444;">加载失败: ' + error.message + '</td></tr>';
+                }
+                showNotification('加载用户数据失败: ' + error.message, 'error');
+            }
+        }
+
+        // 编辑用户
+        async function editUser(userId) {
+            showNotification('编辑用户功能开发中...', 'info');
+            // TODO: 实现编辑用户对话框和API调用
+        }
+
+        // 删除用户
+        async function deleteUser(userId, username) {
+            if (!confirm(`确定要删除用户 "${username}" 吗？此操作不可恢复！`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('删除用户失败');
+                }
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || '删除用户失败');
+                }
+
+                showNotification(result.message || '用户删除成功', 'success');
+                // 重新加载用户列表
+                loadUsersData();
+
+            } catch (error) {
+                console.error('删除用户失败:', error);
+                showNotification('删除用户失败: ' + error.message, 'error');
+            }
+        }
+
+        // 添加用户
+        async function addUser() {
+            showNotification('添加用户功能开发中...', 'info');
+            // TODO: 实现添加用户对话框和API调用
+        }
+
+        // ========================================================================
+        // 工作流管理
+        // ========================================================================
+
+        // 加载工作流数据
+        async function loadWorkflowsData(page = 1, limit = 20) {
+            const loading = document.getElementById('workflowsLoading');
+            const content = document.getElementById('workflowsContent');
+
+            try {
+                if (loading) loading.style.display = 'flex';
+                if (content) content.style.display = 'none';
+
+                // 调用真实API获取工作流列表
+                const response = await fetch(`/api/admin/workflows?page=${page}&limit=${limit}`);
+                if (!response.ok) {
+                    throw new Error('获取工作流列表失败');
+                }
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || '获取工作流列表失败');
+                }
+
+                const workflows = result.workflows;
+
+                if (loading) loading.style.display = 'none';
+                if (content) {
+                    content.style.display = 'block';
+                    const tbody = document.getElementById('workflowsTableBody');
+                    if (workflows.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">暂无工作流数据</td></tr>';
+                    } else {
+                        tbody.innerHTML = workflows.map(workflow => {
+                            const statusMap = {
+                                'in_progress': { text: '进行中', class: 'admin-status-warning' },
+                                'completed': { text: '已完成', class: 'admin-status-online' },
+                                'failed': { text: '失败', class: 'admin-status-error' }
+                            };
+                            const status = statusMap[workflow.status] || { text: workflow.status, class: '' };
+
+                            return `
+                                <tr>
+                                    <td>${workflow.id}</td>
+                                    <td>${workflow.company_name}</td>
+                                    <td>${workflow.username || 'N/A'}</td>
+                                    <td>${workflow.article_count || 0}</td>
+                                    <td><span class="admin-status-badge ${status.class}">${status.text}</span></td>
+                                    <td>${workflow.created_at ? workflow.created_at.split('T')[0] : 'N/A'}</td>
+                                    <td>
+                                        <button class="admin-card-action" onclick="viewWorkflow(${workflow.id})">查看</button>
+                                        <button class="admin-card-action" onclick="deleteWorkflow(${workflow.id}, '${workflow.company_name}')">删除</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('');
+                    }
+                }
+
+            } catch (error) {
+                console.error('加载工作流数据失败:', error);
+                if (loading) loading.style.display = 'none';
+                if (content) {
+                    content.style.display = 'block';
+                    const tbody = document.getElementById('workflowsTableBody');
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #ef4444;">加载失败: ' + error.message + '</td></tr>';
+                }
+                showNotification('加载工作流数据失败: ' + error.message, 'error');
+            }
+        }
+
+        // 查看工作流详情
+        async function viewWorkflow(workflowId) {
+            showNotification('查看工作流详情功能开发中...', 'info');
+            // TODO: 实现工作流详情对话框
+        }
+
+        // 删除工作流
+        async function deleteWorkflow(workflowId, companyName) {
+            if (!confirm(`确定要删除工作流 "${companyName}" 吗？此操作将删除所有相关文章！`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/workflows/${workflowId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('删除工作流失败');
+                }
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || '删除工作流失败');
+                }
+
+                showNotification(result.message || '工作流删除成功', 'success');
+                // 重新加载工作流列表
+                loadWorkflowsData();
+
+            } catch (error) {
+                console.error('删除工作流失败:', error);
+                showNotification('删除工作流失败: ' + error.message, 'error');
+            }
+        }
+
+        // 刷新工作流列表
+        function refreshWorkflows() {
+            loadWorkflowsData();
         }
 
         // 加载模板数据
@@ -2237,8 +2459,83 @@
             showNotification('模板导入功能开发中...', 'info');
         }
 
-        function refreshSystemStatus() {
-            loadDashboardData();
+        async function refreshSystemStatus() {
+            try {
+                const loading = document.getElementById('systemStatusLoading');
+                const content = document.getElementById('systemStatusContent');
+
+                if (loading) loading.style.display = 'flex';
+                if (content) content.style.display = 'none';
+
+                // 调用真实API获取系统状态
+                const response = await fetch('/api/admin/stats/system');
+                if (!response.ok) {
+                    throw new Error('获取系统状态失败');
+                }
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || '获取系统状态失败');
+                }
+
+                const status = result.data;
+
+                if (loading) loading.style.display = 'none';
+                if (content) {
+                    content.style.display = 'block';
+                    content.innerHTML = `
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>CPU使用率</span>
+                                <span style="font-weight: 600;">${status.cpu}%</span>
+                            </div>
+                            <div class="admin-progress-bar">
+                                <div class="admin-progress-fill" style="width: ${status.cpu}%"></div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>内存使用率</span>
+                                <span style="font-weight: 600;">${status.memory}%</span>
+                            </div>
+                            <div class="admin-progress-bar">
+                                <div class="admin-progress-fill" style="width: ${status.memory}%"></div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>磁盘使用率</span>
+                                <span style="font-weight: 600;">${status.disk}%</span>
+                            </div>
+                            <div class="admin-progress-bar">
+                                <div class="admin-progress-fill" style="width: ${status.disk}%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>服务状态</span>
+                                <span style="font-weight: 600; color: #10b981;">${status.service_status === 'running' ? '运行中' : '已停止'}</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.875rem; color: #6b7280;">
+                                <span>运行时间: ${status.uptime_days} 天</span>
+                                <span>数据库: ${status.db_size_mb} MB</span>
+                            </div>
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                console.error('刷新系统状态失败:', error);
+                const loading = document.getElementById('systemStatusLoading');
+                const content = document.getElementById('systemStatusContent');
+                if (loading) loading.style.display = 'none';
+                if (content) {
+                    content.style.display = 'block';
+                    content.innerHTML = '<p style="color: #ef4444;">获取系统状态失败</p>';
+                }
+            }
         }
 
         // 显示通知

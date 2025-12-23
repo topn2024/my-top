@@ -145,6 +145,9 @@ def register_blueprints(app):
     from blueprints.prompt_combination_api import combination_bp
     from blueprints.article_style_api import article_style_bp
 
+    # 管理后台API蓝图
+    from blueprints.admin_api import admin_bp
+
     # 注册页面蓝图
     app.register_blueprint(pages_bp)
 
@@ -153,6 +156,9 @@ def register_blueprints(app):
 
     # 注册API蓝图
     app.register_blueprint(api_bp)
+
+    # 注册管理后台API蓝图
+    app.register_blueprint(admin_bp)
 
     # 注册任务API蓝图
     app.register_blueprint(task_bp, url_prefix='/task')
