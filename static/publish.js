@@ -74,6 +74,32 @@ function displayArticleSelection(articles) {
     });
 }
 
+// 检查知乎Cookie有效性
+async function checkZhihuCookie() {
+    console.log('[发布流程] 检查知乎Cookie有效性...');
+    try {
+        const response = await fetch('/api/zhihu/check_cookie', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+
+        const data = await response.json();
+        console.log('[发布流程] Cookie检查结果:', data);
+        return data;
+    } catch (error) {
+        console.error('[发布流程] Cookie检查失败:', error);
+        return {
+            success: false,
+            cookie_valid: false,
+            requireQRLogin: true,
+            message: '检查Cookie时发生错误'
+        };
+    }
+}
+
 // 开始发布
 async function startPublish() {
     console.log('[发布流程] ========== 开始发布流程 ==========');
@@ -116,14 +142,167 @@ async function startPublish() {
 
     // 目前只支持知乎
     if (selectedPlatforms.includes('知乎')) {
-        console.log('[发布流程] 开始批量发布到知乎');
-        // 批量发布所有选中的文章
-        await publishBatchToZhihu(selectedArticles);
+        console.log('[发布流程] 准备发布到知乎，先检查登录状态...');
+
+        // 先检查Cookie是否有效
+        showLoading('正在检查登录状态...');
+        const cookieCheck = await checkZhihuCookie();
+        hideLoading();
+
+        if (cookieCheck.requireQRLogin) {
+            // Cookie无效，需要扫码登录
+            console.log('[发布流程] Cookie无效，需要扫码登录');
+
+            // 显示提示并开始扫码登录
+            const confirmLogin = confirm(`${cookieCheck.message}\n\n是否现在扫码登录？`);
+            if (!confirmLogin) {
+                console.log('[发布流程] 用户取消扫码登录');
+                return;
+            }
+
+            // 开始二维码登录流程，登录成功后继续发布
+            await handleQRLoginAndPublish(selectedArticles);
+        } else {
+            // Cookie有效，直接发布
+            console.log('[发布流程] Cookie有效，开始批量发布');
+            await publishBatchToZhihu(selectedArticles);
+        }
+
         console.log('[发布流程] ========== 发布流程结束 ==========');
     } else {
         console.warn('[发布流程] 选中的平台不支持:', selectedPlatforms);
         alert('目前仅支持发布到知乎平台，其他平台即将开放');
     }
+}
+
+// 处理二维码登录并在成功后发布
+async function handleQRLoginAndPublish(articles) {
+    try {
+        showLoading('正在获取登录二维码...');
+
+        // 请求二维码
+        const response = await fetch('/api/zhihu/qr_login/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            hideLoading();
+            alert(`获取二维码失败：${data.error || '未知错误'}`);
+            return;
+        }
+
+        // 显示二维码弹窗，登录成功后发布文章
+        showQRCodeModalForPublish(data.qr_code, data.session_id, articles);
+
+    } catch (error) {
+        hideLoading();
+        alert('获取二维码失败: ' + error.message);
+    }
+}
+
+// 显示二维码弹窗（发布专用版本）
+function showQRCodeModalForPublish(qrCodeDataUrl, sessionId, articles) {
+    hideLoading();
+
+    // 创建模态框
+    const modal = document.createElement('div');
+    modal.id = 'qr-login-modal-publish';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px;">
+            <h3 style="margin-bottom: 20px;">📱 扫码登录知乎</h3>
+            <img src="${qrCodeDataUrl}" alt="登录二维码" style="width: 250px; height: 250px; margin: 20px auto; display: block; border: 1px solid #ddd; border-radius: 8px;">
+            <p style="color: #666; margin: 15px 0;">请使用<strong>知乎APP</strong>扫描二维码登录</p>
+            <p id="qr-login-status-publish" style="color: #3b82f6; font-weight: bold;">⏳ 等待扫码中...</p>
+            <p style="color: #999; font-size: 12px; margin-top: 10px;">登录成功后将自动开始发布</p>
+            <button id="qr-cancel-btn-publish" style="margin-top: 20px; padding: 10px 30px; background: #ef4444; color: white; border: none; border-radius: 5px; cursor: pointer;">取消</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 取消按钮
+    document.getElementById('qr-cancel-btn-publish').addEventListener('click', () => {
+        stopQRLoginPolling();
+        document.body.removeChild(modal);
+    });
+
+    // 开始轮询检查登录状态
+    startQRLoginPollingForPublish(sessionId, articles, modal);
+}
+
+// 轮询检查登录状态（发布专用版本）
+function startQRLoginPollingForPublish(sessionId, articles, modal) {
+    let pollCount = 0;
+    const maxPolls = 60; // 最多轮询60次 (2分钟)
+
+    qrLoginPollingInterval = setInterval(async () => {
+        pollCount++;
+
+        if (pollCount > maxPolls) {
+            stopQRLoginPolling();
+            const statusEl = document.getElementById('qr-login-status-publish');
+            if (statusEl) {
+                statusEl.textContent = '❌ 登录超时，请重试';
+                statusEl.style.color = '#ef4444';
+            }
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/zhihu/qr_login/check', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ session_id: sessionId })
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.logged_in) {
+                // 登录成功
+                stopQRLoginPolling();
+                const statusEl = document.getElementById('qr-login-status-publish');
+                if (statusEl) {
+                    statusEl.textContent = '✅ 登录成功！正在发布...';
+                    statusEl.style.color = '#10b981';
+                }
+
+                // 等待1秒后关闭弹窗并开始发布
+                setTimeout(async () => {
+                    if (modal && modal.parentNode) {
+                        document.body.removeChild(modal);
+                    }
+                    console.log('[发布流程] 二维码登录成功，开始批量发布');
+                    await publishBatchToZhihu(articles);
+                }, 1000);
+            }
+
+        } catch (error) {
+            console.error('检查登录状态失败:', error);
+        }
+
+    }, 2000); // 每2秒检查一次
 }
 
 // 批量发布到知乎（异步任务队列版本）

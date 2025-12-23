@@ -916,6 +916,80 @@ def get_workflow_list():
         return jsonify({'error': str(e)}), 500
 
 
+@api_bp.route('/zhihu/check_cookie', methods=['POST'])
+@login_required
+@log_api_request("检查知乎Cookie有效性")
+def check_zhihu_cookie():
+    """
+    检查知乎Cookie是否有效
+    在发布前调用此接口，如果Cookie无效则返回需要扫码登录
+    """
+    import os
+    import json
+
+    user = get_current_user()
+
+    try:
+        # 检查Cookie文件是否存在
+        cookies_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cookies')
+        cookie_file = os.path.join(cookies_dir, f'zhihu_{user.username}.json')
+
+        if not os.path.exists(cookie_file):
+            logger.info(f'Cookie文件不存在: {cookie_file}')
+            return jsonify({
+                'success': True,
+                'cookie_valid': False,
+                'requireQRLogin': True,
+                'message': 'Cookie不存在，请扫码登录'
+            })
+
+        # 检查Cookie文件是否过期（超过7天的Cookie可能失效）
+        import time
+        file_age = time.time() - os.path.getmtime(cookie_file)
+        if file_age > 7 * 24 * 3600:  # 7天
+            logger.info(f'Cookie文件超过7天: {file_age/3600:.1f}小时')
+            return jsonify({
+                'success': True,
+                'cookie_valid': False,
+                'requireQRLogin': True,
+                'message': 'Cookie可能已过期，建议重新登录'
+            })
+
+        # 读取Cookie文件验证内容
+        with open(cookie_file, 'r', encoding='utf-8') as f:
+            cookies = json.load(f)
+
+        # 检查是否有关键Cookie（z_c0是知乎的登录态Cookie）
+        has_login_cookie = any(c.get('name') == 'z_c0' for c in cookies)
+
+        if not has_login_cookie:
+            logger.info('Cookie中缺少z_c0登录态')
+            return jsonify({
+                'success': True,
+                'cookie_valid': False,
+                'requireQRLogin': True,
+                'message': 'Cookie无效，请重新登录'
+            })
+
+        # Cookie看起来有效
+        logger.info(f'Cookie检查通过，共{len(cookies)}个Cookie')
+        return jsonify({
+            'success': True,
+            'cookie_valid': True,
+            'requireQRLogin': False,
+            'message': 'Cookie有效'
+        })
+
+    except Exception as e:
+        logger.error(f'Check cookie failed: {e}', exc_info=True)
+        return jsonify({
+            'success': True,
+            'cookie_valid': False,
+            'requireQRLogin': True,
+            'message': f'检查失败: {str(e)}'
+        })
+
+
 @api_bp.route('/zhihu/qr_login/start', methods=['POST'])
 @login_required
 @log_api_request("开始知乎二维码登录")
