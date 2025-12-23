@@ -42,21 +42,21 @@ class Config:
     # 账号配置文件
     ACCOUNTS_FILE = os.path.join(ACCOUNTS_FOLDER, 'accounts.json')
 
-    # AI API 配置 - 默认使用智谱 AI
-    # 智谱 AI 配置 - 必须通过环境变量或.env文件设置
+    # AI API 配置 - 默认使用千问 AI
+    # 智谱 AI 配置（备用）- 必须通过环境变量或.env文件设置
     ZHIPU_API_KEY = os.environ.get('ZHIPU_API_KEY', '')
     ZHIPU_API_BASE = 'https://open.bigmodel.cn/api/paas/v4'
     ZHIPU_CHAT_URL = f'{ZHIPU_API_BASE}/chat/completions'
     ZHIPU_MODEL = 'glm-4-flash'  # 可选: glm-4, glm-4-flash, glm-4-plus
 
-    # 千问API配置（备用）- 必须通过环境变量或.env文件设置
+    # 千问API配置 - 必须通过环境变量或.env文件设置
     QIANWEN_API_KEY = os.environ.get('QIANWEN_API_KEY', '')
     QIANWEN_API_BASE = 'https://dashscope.aliyuncs.com/compatible-mode/v1'
     QIANWEN_CHAT_URL = f'{QIANWEN_API_BASE}/chat/completions'
     QIANWEN_MODEL = 'qwen-plus'
 
     # 默认 AI 服务商 (zhipu 或 qianwen)
-    DEFAULT_AI_PROVIDER = os.environ.get('AI_PROVIDER', 'zhipu')
+    DEFAULT_AI_PROVIDER = os.environ.get('AI_PROVIDER', 'qianwen')
 
     # 支持的AI模型配置
     SUPPORTED_MODELS = {
@@ -93,7 +93,7 @@ class Config:
     }
 
     # 默认使用的AI模型
-    DEFAULT_AI_MODEL = os.environ.get('DEFAULT_AI_MODEL', 'glm-4-flash')
+    DEFAULT_AI_MODEL = os.environ.get('DEFAULT_AI_MODEL', 'qwen-plus')
 
     # 日志配置
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'DEBUG')
