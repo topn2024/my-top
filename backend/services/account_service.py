@@ -82,8 +82,8 @@ class AccountService:
                 user_id=user_id,
                 platform=platform,
                 username=username,
-                password=encrypted_pwd,
-                config=config
+                password_encrypted=encrypted_pwd,
+                notes=config  # config作为notes存储
             )
 
             db.add(account)

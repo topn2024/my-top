@@ -98,3 +98,11 @@ test_output.txt
 debug_*.html
 admin_cookies.txt
 cookies.txt
+*cookies.txt
+
+# Local settings
+*.local.json
+.claude/settings.local.json
+
+# Backend .env (already covered by .env but explicit)
+backend/.env

@@ -38,7 +38,7 @@ class PublishService:
         """
         try:
             # 导入知乎发布模块
-            from zhihu_auto_post import post_article_to_zhihu
+            from zhihu_auto_post_enhanced import post_article_to_zhihu
             from services.account_service import AccountService
 
             # 判断是否使用账号密码登录

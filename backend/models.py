@@ -185,9 +185,9 @@ class PlatformAccount(Base):
     def __repr__(self):
         return f"<PlatformAccount(id={self.id}, platform='{self.platform}', username='{self.username}')>"
 
-    def to_dict(self, include_password=False):
-        """转换为字典"""
-        data = {
+    def to_dict(self):
+        """转换为字典（不包含密码，出于安全考虑）"""
+        return {
             'id': self.id,
             'user_id': self.user_id,
             'platform': self.platform,
@@ -198,9 +198,6 @@ class PlatformAccount(Base):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
-        if include_password:
-            data['password_encrypted'] = self.password_encrypted
-        return data
 
 
 class PublishHistory(Base):

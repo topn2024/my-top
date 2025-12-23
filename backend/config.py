@@ -43,14 +43,14 @@ class Config:
     ACCOUNTS_FILE = os.path.join(ACCOUNTS_FOLDER, 'accounts.json')
 
     # AI API 配置 - 默认使用智谱 AI
-    # 智谱 AI 配置
-    ZHIPU_API_KEY = os.environ.get('ZHIPU_API_KEY', 'd6ac02f8c1f6f443cf81f3dae86fb095.7Qe6KOWcVDlDlqDJ')
+    # 智谱 AI 配置 - 必须通过环境变量或.env文件设置
+    ZHIPU_API_KEY = os.environ.get('ZHIPU_API_KEY', '')
     ZHIPU_API_BASE = 'https://open.bigmodel.cn/api/paas/v4'
     ZHIPU_CHAT_URL = f'{ZHIPU_API_BASE}/chat/completions'
     ZHIPU_MODEL = 'glm-4-flash'  # 可选: glm-4, glm-4-flash, glm-4-plus
 
-    # 千问API配置（备用）
-    QIANWEN_API_KEY = os.environ.get('QIANWEN_API_KEY', 'sk-f0a85d3e56a746509ec435af2446c67a')
+    # 千问API配置（备用）- 必须通过环境变量或.env文件设置
+    QIANWEN_API_KEY = os.environ.get('QIANWEN_API_KEY', '')
     QIANWEN_API_BASE = 'https://dashscope.aliyuncs.com/compatible-mode/v1'
     QIANWEN_CHAT_URL = f'{QIANWEN_API_BASE}/chat/completions'
     QIANWEN_MODEL = 'qwen-plus'
@@ -138,11 +138,11 @@ class ProductionConfig(Config):
         """
         import sys
 
-        # 硬编码的默认值（用于检查）
-        # 注意: ZHIPU_API_KEY不在此列表中，因为config.py中的默认值是有效的生产密钥
+        # 不安全的默认值（用于检查是否使用了开发默认值）
         DEFAULT_VALUES = {
             'TOPN_SECRET_KEY': 'TopN_Secret_Key_2024_Please_Change_In_Production',
         }
+        # 注意: 所有API密钥现在都必须通过环境变量设置，不再有硬编码的默认值
 
         # 必需的环境变量
         required_vars = {

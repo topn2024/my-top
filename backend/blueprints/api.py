@@ -12,11 +12,18 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from auth import login_required, get_current_user
 from config import get_config
 from logger_config import setup_logger, log_api_request
+from models import PlatformAccount, PublishHistory, Article, Workflow, get_db_session
+from encryption import decrypt_password
+from datetime import datetime
+import json
 
 # 初始化配置
 config = get_config()
 
 logger = setup_logger(__name__)
+
+# 延迟导入的服务（避免循环依赖）
+# 这些服务在具体路由函数中按需导入
 
 # 创建蓝图
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -38,9 +45,7 @@ def health_check():
 def upload_file():
     """文件上传"""
     from services.file_service import FileService
-    import logging
 
-    logger = logging.getLogger(__name__)
     file_service = FileService(config)
     file = request.files.get('file')
 
@@ -521,9 +526,15 @@ def test_account(account_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @api_bp.route('/accounts/import', methods=['POST'])
+@login_required
 @log_api_request("批量导入平台账号")
 def import_accounts():
-    """批量导入账号"""
+    """批量导入账号（使用数据库存储）"""
+    from encryption import encrypt_password
+
+    user = get_current_user()
+    db = get_db_session()
+
     try:
         if 'file' not in request.files:
             return jsonify({'success': False, 'error': '没有文件被上传'}), 400
@@ -573,29 +584,42 @@ def import_accounts():
         if not imported_accounts:
             return jsonify({'success': False, 'error': '没有找到有效的账号信息'}), 400
 
-        accounts = load_accounts()
-        start_id = max([acc.get('id', 0) for acc in accounts], default=0) + 1
+        # 使用数据库存储账号
+        saved_accounts = []
+        for acc in imported_accounts:
+            # 加密密码
+            encrypted_pwd = encrypt_password(acc.get('password', ''))
 
-        for i, acc in enumerate(imported_accounts):
-            acc['id'] = start_id + i
-            acc['created_at'] = datetime.now().isoformat()
-            accounts.append(acc)
+            # 创建账号记录
+            account = PlatformAccount(
+                user_id=user.id,
+                platform=acc.get('platform', ''),
+                username=acc.get('username', ''),
+                password_encrypted=encrypted_pwd,
+                notes=acc.get('notes', ''),
+                status='active'
+            )
+            db.add(account)
+            saved_accounts.append(acc)
 
-        if save_accounts(accounts):
-            logger.info(f'Imported {len(imported_accounts)} accounts')
-            return jsonify({
-                'success': True,
-                'count': len(imported_accounts),
-                'accounts': accounts
-            })
-        else:
-            return jsonify({'success': False, 'error': '保存失败'}), 500
+        db.commit()
+        logger.info(f'Imported {len(saved_accounts)} accounts for user {user.id}')
+
+        return jsonify({
+            'success': True,
+            'count': len(saved_accounts),
+            'message': f'成功导入 {len(saved_accounts)} 个账号'
+        })
 
     except json.JSONDecodeError as e:
+        db.rollback()
         return jsonify({'success': False, 'error': f'JSON格式错误: {str(e)}'}), 400
     except Exception as e:
+        db.rollback()
         logger.error(f'Import accounts failed: {e}', exc_info=True)
         return jsonify({'success': False, 'error': f'导入失败: {str(e)}'}), 500
+    finally:
+        db.close()
 
 @api_bp.route('/publish_zhihu', methods=['POST'])
 @login_required
@@ -1016,7 +1040,6 @@ def get_publish_history():
 def get_user_articles():
     """获取用户的文章归档（包含已发布和未发布的文章）"""
     from services.workflow_service import WorkflowService
-    from models import get_db_session, Article, Workflow, PublishHistory
 
     user = get_current_user()
     limit = request.args.get('limit', 50, type=int)
@@ -1268,7 +1291,8 @@ def publish_csdn():
                 )
                 db.add(publish_record)
                 db.commit()
-            except:
+            except Exception as record_err:
+                logger.warning(f'Failed to save publish record: {record_err}')
                 db.rollback()
             finally:
                 db.close()
@@ -1309,7 +1333,8 @@ def publish_csdn():
                 )
                 db.add(publish_record)
                 db.commit()
-            except:
+            except Exception as record_err:
+                logger.warning(f'Failed to save failed publish record: {record_err}')
                 db.rollback()
             finally:
                 db.close()
@@ -1342,7 +1367,8 @@ def get_platforms():
                     'name': info['name'],
                     'features': info.get('features', {})
                 })
-            except:
+            except Exception as platform_err:
+                logger.warning(f'Failed to get info for platform {platform}: {platform_err}')
                 continue
 
         return jsonify({
