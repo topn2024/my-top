@@ -923,11 +923,20 @@ def check_zhihu_cookie():
     """
     检查知乎Cookie是否有效
     在发布前调用此接口，如果Cookie无效则返回需要扫码登录
+
+    验证流程：
+    1. 检查Cookie文件是否存在
+    2. 检查Cookie是否包含z_c0登录态
+    3. 在线验证Cookie是否在知乎服务器上有效
     """
     import os
     import json
+    import requests
 
     user = get_current_user()
+    data = request.json or {}
+    # 是否跳过在线验证（默认进行在线验证）
+    skip_online_check = data.get('skip_online_check', False)
 
     try:
         # 检查Cookie文件是否存在
@@ -943,26 +952,18 @@ def check_zhihu_cookie():
                 'message': 'Cookie不存在，请扫码登录'
             })
 
-        # 检查Cookie文件是否过期（超过7天的Cookie可能失效）
-        import time
-        file_age = time.time() - os.path.getmtime(cookie_file)
-        if file_age > 7 * 24 * 3600:  # 7天
-            logger.info(f'Cookie文件超过7天: {file_age/3600:.1f}小时')
-            return jsonify({
-                'success': True,
-                'cookie_valid': False,
-                'requireQRLogin': True,
-                'message': 'Cookie可能已过期，建议重新登录'
-            })
-
-        # 读取Cookie文件验证内容
+        # 读取Cookie文件
         with open(cookie_file, 'r', encoding='utf-8') as f:
             cookies = json.load(f)
 
         # 检查是否有关键Cookie（z_c0是知乎的登录态Cookie）
-        has_login_cookie = any(c.get('name') == 'z_c0' for c in cookies)
+        z_c0_cookie = None
+        for c in cookies:
+            if c.get('name') == 'z_c0':
+                z_c0_cookie = c.get('value')
+                break
 
-        if not has_login_cookie:
+        if not z_c0_cookie:
             logger.info('Cookie中缺少z_c0登录态')
             return jsonify({
                 'success': True,
@@ -971,14 +972,75 @@ def check_zhihu_cookie():
                 'message': 'Cookie无效，请重新登录'
             })
 
-        # Cookie看起来有效
-        logger.info(f'Cookie检查通过，共{len(cookies)}个Cookie')
-        return jsonify({
-            'success': True,
-            'cookie_valid': True,
-            'requireQRLogin': False,
-            'message': 'Cookie有效'
-        })
+        # 如果跳过在线验证，只做文件检查
+        if skip_online_check:
+            logger.info(f'Cookie文件检查通过（跳过在线验证），共{len(cookies)}个Cookie')
+            return jsonify({
+                'success': True,
+                'cookie_valid': True,
+                'requireQRLogin': False,
+                'message': 'Cookie文件有效'
+            })
+
+        # 在线验证：使用Cookie访问知乎API检查登录状态
+        logger.info('开始在线验证Cookie有效性...')
+        try:
+            # 构建Cookie字符串
+            cookie_str = '; '.join([f"{c.get('name')}={c.get('value')}" for c in cookies if c.get('name') and c.get('value')])
+
+            # 使用知乎的个人信息API验证登录状态
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Cookie': cookie_str,
+                'Referer': 'https://www.zhihu.com/'
+            }
+
+            # 请求知乎的个人信息接口
+            response = requests.get(
+                'https://www.zhihu.com/api/v4/me',
+                headers=headers,
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                user_info = response.json()
+                if user_info.get('id'):
+                    zhihu_name = user_info.get('name', '未知用户')
+                    logger.info(f'✓ Cookie在线验证成功，知乎用户: {zhihu_name}')
+                    return jsonify({
+                        'success': True,
+                        'cookie_valid': True,
+                        'requireQRLogin': False,
+                        'message': f'已登录知乎账号: {zhihu_name}',
+                        'zhihu_user': zhihu_name
+                    })
+
+            # 登录态失效
+            logger.warning(f'Cookie在线验证失败，HTTP状态码: {response.status_code}')
+            return jsonify({
+                'success': True,
+                'cookie_valid': False,
+                'requireQRLogin': True,
+                'message': 'Cookie已失效，请重新扫码登录'
+            })
+
+        except requests.Timeout:
+            logger.warning('Cookie在线验证超时，使用文件检查结果')
+            # 超时时，依赖文件检查结果
+            return jsonify({
+                'success': True,
+                'cookie_valid': True,
+                'requireQRLogin': False,
+                'message': 'Cookie验证超时，但文件有效'
+            })
+        except Exception as e:
+            logger.warning(f'Cookie在线验证异常: {e}，使用文件检查结果')
+            return jsonify({
+                'success': True,
+                'cookie_valid': True,
+                'requireQRLogin': False,
+                'message': f'Cookie验证异常: {str(e)}'
+            })
 
     except Exception as e:
         logger.error(f'Check cookie failed: {e}', exc_info=True)
