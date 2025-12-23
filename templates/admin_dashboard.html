@@ -784,6 +784,335 @@
         .admin-action-btn.primary:hover {
             background: #2563eb;
         }
+
+        /* ============================================================================
+         * 日志监控样式
+         * ============================================================================ */
+        .log-tabs {
+            display: flex;
+            gap: 0;
+            background: #f8fafc;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .log-tab {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .log-tab:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .log-tab.active {
+            background: white;
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+
+        .log-panel {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .log-select {
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background: white;
+            color: #1e293b;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .log-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .log-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .log-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .log-console {
+            background: #1e293b;
+            color: #e2e8f0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            padding: 16px;
+            border-radius: 8px;
+            height: 500px;
+            overflow-y: auto;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .log-console::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .log-console::-webkit-scrollbar-track {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        .log-console::-webkit-scrollbar-thumb {
+            background: #64748b;
+            border-radius: 4px;
+        }
+
+        .log-line {
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 2px 0;
+            display: flex;
+            gap: 12px;
+        }
+
+        .log-line:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .log-line.DEBUG { color: #94a3b8; }
+        .log-line.INFO { color: #60a5fa; }
+        .log-line.WARNING { color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
+        .log-line.ERROR { color: #f87171; background: rgba(248, 113, 113, 0.1); }
+        .log-line.CRITICAL { color: #ef4444; background: rgba(239, 68, 68, 0.15); font-weight: bold; }
+
+        .log-timestamp {
+            color: #64748b;
+            white-space: nowrap;
+        }
+
+        .log-level {
+            font-weight: 600;
+            min-width: 70px;
+        }
+
+        .log-module {
+            color: #a78bfa;
+            min-width: 150px;
+        }
+
+        .log-message {
+            flex: 1;
+        }
+
+        .log-status-bar {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-radius: 0 0 8px 8px;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .log-search-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .log-search-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .log-search-results {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .log-empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .log-error-item {
+            padding: 16px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .log-error-item:hover {
+            background: #f8fafc;
+        }
+
+        .log-error-item:last-child {
+            border-bottom: none;
+        }
+
+        .log-error-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .log-error-type {
+            font-weight: 600;
+            color: #dc2626;
+        }
+
+        .log-error-time {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .log-error-message {
+            font-size: 0.9rem;
+            color: #475569;
+            word-break: break-word;
+        }
+
+        .log-error-list, .log-slow-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-slow-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .log-slow-item:last-child {
+            border-bottom: none;
+        }
+
+        .log-slow-operation {
+            flex: 1;
+            font-size: 0.9rem;
+            color: #1e293b;
+        }
+
+        .log-slow-duration {
+            font-weight: 600;
+            color: #dc2626;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .log-trace-results {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .log-trace-item {
+            padding: 12px 16px;
+            border-left: 3px solid #3b82f6;
+            background: #f8fafc;
+            margin: 8px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .log-trace-item.ERROR {
+            border-left-color: #dc2626;
+            background: #fef2f2;
+        }
+
+        .log-trace-item.WARNING {
+            border-left-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .log-pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+            padding: 16px;
+        }
+
+        .log-page-btn {
+            padding: 8px 14px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .log-page-btn:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .log-page-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .log-loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        /* SSE流状态指示 */
+        #logStreamBtn.streaming {
+            background: #dc2626;
+            color: white;
+            border-color: #dc2626;
+        }
+
+        #logStreamBtn.streaming:hover {
+            background: #b91c1c;
+        }
+
+        @media (max-width: 768px) {
+            .log-tabs {
+                flex-wrap: wrap;
+            }
+
+            .log-tab {
+                flex: 1 1 50%;
+                font-size: 0.85rem;
+            }
+
+            .log-search-row {
+                flex-wrap: wrap;
+            }
+
+            .log-console {
+                height: 350px;
+                font-size: 0.75rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1384,10 +1713,245 @@
             </div>
 
             <div id="logs" class="admin-section" style="display: none;">
-                <div class="admin-empty-state">
-                    <div class="admin-empty-state-icon">📋</div>
-                    <h3>日志监控</h3>
-                    <p>日志监控功能正在开发中...</p>
+                <!-- 日志监控标签页导航 -->
+                <div class="admin-card" style="margin-bottom: 20px; padding: 0;">
+                    <div class="log-tabs">
+                        <button class="log-tab active" onclick="switchLogTab('realtime')">实时日志</button>
+                        <button class="log-tab" onclick="switchLogTab('search')">日志搜索</button>
+                        <button class="log-tab" onclick="switchLogTab('errors')">错误分析</button>
+                        <button class="log-tab" onclick="switchLogTab('performance')">性能监控</button>
+                        <button class="log-tab" onclick="switchLogTab('trace')">请求追踪</button>
+                    </div>
+                </div>
+
+                <!-- 实时日志面板 -->
+                <div id="log-realtime" class="log-panel">
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">📋 实时日志</h3>
+                            <div class="admin-card-actions">
+                                <select id="logFileSelect" class="log-select" onchange="changeLogFile()">
+                                    <option value="all.log">all.log</option>
+                                    <option value="error.log">error.log</option>
+                                    <option value="slow.log">slow.log</option>
+                                    <option value="performance.log">performance.log</option>
+                                </select>
+                                <select id="logLevelFilter" class="log-select" onchange="filterLogLevel()">
+                                    <option value="ALL">全部级别</option>
+                                    <option value="DEBUG">DEBUG</option>
+                                    <option value="INFO">INFO</option>
+                                    <option value="WARNING">WARNING</option>
+                                    <option value="ERROR">ERROR</option>
+                                </select>
+                                <button class="admin-btn admin-btn-secondary" id="logStreamBtn" onclick="toggleLogStream()">
+                                    <span id="streamBtnText">▶ 开始</span>
+                                </button>
+                                <button class="admin-btn admin-btn-secondary" onclick="clearLogConsole()">清屏</button>
+                                <button class="admin-btn admin-btn-secondary" onclick="refreshLogs()">刷新</button>
+                            </div>
+                        </div>
+                        <div class="log-console" id="logConsole">
+                            <div class="log-loading">正在加载日志...</div>
+                        </div>
+                        <div class="log-status-bar">
+                            <span id="logStatus">就绪</span>
+                            <span id="logCount">0 条日志</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 日志搜索面板 -->
+                <div id="log-search" class="log-panel" style="display: none;">
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">🔍 日志搜索</h3>
+                        </div>
+                        <div class="log-search-form">
+                            <div class="log-search-row">
+                                <input type="text" id="searchKeyword" class="log-input" placeholder="输入搜索关键词（支持正则表达式）">
+                                <select id="searchFile" class="log-select">
+                                    <option value="all.log">all.log</option>
+                                    <option value="error.log">error.log</option>
+                                    <option value="slow.log">slow.log</option>
+                                </select>
+                                <select id="searchLevel" class="log-select">
+                                    <option value="ALL">全部级别</option>
+                                    <option value="DEBUG">DEBUG</option>
+                                    <option value="INFO">INFO</option>
+                                    <option value="WARNING">WARNING</option>
+                                    <option value="ERROR">ERROR</option>
+                                </select>
+                            </div>
+                            <div class="log-search-row">
+                                <input type="datetime-local" id="searchStartTime" class="log-input">
+                                <span style="color: #64748b;">至</span>
+                                <input type="datetime-local" id="searchEndTime" class="log-input">
+                                <button class="admin-btn admin-btn-primary" onclick="searchLogs()">搜索</button>
+                                <button class="admin-btn admin-btn-secondary" onclick="exportSearchResults()">导出</button>
+                            </div>
+                        </div>
+                        <div id="searchResults" class="log-search-results">
+                            <div class="log-empty-state">输入关键词开始搜索</div>
+                        </div>
+                        <div id="searchPagination" class="log-pagination" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- 错误分析面板 -->
+                <div id="log-errors" class="log-panel" style="display: none;">
+                    <div class="admin-stats-grid">
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">错误总数</div>
+                                <div class="admin-stat-icon" style="background: #fee2e2; color: #991b1b;">⚠️</div>
+                            </div>
+                            <div class="admin-stat-value" id="totalErrors">0</div>
+                            <div class="admin-stat-change" id="errorTrend">最近24小时</div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">错误类型数</div>
+                                <div class="admin-stat-icon" style="background: #fef3c7; color: #92400e;">📊</div>
+                            </div>
+                            <div class="admin-stat-value" id="errorTypes">0</div>
+                            <div class="admin-stat-change">不同错误类型</div>
+                        </div>
+                    </div>
+
+                    <div class="admin-content-grid">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3 class="admin-card-title">错误趋势</h3>
+                                <div class="admin-card-actions">
+                                    <button class="admin-card-action active-period" onclick="changeErrorPeriod(24)">24小时</button>
+                                    <button class="admin-card-action" onclick="changeErrorPeriod(72)">3天</button>
+                                    <button class="admin-card-action" onclick="changeErrorPeriod(168)">7天</button>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="errorTrendChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3 class="admin-card-title">错误类型分布</h3>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="errorTypeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">最近错误</h3>
+                            <button class="admin-btn admin-btn-secondary" onclick="loadErrorStats()">刷新</button>
+                        </div>
+                        <div id="recentErrors" class="log-error-list">
+                            <div class="log-loading">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 性能监控面板 -->
+                <div id="log-performance" class="log-panel" style="display: none;">
+                    <div class="admin-stats-grid">
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">总请求数</div>
+                                <div class="admin-stat-icon" style="background: #dbeafe; color: #1e40af;">📈</div>
+                            </div>
+                            <div class="admin-stat-value" id="totalRequests">0</div>
+                            <div class="admin-stat-change">最近24小时</div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">平均响应时间</div>
+                                <div class="admin-stat-icon" style="background: #dcfce7; color: #166534;">⏱️</div>
+                            </div>
+                            <div class="admin-stat-value" id="avgResponseTime2">0ms</div>
+                            <div class="admin-stat-change">毫秒</div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">P95响应时间</div>
+                                <div class="admin-stat-icon" style="background: #fef3c7; color: #92400e;">📊</div>
+                            </div>
+                            <div class="admin-stat-value" id="p95ResponseTime">0ms</div>
+                            <div class="admin-stat-change">95%请求</div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">慢请求数</div>
+                                <div class="admin-stat-icon" style="background: #fee2e2; color: #991b1b;">🐌</div>
+                            </div>
+                            <div class="admin-stat-value" id="slowRequests">0</div>
+                            <div class="admin-stat-change">>2秒的请求</div>
+                        </div>
+                    </div>
+
+                    <div class="admin-content-grid">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3 class="admin-card-title">响应时间趋势</h3>
+                                <div class="admin-card-actions">
+                                    <button class="admin-card-action active-period" onclick="changePerfPeriod(24)">24小时</button>
+                                    <button class="admin-card-action" onclick="changePerfPeriod(72)">3天</button>
+                                    <button class="admin-card-action" onclick="changePerfPeriod(168)">7天</button>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="perfTrendChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3 class="admin-card-title">慢查询排行</h3>
+                                <button class="admin-btn admin-btn-secondary" onclick="loadPerformanceStats()">刷新</button>
+                            </div>
+                            <div id="slowQueryList" class="log-slow-list">
+                                <div class="log-loading">加载中...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">端点性能排名</h3>
+                        </div>
+                        <table class="admin-table" id="endpointPerfTable">
+                            <thead>
+                                <tr>
+                                    <th>端点</th>
+                                    <th>请求数</th>
+                                    <th>平均耗时</th>
+                                    <th>P95耗时</th>
+                                    <th>最大耗时</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="5" class="log-loading">加载中...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 请求追踪面板 -->
+                <div id="log-trace" class="log-panel" style="display: none;">
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">🔗 请求追踪</h3>
+                        </div>
+                        <div class="log-search-form">
+                            <div class="log-search-row">
+                                <input type="text" id="traceRequestId" class="log-input" placeholder="输入请求ID（如: abc12345）" style="flex: 2;">
+                                <button class="admin-btn admin-btn-primary" onclick="traceRequest()">追踪</button>
+                            </div>
+                        </div>
+                        <div id="traceResults" class="log-trace-results">
+                            <div class="log-empty-state">输入请求ID追踪完整请求链路</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1813,6 +2377,9 @@
                 case 'publishing':
                     loadPublishingData();
                     break;
+                case 'logs':
+                    initLogSection();
+                    break;
             }
         }
 
@@ -2192,50 +2759,53 @@
         }
 
         // 加载内容分析数据
-        async function loadContentAnalysisData() {
+        async function loadContentAnalysisData(period = 'week') {
             const loading = document.getElementById('contentLoading');
             const content = document.getElementById('contentContent');
 
             if (loading) loading.style.display = 'flex';
 
-            // 模拟API调用
-            setTimeout(() => {
-                const mockContentData = {
-                    totalContentGenerated: 1256,
-                    publishedContent: 892,
-                    contentQualityScore: 4.2,
-                    contentGrowthRate: 18.5,
-                    topPerformingCategories: [
-                        { category: '科技资讯', count: 456, performance: 4.8 },
-                        { category: '行业分析', count: 342, performance: 4.5 },
-                        { category: '产品推广', count: 521, performance: 4.2 }
-                    ]
-                };
+            try {
+                // 调用真实API
+                const response = await fetch(`/api/admin/analytics/content?period=${period}`);
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.error || '获取内容分析数据失败');
+                }
+
+                const data = result.data;
 
                 // 更新统计卡片
-                updateStatCard('totalContentGenerated', mockContentData.totalContentGenerated);
-                updateStatCard('publishedContent', mockContentData.publishedContent);
-                updateStatCard('contentQualityScore', mockContentData.contentQualityScore);
+                updateStatCard('totalContentGenerated', data.total_generated);
+                updateStatCard('publishedContent', data.total_published);
+                updateStatCard('contentQualityScore', data.quality_score);
 
-                // 更新内容趋势图表
-                updateContentChart();
+                // 更新内容趋势图表（传入趋势数据）
+                updateContentChart(data.trend);
 
                 if (loading) loading.style.display = 'none';
-                if (content) {
-                    content.style.display = 'block';
-                    // 显示内容统计表格
-                    const categoriesEl = document.getElementById('contentCategoriesTable');
-                    if (categoriesEl) {
-                        categoriesEl.innerHTML = mockContentData.topPerformingCategories.map((cat, index) => `
-                            <tr>
-                                <td>${cat.category}</td>
-                                <td>${cat.count}</td>
-                                <td><span class="admin-status-badge admin-status-online">${cat.performance.toFixed(1)}</span></td>
-                            </tr>
-                        `).join('');
-                    }
+                if (content) content.style.display = 'block';
+
+                // 暂时隐藏分类表格（数据库中暂无分类数据）
+                /*
+                const categoriesEl = document.getElementById('contentCategoriesTable');
+                if (categoriesEl) {
+                    categoriesEl.innerHTML = mockContentData.topPerformingCategories.map((cat, index) => `
+                        <tr>
+                            <td>${cat.category}</td>
+                            <td>${cat.count}</td>
+                            <td><span class="admin-status-badge admin-status-online">${cat.performance.toFixed(1)}</span></td>
+                        </tr>
+                    `).join('');
                 }
-            }, 800);
+                */
+
+            } catch (error) {
+                console.error('加载内容分析数据失败:', error);
+                showNotification('加载内容分析数据失败', 'error');
+                if (loading) loading.style.display = 'none';
+            }
         }
 
         // 加载用户行为数据
@@ -2420,56 +2990,36 @@
         }
 
         // 更新内容图表
-        function updateContentChart() {
+        function updateContentChart(trendData = null) {
             if (!contentChart) return;
 
-            const data = {
-                week: {
+            // 如果没有传入数据，使用空数据
+            if (!trendData || !trendData.labels) {
+                trendData = {
                     labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-                    datasets: [{
-                        label: '内容生成',
-                        data: [45, 52, 48, 65, 78, 42, 58],
-                        borderColor: '#22c55e',
-                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
-                        tension: 0.4,
-                        fill: true
-                    }, {
-                        label: '内容发布',
-                        data: [12, 18, 25, 22, 28, 15],
-                        borderColor: '#16a34a',
-                        backgroundColor: 'rgba(22, 163, 74, 0.2)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                month: {
-                    labels: ['第1周', '第2周', '第3周', '第4周'],
-                    datasets: [{
-                        label: '内容生成',
-                        data: [320, 450, 380, 420, 510, 480],
-                        borderColor: '#22c55e',
-                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
-                        tension: 0.4,
-                        fill: true
-                    }, {
-                        label: '内容发布',
-                        data: [48, 156, 248, 312, 384, 456],
-                        borderColor: '#16a34a',
-                        backgroundColor: 'rgba(22, 163, 74, 0.2)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                }
-            };
+                    generated: [0, 0, 0, 0, 0, 0, 0],
+                    published: [0, 0, 0, 0, 0, 0, 0]
+                };
+            }
 
-            const selectedData = data[currentAnalysisPeriod] || data.week;
-            contentChart.data.labels = selectedData.labels;
-            contentChart.data.datasets[0].data = selectedData.datasets[0].data;
-            contentChart.data.datasets[1].data = selectedData.datasets[1].data;
-            contentChart.data.datasets[0].borderColor = selectedData.datasets[0].borderColor;
-            contentChart.data.datasets[0].backgroundColor = selectedData.datasets[0].backgroundColor;
-            contentChart.data.datasets[1].borderColor = selectedData.datasets[1].borderColor;
-            contentChart.data.datasets[1].backgroundColor = selectedData.datasets[1].backgroundColor;
+            // 更新图表数据
+            contentChart.data.labels = trendData.labels;
+            contentChart.data.datasets[0].data = trendData.generated;
+            contentChart.data.datasets[1].data = trendData.published;
+
+            // 保持原有的样式
+            contentChart.data.datasets[0].label = '内容生成';
+            contentChart.data.datasets[0].borderColor = '#22c55e';
+            contentChart.data.datasets[0].backgroundColor = 'rgba(34, 197, 94, 0.2)';
+            contentChart.data.datasets[0].tension = 0.4;
+            contentChart.data.datasets[0].fill = true;
+
+            contentChart.data.datasets[1].label = '内容发布';
+            contentChart.data.datasets[1].borderColor = '#16a34a';
+            contentChart.data.datasets[1].backgroundColor = 'rgba(22, 163, 74, 0.2)';
+            contentChart.data.datasets[1].tension = 0.4;
+            contentChart.data.datasets[1].fill = true;
+
             contentChart.update();
         }
 
@@ -3392,6 +3942,611 @@
                     loadDashboardData();
                 }
             }, 60000); // 每分钟刷新一次
+        }
+
+        // ============================================================================
+        // 日志监控功能
+        // ============================================================================
+
+        // 日志监控状态
+        let logEventSource = null;
+        let isLogStreaming = false;
+        let currentLogTab = 'realtime';
+        let errorTrendChart = null;
+        let errorTypeChart = null;
+        let perfTrendChart = null;
+        let currentErrorPeriod = 24;
+        let currentPerfPeriod = 24;
+        let searchPage = 1;
+
+        // 切换日志标签页
+        function switchLogTab(tab) {
+            currentLogTab = tab;
+
+            // 更新标签激活状态
+            document.querySelectorAll('.log-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.log-tab[onclick*="${tab}"]`).classList.add('active');
+
+            // 切换面板显示
+            document.querySelectorAll('.log-panel').forEach(p => p.style.display = 'none');
+            document.getElementById(`log-${tab}`).style.display = 'block';
+
+            // 加载对应数据
+            switch(tab) {
+                case 'realtime':
+                    refreshLogs();
+                    break;
+                case 'errors':
+                    loadErrorStats();
+                    break;
+                case 'performance':
+                    loadPerformanceStats();
+                    break;
+            }
+        }
+
+        // 刷新日志
+        async function refreshLogs() {
+            const logFile = document.getElementById('logFileSelect').value;
+            const level = document.getElementById('logLevelFilter').value;
+            const logConsole = document.getElementById('logConsole');
+
+            logConsole.innerHTML = '<div class="log-loading">正在加载日志...</div>';
+
+            try {
+                const response = await fetch(`/api/admin/logs/tail?file=${logFile}&lines=200&level=${level}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    renderLogs(data.logs);
+                    document.getElementById('logCount').textContent = `${data.logs.length} 条日志`;
+                    document.getElementById('logStatus').textContent = '已加载';
+                } else {
+                    logConsole.innerHTML = `<div class="log-empty-state">加载失败: ${data.error}</div>`;
+                }
+            } catch (error) {
+                logConsole.innerHTML = `<div class="log-empty-state">加载失败: ${error.message}</div>`;
+            }
+        }
+
+        // 渲染日志内容
+        function renderLogs(logs) {
+            const logConsole = document.getElementById('logConsole');
+
+            if (!logs || logs.length === 0) {
+                logConsole.innerHTML = '<div class="log-empty-state">暂无日志</div>';
+                return;
+            }
+
+            logConsole.innerHTML = logs.map(log => {
+                const level = log.level || 'INFO';
+                const timestamp = log.timestamp || '';
+                const module = log.module || '';
+                const message = escapeHtml(log.message || log.raw || '');
+
+                return `<div class="log-line ${level}">
+                    <span class="log-timestamp">${timestamp}</span>
+                    <span class="log-level">${level}</span>
+                    <span class="log-module">${module}</span>
+                    <span class="log-message">${message}</span>
+                </div>`;
+            }).join('');
+
+            // 滚动到底部
+            logConsole.scrollTop = logConsole.scrollHeight;
+        }
+
+        // 切换SSE日志流
+        function toggleLogStream() {
+            if (isLogStreaming) {
+                stopLogStream();
+            } else {
+                startLogStream();
+            }
+        }
+
+        // 启动SSE日志流
+        function startLogStream() {
+            const logFile = document.getElementById('logFileSelect').value;
+            const level = document.getElementById('logLevelFilter').value;
+
+            logEventSource = new EventSource(`/api/admin/logs/stream?file=${logFile}&level=${level}`);
+
+            logEventSource.onmessage = function(event) {
+                try {
+                    const log = JSON.parse(event.data);
+                    appendLog(log);
+                } catch (e) {
+                    // 忽略解析错误
+                }
+            };
+
+            logEventSource.onerror = function() {
+                if (isLogStreaming) {
+                    document.getElementById('logStatus').textContent = '连接中断，重连中...';
+                }
+            };
+
+            isLogStreaming = true;
+            document.getElementById('streamBtnText').textContent = '⏹ 停止';
+            document.getElementById('logStreamBtn').classList.add('streaming');
+            document.getElementById('logStatus').textContent = '实时监控中...';
+        }
+
+        // 停止SSE日志流
+        function stopLogStream() {
+            if (logEventSource) {
+                logEventSource.close();
+                logEventSource = null;
+            }
+
+            isLogStreaming = false;
+            document.getElementById('streamBtnText').textContent = '▶ 开始';
+            document.getElementById('logStreamBtn').classList.remove('streaming');
+            document.getElementById('logStatus').textContent = '已停止';
+        }
+
+        // 追加单条日志
+        function appendLog(log) {
+            const logConsole = document.getElementById('logConsole');
+            const level = log.level || 'INFO';
+            const timestamp = log.timestamp || '';
+            const module = log.module || '';
+            const message = escapeHtml(log.message || log.raw || '');
+
+            const logLine = document.createElement('div');
+            logLine.className = `log-line ${level}`;
+            logLine.innerHTML = `
+                <span class="log-timestamp">${timestamp}</span>
+                <span class="log-level">${level}</span>
+                <span class="log-module">${module}</span>
+                <span class="log-message">${message}</span>
+            `;
+
+            // 移除空状态提示
+            const emptyState = logConsole.querySelector('.log-empty-state, .log-loading');
+            if (emptyState) {
+                logConsole.innerHTML = '';
+            }
+
+            logConsole.appendChild(logLine);
+
+            // 限制最大行数
+            while (logConsole.children.length > 500) {
+                logConsole.removeChild(logConsole.firstChild);
+            }
+
+            // 自动滚动
+            logConsole.scrollTop = logConsole.scrollHeight;
+
+            // 更新计数
+            document.getElementById('logCount').textContent = `${logConsole.children.length} 条日志`;
+        }
+
+        // 清屏
+        function clearLogConsole() {
+            document.getElementById('logConsole').innerHTML = '<div class="log-empty-state">日志已清空</div>';
+            document.getElementById('logCount').textContent = '0 条日志';
+        }
+
+        // 改变日志文件
+        function changeLogFile() {
+            if (isLogStreaming) {
+                stopLogStream();
+                startLogStream();
+            } else {
+                refreshLogs();
+            }
+        }
+
+        // 改变日志级别过滤
+        function filterLogLevel() {
+            if (isLogStreaming) {
+                stopLogStream();
+                startLogStream();
+            } else {
+                refreshLogs();
+            }
+        }
+
+        // 搜索日志
+        async function searchLogs() {
+            const keyword = document.getElementById('searchKeyword').value.trim();
+            if (!keyword) {
+                showNotification('请输入搜索关键词', 'warning');
+                return;
+            }
+
+            const file = document.getElementById('searchFile').value;
+            const level = document.getElementById('searchLevel').value;
+            const start = document.getElementById('searchStartTime').value;
+            const end = document.getElementById('searchEndTime').value;
+
+            const searchResults = document.getElementById('searchResults');
+            searchResults.innerHTML = '<div class="log-loading">搜索中...</div>';
+
+            try {
+                let url = `/api/admin/logs/search?keyword=${encodeURIComponent(keyword)}&file=${file}&level=${level}&page=${searchPage}&limit=50`;
+                if (start) url += `&start=${start}`;
+                if (end) url += `&end=${end}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success) {
+                    renderSearchResults(data);
+                } else {
+                    searchResults.innerHTML = `<div class="log-empty-state">搜索失败: ${data.error}</div>`;
+                }
+            } catch (error) {
+                searchResults.innerHTML = `<div class="log-empty-state">搜索失败: ${error.message}</div>`;
+            }
+        }
+
+        // 渲染搜索结果
+        function renderSearchResults(data) {
+            const searchResults = document.getElementById('searchResults');
+            const pagination = document.getElementById('searchPagination');
+
+            if (!data.logs || data.logs.length === 0) {
+                searchResults.innerHTML = '<div class="log-empty-state">未找到匹配的日志</div>';
+                pagination.style.display = 'none';
+                return;
+            }
+
+            searchResults.innerHTML = data.logs.map(log => {
+                const level = log.level || 'INFO';
+                return `<div class="log-trace-item ${level}">
+                    <div><strong>${log.timestamp || ''}</strong> [${level}] ${log.module || ''}</div>
+                    <div style="margin-top: 8px; color: #475569;">${escapeHtml(log.message || log.raw || '')}</div>
+                </div>`;
+            }).join('');
+
+            // 渲染分页
+            if (data.pages > 1) {
+                pagination.style.display = 'flex';
+                pagination.innerHTML = '';
+
+                for (let i = 1; i <= Math.min(data.pages, 10); i++) {
+                    const btn = document.createElement('button');
+                    btn.className = `log-page-btn ${i === data.page ? 'active' : ''}`;
+                    btn.textContent = i;
+                    btn.onclick = () => { searchPage = i; searchLogs(); };
+                    pagination.appendChild(btn);
+                }
+            } else {
+                pagination.style.display = 'none';
+            }
+        }
+
+        // 导出搜索结果
+        async function exportSearchResults() {
+            const keyword = document.getElementById('searchKeyword').value.trim();
+            const file = document.getElementById('searchFile').value;
+            const level = document.getElementById('searchLevel').value;
+            const start = document.getElementById('searchStartTime').value;
+            const end = document.getElementById('searchEndTime').value;
+
+            try {
+                const response = await fetch('/api/admin/logs/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        file: file,
+                        level: level,
+                        start: start || null,
+                        end: end || null,
+                        format: 'txt'
+                    })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `logs_export_${new Date().toISOString().slice(0,10)}.txt`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    showNotification('日志导出成功', 'success');
+                } else {
+                    showNotification('导出失败', 'error');
+                }
+            } catch (error) {
+                showNotification('导出失败: ' + error.message, 'error');
+            }
+        }
+
+        // 加载错误统计
+        async function loadErrorStats() {
+            try {
+                const response = await fetch(`/api/admin/logs/stats/errors?hours=${currentErrorPeriod}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('totalErrors').textContent = data.total_errors;
+                    document.getElementById('errorTypes').textContent = Object.keys(data.by_type).length;
+
+                    renderErrorTrendChart(data.trend);
+                    renderErrorTypeChart(data.by_type);
+                    renderRecentErrors(data.recent);
+                }
+            } catch (error) {
+                console.error('加载错误统计失败:', error);
+            }
+        }
+
+        // 渲染错误趋势图表
+        function renderErrorTrendChart(trend) {
+            const ctx = document.getElementById('errorTrendChart').getContext('2d');
+
+            if (errorTrendChart) {
+                errorTrendChart.destroy();
+            }
+
+            errorTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: trend.labels,
+                    datasets: [{
+                        label: '错误数',
+                        data: trend.data,
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // 渲染错误类型分布图表
+        function renderErrorTypeChart(byType) {
+            const ctx = document.getElementById('errorTypeChart').getContext('2d');
+
+            if (errorTypeChart) {
+                errorTypeChart.destroy();
+            }
+
+            const labels = Object.keys(byType);
+            const data = Object.values(byType);
+            const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'];
+
+            errorTypeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length)
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+        }
+
+        // 渲染最近错误列表
+        function renderRecentErrors(errors) {
+            const container = document.getElementById('recentErrors');
+
+            if (!errors || errors.length === 0) {
+                container.innerHTML = '<div class="log-empty-state">暂无错误</div>';
+                return;
+            }
+
+            container.innerHTML = errors.map(error => `
+                <div class="log-error-item">
+                    <div class="log-error-header">
+                        <span class="log-error-type">${error.type}</span>
+                        <span class="log-error-time">${error.timestamp || ''}</span>
+                    </div>
+                    <div class="log-error-message">${escapeHtml(error.message || '')}</div>
+                </div>
+            `).join('');
+        }
+
+        // 改变错误统计周期
+        function changeErrorPeriod(hours) {
+            currentErrorPeriod = hours;
+
+            // 更新按钮状态
+            document.querySelectorAll('#log-errors .admin-card-action').forEach(btn => {
+                btn.classList.remove('active-period');
+                if (btn.textContent.includes(hours === 24 ? '24小时' : hours === 72 ? '3天' : '7天')) {
+                    btn.classList.add('active-period');
+                }
+            });
+
+            loadErrorStats();
+        }
+
+        // 加载性能统计
+        async function loadPerformanceStats() {
+            try {
+                const response = await fetch(`/api/admin/logs/stats/performance?hours=${currentPerfPeriod}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('totalRequests').textContent = data.total_requests;
+                    document.getElementById('avgResponseTime2').textContent = `${(data.avg_response_time * 1000).toFixed(0)}ms`;
+                    document.getElementById('p95ResponseTime').textContent = `${(data.p95_response_time * 1000).toFixed(0)}ms`;
+                    document.getElementById('slowRequests').textContent = data.slow_requests;
+
+                    renderPerfTrendChart(data.trend);
+                    renderEndpointTable(data.by_endpoint);
+
+                    // 加载慢查询
+                    loadSlowQueries();
+                }
+            } catch (error) {
+                console.error('加载性能统计失败:', error);
+            }
+        }
+
+        // 加载慢查询
+        async function loadSlowQueries() {
+            try {
+                const response = await fetch(`/api/admin/logs/stats/slow?hours=${currentPerfPeriod}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    renderSlowQueryList(data.top_slow);
+                }
+            } catch (error) {
+                console.error('加载慢查询失败:', error);
+            }
+        }
+
+        // 渲染性能趋势图表
+        function renderPerfTrendChart(trend) {
+            const ctx = document.getElementById('perfTrendChart').getContext('2d');
+
+            if (perfTrendChart) {
+                perfTrendChart.destroy();
+            }
+
+            perfTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: trend.labels,
+                    datasets: [{
+                        label: '平均响应时间 (秒)',
+                        data: trend.avg_times,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // 渲染端点性能表格
+        function renderEndpointTable(endpoints) {
+            const tbody = document.querySelector('#endpointPerfTable tbody');
+
+            if (!endpoints || endpoints.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="log-empty-state">暂无数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = endpoints.map(ep => `
+                <tr>
+                    <td>${escapeHtml(ep.endpoint)}</td>
+                    <td>${ep.count}</td>
+                    <td>${(ep.avg * 1000).toFixed(0)}ms</td>
+                    <td>${(ep.p95 * 1000).toFixed(0)}ms</td>
+                    <td>${(ep.max * 1000).toFixed(0)}ms</td>
+                </tr>
+            `).join('');
+        }
+
+        // 渲染慢查询列表
+        function renderSlowQueryList(queries) {
+            const container = document.getElementById('slowQueryList');
+
+            if (!queries || queries.length === 0) {
+                container.innerHTML = '<div class="log-empty-state">暂无慢查询</div>';
+                return;
+            }
+
+            container.innerHTML = queries.slice(0, 10).map(q => `
+                <div class="log-slow-item">
+                    <span class="log-slow-operation">${escapeHtml(q.operation)}</span>
+                    <span class="log-slow-duration">${q.duration.toFixed(2)}s</span>
+                </div>
+            `).join('');
+        }
+
+        // 改变性能统计周期
+        function changePerfPeriod(hours) {
+            currentPerfPeriod = hours;
+
+            // 更新按钮状态
+            document.querySelectorAll('#log-performance .admin-card-action').forEach(btn => {
+                btn.classList.remove('active-period');
+                if (btn.textContent.includes(hours === 24 ? '24小时' : hours === 72 ? '3天' : '7天')) {
+                    btn.classList.add('active-period');
+                }
+            });
+
+            loadPerformanceStats();
+        }
+
+        // 请求追踪
+        async function traceRequest() {
+            const requestId = document.getElementById('traceRequestId').value.trim();
+            if (!requestId) {
+                showNotification('请输入请求ID', 'warning');
+                return;
+            }
+
+            const traceResults = document.getElementById('traceResults');
+            traceResults.innerHTML = '<div class="log-loading">追踪中...</div>';
+
+            try {
+                const response = await fetch(`/api/admin/logs/request/${requestId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    if (data.logs && data.logs.length > 0) {
+                        traceResults.innerHTML = data.logs.map(log => {
+                            const level = log.level || 'INFO';
+                            return `<div class="log-trace-item ${level}">
+                                <div><strong>${log.timestamp || ''}</strong> [${level}] ${log.module || ''}</div>
+                                <div style="margin-top: 8px; color: #475569;">${escapeHtml(log.message || log.raw || '')}</div>
+                            </div>`;
+                        }).join('');
+                    } else {
+                        traceResults.innerHTML = `<div class="log-empty-state">未找到请求ID: ${requestId}</div>`;
+                    }
+                } else {
+                    traceResults.innerHTML = `<div class="log-empty-state">追踪失败: ${data.error}</div>`;
+                }
+            } catch (error) {
+                traceResults.innerHTML = `<div class="log-empty-state">追踪失败: ${error.message}</div>`;
+            }
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 日志部分加载时初始化
+        function initLogSection() {
+            refreshLogs();
         }
     </script>
 
