@@ -963,6 +963,7 @@
             border-bottom: 1px solid #f1f5f9;
             cursor: pointer;
             transition: background 0.2s;
+            border-left: 4px solid transparent;
         }
 
         .log-error-item:hover {
@@ -973,11 +974,56 @@
             border-bottom: none;
         }
 
+        .log-error-item.severity-critical {
+            border-left-color: #991b1b;
+            background: #fef2f2;
+        }
+
+        .log-error-item.severity-error {
+            border-left-color: #d97706;
+            background: #fffbeb;
+        }
+
+        .log-error-item.severity-warning {
+            border-left-color: #ca8a04;
+            background: #fefce8;
+        }
+
         .log-error-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .error-badges {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .error-code-badge, .error-category-badge, .error-severity-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .error-severity-badge.severity-critical {
+            background: #991b1b;
+            color: #fff;
+        }
+
+        .error-severity-badge.severity-error {
+            background: #d97706;
+            color: #fff;
+        }
+
+        .error-severity-badge.severity-warning {
+            background: #ca8a04;
+            color: #fff;
         }
 
         .log-error-type {
@@ -988,12 +1034,79 @@
         .log-error-time {
             font-size: 0.8rem;
             color: #64748b;
+            white-space: nowrap;
+        }
+
+        .log-error-name {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
         }
 
         .log-error-message {
             font-size: 0.9rem;
             color: #475569;
             word-break: break-word;
+        }
+
+        .log-error-solution {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #ecfdf5;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #065f46;
+        }
+
+        /* 错误分类网格 */
+        .error-category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .error-category-card {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 8px;
+            gap: 12px;
+        }
+
+        .error-category-icon {
+            font-size: 1.5rem;
+        }
+
+        .error-category-info {
+            flex: 1;
+        }
+
+        .error-category-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .error-category-code {
+            font-size: 0.75rem;
+            color: #64748b;
+            font-family: monospace;
+        }
+
+        .error-category-count {
+            text-align: right;
+        }
+
+        .error-count-value {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .error-count-percent {
+            font-size: 0.75rem;
+            color: #64748b;
         }
 
         .log-error-list, .log-slow-list {
@@ -1799,7 +1912,8 @@
 
                 <!-- 错误分析面板 -->
                 <div id="log-errors" class="log-panel" style="display: none;">
-                    <div class="admin-stats-grid">
+                    <!-- 严重级别统计卡片 -->
+                    <div class="admin-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
                         <div class="admin-stat-card">
                             <div class="admin-stat-header">
                                 <div class="admin-stat-title">错误总数</div>
@@ -1810,11 +1924,27 @@
                         </div>
                         <div class="admin-stat-card">
                             <div class="admin-stat-header">
-                                <div class="admin-stat-title">错误类型数</div>
-                                <div class="admin-stat-icon" style="background: #fef3c7; color: #92400e;">📊</div>
+                                <div class="admin-stat-title">严重错误</div>
+                                <div class="admin-stat-icon" style="background: #7f1d1d; color: #fff;">🔴</div>
                             </div>
-                            <div class="admin-stat-value" id="errorTypes">0</div>
-                            <div class="admin-stat-change">不同错误类型</div>
+                            <div class="admin-stat-value" id="criticalErrors" style="color: #991b1b;">0</div>
+                            <div class="admin-stat-change">CRITICAL级别</div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">一般错误</div>
+                                <div class="admin-stat-icon" style="background: #fef3c7; color: #92400e;">🟠</div>
+                            </div>
+                            <div class="admin-stat-value" id="normalErrors" style="color: #d97706;">0</div>
+                            <div class="admin-stat-change">ERROR级别</div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-header">
+                                <div class="admin-stat-title">警告</div>
+                                <div class="admin-stat-icon" style="background: #fef9c3; color: #a16207;">🟡</div>
+                            </div>
+                            <div class="admin-stat-value" id="warningErrors" style="color: #ca8a04;">0</div>
+                            <div class="admin-stat-change">WARNING级别</div>
                         </div>
                     </div>
 
@@ -1834,11 +1964,21 @@
                         </div>
                         <div class="admin-card">
                             <div class="admin-card-header">
-                                <h3 class="admin-card-title">错误类型分布</h3>
+                                <h3 class="admin-card-title">错误分类分布</h3>
                             </div>
                             <div class="chart-container">
                                 <canvas id="errorTypeChart"></canvas>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- 错误分类明细 -->
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">错误分类统计</h3>
+                        </div>
+                        <div id="errorCategoryStats" class="error-category-grid">
+                            <div class="log-loading">加载中...</div>
                         </div>
                     </div>
 
@@ -4257,6 +4397,19 @@
             }
         }
 
+        // 错误分类颜色映射
+        const categoryColors = {
+            'AUTH': { bg: '#fef3c7', color: '#92400e', icon: '🔐' },
+            'BIZ': { bg: '#dbeafe', color: '#1e40af', icon: '📋' },
+            'VALID': { bg: '#fce7f3', color: '#9d174d', icon: '✓' },
+            'EXT': { bg: '#e0e7ff', color: '#3730a3', icon: '🌐' },
+            'SYS': { bg: '#fee2e2', color: '#991b1b', icon: '⚙️' },
+            'RES': { bg: '#ccfbf1', color: '#0f766e', icon: '📁' },
+            'NET': { bg: '#f3e8ff', color: '#6b21a8', icon: '🔗' },
+            'DB': { bg: '#fef9c3', color: '#a16207', icon: '💾' },
+            'UNK': { bg: '#f3f4f6', color: '#374151', icon: '❓' }
+        };
+
         // 加载错误统计
         async function loadErrorStats() {
             try {
@@ -4264,16 +4417,48 @@
                 const data = await response.json();
 
                 if (data.success) {
+                    // 更新统计卡片
                     document.getElementById('totalErrors').textContent = data.total_errors;
-                    document.getElementById('errorTypes').textContent = Object.keys(data.by_type).length;
+                    document.getElementById('criticalErrors').textContent = data.by_severity?.CRITICAL || 0;
+                    document.getElementById('normalErrors').textContent = data.by_severity?.ERROR || 0;
+                    document.getElementById('warningErrors').textContent = data.by_severity?.WARNING || 0;
 
+                    // 渲染图表
                     renderErrorTrendChart(data.trend);
-                    renderErrorTypeChart(data.by_type);
+                    renderErrorCategoryChart(data.by_category);
+                    renderErrorCategoryStats(data.by_category);
                     renderRecentErrors(data.recent);
                 }
             } catch (error) {
                 console.error('加载错误统计失败:', error);
             }
+        }
+
+        // 渲染错误分类统计
+        function renderErrorCategoryStats(categories) {
+            const container = document.getElementById('errorCategoryStats');
+
+            if (!categories || categories.length === 0) {
+                container.innerHTML = '<div class="log-empty-state">暂无错误分类数据</div>';
+                return;
+            }
+
+            container.innerHTML = categories.map(cat => {
+                const style = categoryColors[cat.category] || categoryColors['UNK'];
+                return `
+                    <div class="error-category-card" style="background: ${style.bg}; border-left: 4px solid ${style.color};">
+                        <div class="error-category-icon">${style.icon}</div>
+                        <div class="error-category-info">
+                            <div class="error-category-name" style="color: ${style.color};">${cat.name}</div>
+                            <div class="error-category-code">${cat.category}</div>
+                        </div>
+                        <div class="error-category-count">
+                            <span class="error-count-value">${cat.count}</span>
+                            <span class="error-count-percent">${cat.percentage}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         // 渲染错误趋势图表
@@ -4310,17 +4495,24 @@
             });
         }
 
-        // 渲染错误类型分布图表
-        function renderErrorTypeChart(byType) {
+        // 渲染错误分类分布图表
+        function renderErrorCategoryChart(categories) {
             const ctx = document.getElementById('errorTypeChart').getContext('2d');
 
             if (errorTypeChart) {
                 errorTypeChart.destroy();
             }
 
-            const labels = Object.keys(byType);
-            const data = Object.values(byType);
-            const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'];
+            if (!categories || categories.length === 0) {
+                return;
+            }
+
+            const labels = categories.map(c => c.name);
+            const data = categories.map(c => c.count);
+            const colors = categories.map(c => {
+                const style = categoryColors[c.category] || categoryColors['UNK'];
+                return style.color;
+            });
 
             errorTypeChart = new Chart(ctx, {
                 type: 'doughnut',
@@ -4328,7 +4520,7 @@
                     labels: labels,
                     datasets: [{
                         data: data,
-                        backgroundColor: colors.slice(0, labels.length)
+                        backgroundColor: colors
                     }]
                 },
                 options: {
@@ -4336,7 +4528,18 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'right'
+                            position: 'right',
+                            labels: {
+                                generateLabels: function(chart) {
+                                    const data = chart.data;
+                                    return data.labels.map((label, i) => ({
+                                        text: `${label} (${data.datasets[0].data[i]})`,
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        hidden: false,
+                                        index: i
+                                    }));
+                                }
+                            }
                         }
                     }
                 }
@@ -4352,15 +4555,26 @@
                 return;
             }
 
-            container.innerHTML = errors.map(error => `
-                <div class="log-error-item">
-                    <div class="log-error-header">
-                        <span class="log-error-type">${error.type}</span>
-                        <span class="log-error-time">${error.timestamp || ''}</span>
+            container.innerHTML = errors.map(error => {
+                const style = categoryColors[error.category] || categoryColors['UNK'];
+                const severityClass = error.severity === 'CRITICAL' ? 'severity-critical' :
+                                     error.severity === 'ERROR' ? 'severity-error' : 'severity-warning';
+                return `
+                    <div class="log-error-item ${severityClass}">
+                        <div class="log-error-header">
+                            <div class="error-badges">
+                                <span class="error-code-badge" style="background: ${style.bg}; color: ${style.color};">${error.code}</span>
+                                <span class="error-category-badge" style="background: ${style.bg}; color: ${style.color};">${error.category_name}</span>
+                                <span class="error-severity-badge ${severityClass}">${error.severity}</span>
+                            </div>
+                            <span class="log-error-time">${error.timestamp || ''}</span>
+                        </div>
+                        <div class="log-error-name">${escapeHtml(error.name || '')}</div>
+                        <div class="log-error-message">${escapeHtml(error.message || '')}</div>
+                        ${error.solution ? `<div class="log-error-solution">💡 ${escapeHtml(error.solution)}</div>` : ''}
                     </div>
-                    <div class="log-error-message">${escapeHtml(error.message || '')}</div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         // 改变错误统计周期

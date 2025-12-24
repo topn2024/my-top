@@ -2,6 +2,12 @@
 """
 日志服务层
 提供日志查询、分析、统计的API服务
+
+企业级日志分析功能:
+- 智能错误分类（8大类，50+错误码）
+- 错误趋势分析
+- 性能监控统计
+- 请求链路追踪
 """
 import os
 import re
@@ -12,6 +18,10 @@ from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
 
 from logger_config import setup_logger, log_service_call
+from error_codes import (
+    classify_error, get_all_categories, ErrorCategory, ErrorSeverity,
+    EXCEPTION_TO_ERROR_CODE, KEYWORD_TO_ERROR_CODE
+)
 
 logger = setup_logger(__name__)
 
@@ -306,13 +316,17 @@ class LogService:
 
     def get_error_stats(self, hours: int = 24) -> Dict[str, Any]:
         """
-        获取错误统计
+        获取错误统计（企业级错误分类）
 
         Args:
             hours: 统计最近N小时
 
         Returns:
-            错误统计数据
+            错误统计数据，包含:
+            - 按分类统计 (AUTH, BIZ, VALID, EXT, SYS, RES, NET, DB, UNK)
+            - 按严重级别统计 (CRITICAL, ERROR, WARNING)
+            - 错误趋势
+            - 最近错误详情
         """
         log_path = self.log_dir / 'error.log'
         all_log_path = self.log_dir / 'all.log'
@@ -323,18 +337,17 @@ class LogService:
         elif all_log_path.exists():
             target_path = all_log_path
         else:
-            return {
-                'total_errors': 0,
-                'by_type': {},
-                'trend': {'labels': [], 'data': []},
-                'recent': []
-            }
+            return self._empty_error_stats()
 
         try:
             cutoff_time = datetime.now() - timedelta(hours=hours)
-            error_types = Counter()
-            error_by_hour = defaultdict(int)
-            recent_errors = []
+
+            # 统计容器
+            by_category = Counter()      # 按分类
+            by_severity = Counter()      # 按严重级别
+            by_code = Counter()          # 按错误码
+            by_hour = defaultdict(int)   # 按小时趋势
+            recent_errors = []           # 最近错误
 
             with open(target_path, 'r', encoding='utf-8', errors='ignore') as f:
                 for line in f:
@@ -351,23 +364,37 @@ class LogService:
                     if log_dt and log_dt < cutoff_time:
                         continue
 
-                    # 提取错误类型
+                    # 提取异常类型
                     error_match = self.ERROR_TYPE_PATTERN.search(line)
-                    error_type = error_match.group(1) if error_match else 'UnknownError'
-                    error_types[error_type] += 1
+                    exception_type = error_match.group(1) if error_match else None
+
+                    # 使用企业级错误分类
+                    error_info = classify_error(
+                        parsed.get('message', ''),
+                        exception_type
+                    )
+
+                    # 统计
+                    by_category[error_info['category']] += 1
+                    by_severity[error_info['severity']] += 1
+                    by_code[error_info['code']] += 1
 
                     # 按小时统计
                     if log_dt:
                         hour_key = log_dt.strftime('%Y-%m-%d %H:00')
-                        error_by_hour[hour_key] += 1
+                        by_hour[hour_key] += 1
 
-                    # 收集最近错误
+                    # 收集最近错误（带分类信息）
                     recent_errors.append({
                         'timestamp': parsed.get('timestamp'),
-                        'type': error_type,
+                        'code': error_info['code'],
+                        'category': error_info['category'],
+                        'category_name': error_info['category_name'],
+                        'severity': error_info['severity'],
+                        'name': error_info['name'],
                         'message': parsed.get('message', '')[:200],
                         'module': parsed.get('module'),
-                        'location': parsed.get('location')
+                        'solution': error_info.get('solution', '')
                     })
 
             # 生成趋势数据
@@ -378,27 +405,59 @@ class LogService:
                 hour = current - timedelta(hours=i)
                 hour_key = hour.strftime('%Y-%m-%d %H:00')
                 trend_labels.insert(0, hour.strftime('%H:00'))
-                trend_data.insert(0, error_by_hour.get(hour_key, 0))
+                trend_data.insert(0, by_hour.get(hour_key, 0))
+
+            # 分类统计详情
+            category_stats = []
+            for cat in ErrorCategory:
+                count = by_category.get(cat.name, 0)
+                if count > 0:
+                    category_stats.append({
+                        'category': cat.name,
+                        'name': cat.name_cn,
+                        'name_en': cat.name_en,
+                        'count': count,
+                        'percentage': round(count / sum(by_category.values()) * 100, 1) if by_category else 0
+                    })
+
+            # 严重级别统计
+            severity_stats = {
+                'CRITICAL': by_severity.get('CRITICAL', 0),
+                'ERROR': by_severity.get('ERROR', 0),
+                'WARNING': by_severity.get('WARNING', 0)
+            }
 
             return {
-                'total_errors': sum(error_types.values()),
-                'by_type': dict(error_types.most_common(10)),
+                'total_errors': sum(by_category.values()),
+                'by_category': category_stats,
+                'by_severity': severity_stats,
+                'by_code': dict(by_code.most_common(15)),
                 'trend': {
                     'labels': trend_labels,
                     'data': trend_data
                 },
-                'recent': recent_errors[-20:][::-1]  # 最近20条，倒序
+                'recent': recent_errors[-30:][::-1],  # 最近30条，倒序
+                'categories': get_all_categories()  # 所有分类定义
             }
 
         except Exception as e:
             logger.error(f"错误统计失败: {e}")
-            return {
-                'total_errors': 0,
-                'by_type': {},
-                'trend': {'labels': [], 'data': []},
-                'recent': [],
-                'error': str(e)
-            }
+            return self._empty_error_stats(str(e))
+
+    def _empty_error_stats(self, error: str = None) -> Dict[str, Any]:
+        """返回空的错误统计结构"""
+        result = {
+            'total_errors': 0,
+            'by_category': [],
+            'by_severity': {'CRITICAL': 0, 'ERROR': 0, 'WARNING': 0},
+            'by_code': {},
+            'trend': {'labels': [], 'data': []},
+            'recent': [],
+            'categories': get_all_categories()
+        }
+        if error:
+            result['error'] = error
+        return result
 
     def get_performance_stats(self, hours: int = 24) -> Dict[str, Any]:
         """

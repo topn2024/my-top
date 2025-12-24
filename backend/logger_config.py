@@ -476,6 +476,141 @@ def log_function_call(logger=None, log_args=False):
 default_logger = setup_logger('topn')
 
 
+# ============================================================
+# 结构化错误日志
+# ============================================================
+def log_error(logger_instance, error_code: str, message: str,
+              exception: Exception = None, extra_data: dict = None):
+    """
+    记录结构化错误日志
+
+    Args:
+        logger_instance: logger实例
+        error_code: 错误码 (如 ERR-10001)
+        message: 错误描述
+        exception: 原始异常对象
+        extra_data: 额外数据
+
+    用法:
+        from logger_config import log_error, default_logger
+        log_error(default_logger, 'ERR-10001', '用户登录失败', exception=e)
+    """
+    try:
+        from error_codes import classify_error
+
+        # 获取异常类型
+        exc_type = type(exception).__name__ if exception else None
+
+        # 分类错误
+        error_info = classify_error(message, exc_type)
+
+        # 构建日志消息
+        log_parts = [
+            f"[{error_code or error_info['code']}]",
+            f"[{error_info['category']}]",
+            f"{error_info['name']}:",
+            message
+        ]
+
+        if exception:
+            log_parts.append(f"| {exc_type}: {str(exception)[:100]}")
+
+        log_msg = ' '.join(log_parts)
+
+        # 根据严重级别选择日志方法
+        severity = error_info.get('severity', 'ERROR')
+        extra = {
+            'error_code': error_code or error_info['code'],
+            'category': error_info['category'],
+            'severity': severity,
+            **(extra_data or {})
+        }
+
+        if severity == 'CRITICAL':
+            logger_instance.critical(log_msg, extra=extra, exc_info=exception is not None)
+        elif severity == 'WARNING':
+            logger_instance.warning(log_msg, extra=extra)
+        else:
+            logger_instance.error(log_msg, extra=extra)
+
+    except ImportError:
+        # error_codes模块未加载时的回退
+        if exception:
+            logger_instance.error(f"[{error_code}] {message} | {type(exception).__name__}: {exception}")
+        else:
+            logger_instance.error(f"[{error_code}] {message}")
+
+
+def log_business_error(operation: str, error_type: str, message: str,
+                       user: str = None, extra: dict = None):
+    """
+    记录业务错误（用于业务层）
+
+    Args:
+        operation: 操作名称
+        error_type: 错误类型 (AUTH/BIZ/VALID/EXT/SYS/RES/NET/DB)
+        message: 错误消息
+        user: 用户标识
+        extra: 额外信息
+    """
+    log_data = {
+        'operation': operation,
+        'type': error_type,
+        'message': message
+    }
+    if user:
+        log_data['user'] = user
+    if extra:
+        log_data.update(extra)
+
+    default_logger.error(
+        f"[BIZ-ERROR] {operation} | type={error_type} | {message}",
+        extra=log_data
+    )
+
+
+def log_external_error(service: str, operation: str, status_code: int = None,
+                       response: str = None, duration: float = None):
+    """
+    记录外部服务调用错误
+
+    Args:
+        service: 服务名称 (如 'openai', 'zhihu', 'weixin')
+        operation: 操作名称
+        status_code: HTTP状态码
+        response: 响应内容
+        duration: 耗时（秒）
+    """
+    parts = [f"[EXT-ERROR] {service}.{operation}"]
+
+    if status_code:
+        parts.append(f"status={status_code}")
+    if duration:
+        parts.append(f"took={duration:.3f}s")
+    if response:
+        parts.append(f"resp={response[:100]}")
+
+    default_logger.error(' | '.join(parts))
+
+
+def log_db_error(operation: str, table: str = None, error: Exception = None):
+    """
+    记录数据库错误
+
+    Args:
+        operation: 操作类型 (SELECT/INSERT/UPDATE/DELETE)
+        table: 表名
+        error: 异常对象
+    """
+    parts = [f"[DB-ERROR] {operation}"]
+    if table:
+        parts.append(f"table={table}")
+    if error:
+        parts.append(f"{type(error).__name__}: {str(error)[:100]}")
+
+    default_logger.error(' | '.join(parts))
+
+
 # 导出
 __all__ = [
     'setup_logger',
@@ -483,6 +618,10 @@ __all__ = [
     'log_service_call',
     'log_database_query',
     'log_function_call',
+    'log_error',
+    'log_business_error',
+    'log_external_error',
+    'log_db_error',
     'set_request_id',
     'get_request_id',
     'clear_request_id',
