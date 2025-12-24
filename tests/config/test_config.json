@@ -1,0 +1,33 @@
+{
+    "base_url": "http://localhost:3001",
+    "timeout": 30,
+    "test_user": {
+        "username": "admin",
+        "password": "admin123",
+        "email": "admin@example.com"
+    },
+    "database": {
+        "url": "sqlite:///test_topn.db",
+        "echo": false
+    },
+    "api_endpoints": {
+        "login": "/api/auth/login",
+        "logout": "/api/auth/logout",
+        "register": "/api/auth/register",
+        "articles": "/api/articles/history",
+        "workflows": "/api/workflow/list",
+        "publish": "/api/publish",
+        "admin_stats": "/api/admin/stats/overview",
+        "admin_logs": "/api/admin/logs/files"
+    },
+    "webdriver": {
+        "headless": true,
+        "implicit_wait": 10,
+        "page_load_timeout": 30,
+        "screenshot_on_failure": true
+    },
+    "test_data": {
+        "cleanup_after_test": true,
+        "use_fixtures": true
+    }
+}
