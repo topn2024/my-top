@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-增强版日志配置模块
-提供完善的日志记录功能，方便问题定位和性能监控
+优化版日志配置模块
+提供清晰、易读的日志输出，便于问题定位和性能监控
+
+日志格式设计原则:
+1. 一行一条日志，便于grep和快速扫描
+2. 关键信息前置：时间 > 级别 > 模块 > 消息
+3. 使用颜色区分级别（控制台）
+4. 敏感信息自动脱敏
+5. 请求链路追踪（RequestID）
 """
 import logging
 import sys
@@ -14,6 +21,7 @@ import traceback
 from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from threading import local
 import uuid
+import re
 
 # 线程本地存储，用于存储请求ID
 _thread_local = local()
@@ -22,63 +30,132 @@ _thread_local = local()
 LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
 os.makedirs(LOG_DIR, exist_ok=True)
 
-# 日志格式
-DETAILED_FORMAT = '%(asctime)s | %(levelname)-8s | %(name)-30s | [%(filename)s:%(lineno)4d] | %(request_id)s | %(message)s'
-SIMPLE_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
-JSON_FORMAT = True  # 是否启用JSON格式日志
-DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
-
-# 慢查询阈值（秒）
+# 慢操作阈值（秒）
 SLOW_QUERY_THRESHOLD = 3.0
 SLOW_API_THRESHOLD = 2.0
 
 
+# ============================================================
+# 颜色定义（控制台输出）
+# ============================================================
+class LogColors:
+    """日志颜色代码"""
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
+
+    # 级别颜色
+    DEBUG = '\033[36m'      # 青色
+    INFO = '\033[32m'       # 绿色
+    WARNING = '\033[33m'    # 黄色
+    ERROR = '\033[31m'      # 红色
+    CRITICAL = '\033[35m'   # 紫色
+
+    # 特殊颜色
+    TIME = '\033[90m'       # 灰色
+    MODULE = '\033[34m'     # 蓝色
+    REQUEST_ID = '\033[95m' # 亮紫色
+
+
 class RequestIdFilter(logging.Filter):
     """为日志添加请求ID"""
-
     def filter(self, record):
-        record.request_id = getattr(_thread_local, 'request_id', 'NO-REQ-ID')
+        record.request_id = getattr(_thread_local, 'request_id', '-')
         return True
 
 
-class StructuredFormatter(logging.Formatter):
-    """结构化日志格式化器（JSON格式）"""
+# ============================================================
+# 日志格式化器
+# ============================================================
+class CompactFormatter(logging.Formatter):
+    """紧凑型格式化器 - 用于文件日志"""
+
+    def __init__(self):
+        # 格式: 时间 | 级别 | 请求ID | 模块:行号 | 消息
+        fmt = '%(asctime)s | %(levelname)-5s | %(request_id)-8s | %(name)-20s | %(message)s'
+        super().__init__(fmt, datefmt='%Y-%m-%d %H:%M:%S')
+
+
+class ColoredFormatter(logging.Formatter):
+    """彩色格式化器 - 用于控制台日志"""
+
+    LEVEL_COLORS = {
+        logging.DEBUG: LogColors.DEBUG,
+        logging.INFO: LogColors.INFO,
+        logging.WARNING: LogColors.WARNING,
+        logging.ERROR: LogColors.ERROR,
+        logging.CRITICAL: LogColors.CRITICAL,
+    }
+
+    def format(self, record):
+        # 获取级别颜色
+        level_color = self.LEVEL_COLORS.get(record.levelno, LogColors.RESET)
+
+        # 格式化时间（灰色）
+        time_str = f"{LogColors.TIME}{datetime.fromtimestamp(record.created).strftime('%H:%M:%S')}{LogColors.RESET}"
+
+        # 格式化级别（彩色）
+        level_str = f"{level_color}{record.levelname:5}{LogColors.RESET}"
+
+        # 格式化请求ID（亮紫色）
+        req_id = getattr(record, 'request_id', '-')
+        req_id_str = f"{LogColors.REQUEST_ID}{req_id:8}{LogColors.RESET}" if req_id != '-' else f"{'':8}"
+
+        # 格式化模块名（蓝色，截断到20字符）
+        module_name = record.name[:20] if len(record.name) > 20 else record.name
+        module_str = f"{LogColors.MODULE}{module_name:20}{LogColors.RESET}"
+
+        # 格式化消息
+        message = record.getMessage()
+
+        # 如果是错误，添加红色
+        if record.levelno >= logging.ERROR:
+            message = f"{LogColors.ERROR}{message}{LogColors.RESET}"
+
+        # 组合输出
+        formatted = f"{time_str} {level_str} {req_id_str} {module_str} {message}"
+
+        # 添加异常信息
+        if record.exc_info:
+            formatted += f"\n{LogColors.ERROR}{self.formatException(record.exc_info)}{LogColors.RESET}"
+
+        return formatted
+
+
+class JSONFormatter(logging.Formatter):
+    """JSON格式化器 - 用于日志分析系统"""
 
     def format(self, record):
         log_data = {
-            'timestamp': datetime.fromtimestamp(record.created).isoformat(),
+            'ts': datetime.fromtimestamp(record.created).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3],
             'level': record.levelname,
             'logger': record.name,
-            'file': record.filename,
-            'line': record.lineno,
-            'function': record.funcName,
-            'request_id': getattr(record, 'request_id', 'NO-REQ-ID'),
-            'message': record.getMessage(),
+            'req_id': getattr(record, 'request_id', '-'),
+            'msg': record.getMessage(),
         }
+
+        # 添加额外字段
+        for key in ['user', 'duration', 'status', 'method', 'path', 'ip']:
+            if hasattr(record, key):
+                log_data[key] = getattr(record, key)
 
         # 添加异常信息
         if record.exc_info:
             log_data['exception'] = self.formatException(record.exc_info)
 
-        # 添加额外字段
-        if hasattr(record, 'user_id'):
-            log_data['user_id'] = record.user_id
-        if hasattr(record, 'duration'):
-            log_data['duration'] = record.duration
-        if hasattr(record, 'operation'):
-            log_data['operation'] = record.operation
-
         return json.dumps(log_data, ensure_ascii=False)
 
 
+# ============================================================
+# Logger配置
+# ============================================================
 def setup_logger(name=None, level=logging.INFO, enable_json=False):
     """
     配置并返回logger实例
 
     Args:
-        name: logger名称，默认为调用模块名
-        level: 日志级别，默认INFO
-        enable_json: 是否启用JSON格式，默认False
+        name: logger名称
+        level: 日志级别
+        enable_json: 是否启用JSON格式（用于日志分析系统）
 
     Returns:
         配置好的logger实例
@@ -90,97 +167,50 @@ def setup_logger(name=None, level=logging.INFO, enable_json=False):
         return logger
 
     logger.setLevel(level)
+    logger.propagate = False  # 避免重复输出
 
     # 添加请求ID过滤器
     request_id_filter = RequestIdFilter()
 
-    # ===== 控制台处理器 =====
+    # ===== 控制台处理器（彩色输出）=====
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(level)
-    console_formatter = logging.Formatter(DETAILED_FORMAT, DATE_FORMAT)
-    console_handler.setFormatter(console_formatter)
+    console_handler.setFormatter(ColoredFormatter())
     console_handler.addFilter(request_id_filter)
     logger.addHandler(console_handler)
 
-    # ===== 文件处理器 - 所有日志（轮转） =====
+    # ===== 文件处理器 - 所有日志 =====
     all_log_file = os.path.join(LOG_DIR, 'all.log')
-    # 最大10MB，保留5个备份文件
-    all_file_handler = RotatingFileHandler(
+    all_handler = RotatingFileHandler(
         all_log_file,
-        maxBytes=10*1024*1024,
+        maxBytes=10*1024*1024,  # 10MB
         backupCount=5,
         encoding='utf-8'
     )
-    all_file_handler.setLevel(logging.DEBUG)
+    all_handler.setLevel(logging.DEBUG)
+    all_handler.setFormatter(JSONFormatter() if enable_json else CompactFormatter())
+    all_handler.addFilter(request_id_filter)
+    logger.addHandler(all_handler)
 
-    if enable_json:
-        all_file_handler.setFormatter(StructuredFormatter())
-    else:
-        all_file_handler.setFormatter(logging.Formatter(DETAILED_FORMAT, DATE_FORMAT))
-
-    all_file_handler.addFilter(request_id_filter)
-    logger.addHandler(all_file_handler)
-
-    # ===== 文件处理器 - 错误日志（轮转） =====
+    # ===== 文件处理器 - 错误日志 =====
     error_log_file = os.path.join(LOG_DIR, 'error.log')
-    error_file_handler = RotatingFileHandler(
+    error_handler = RotatingFileHandler(
         error_log_file,
         maxBytes=10*1024*1024,
         backupCount=10,
         encoding='utf-8'
     )
-    error_file_handler.setLevel(logging.ERROR)
-
-    if enable_json:
-        error_file_handler.setFormatter(StructuredFormatter())
-    else:
-        error_file_handler.setFormatter(logging.Formatter(DETAILED_FORMAT, DATE_FORMAT))
-
-    error_file_handler.addFilter(request_id_filter)
-    logger.addHandler(error_file_handler)
-
-    # ===== 文件处理器 - 慢查询日志 =====
-    slow_log_file = os.path.join(LOG_DIR, 'slow.log')
-    slow_file_handler = RotatingFileHandler(
-        slow_log_file,
-        maxBytes=10*1024*1024,
-        backupCount=5,
-        encoding='utf-8'
-    )
-    slow_file_handler.setLevel(logging.WARNING)
-
-    if enable_json:
-        slow_file_handler.setFormatter(StructuredFormatter())
-    else:
-        slow_file_handler.setFormatter(logging.Formatter(DETAILED_FORMAT, DATE_FORMAT))
-
-    slow_file_handler.addFilter(request_id_filter)
-    # 这个handler只在需要时手动添加日志
-
-    # ===== 文件处理器 - 性能监控日志（按天轮转） =====
-    perf_log_file = os.path.join(LOG_DIR, 'performance.log')
-    perf_file_handler = TimedRotatingFileHandler(
-        perf_log_file,
-        when='midnight',
-        interval=1,
-        backupCount=30,  # 保留30天
-        encoding='utf-8'
-    )
-    perf_file_handler.setLevel(logging.INFO)
-    perf_formatter = logging.Formatter(
-        '%(asctime)s | %(request_id)s | %(operation)s | %(duration).3fs | %(message)s',
-        DATE_FORMAT
-    )
-    perf_file_handler.setFormatter(perf_formatter)
-    perf_file_handler.addFilter(request_id_filter)
-
-    # 保存slow和perf handlers以供其他模块使用
-    logger.slow_handler = slow_file_handler
-    logger.perf_handler = perf_file_handler
+    error_handler.setLevel(logging.ERROR)
+    error_handler.setFormatter(CompactFormatter())
+    error_handler.addFilter(request_id_filter)
+    logger.addHandler(error_handler)
 
     return logger
 
 
+# ============================================================
+# 请求ID管理
+# ============================================================
 def set_request_id(request_id=None):
     """设置当前线程的请求ID"""
     _thread_local.request_id = request_id or str(uuid.uuid4())[:8]
@@ -189,7 +219,7 @@ def set_request_id(request_id=None):
 
 def get_request_id():
     """获取当前线程的请求ID"""
-    return getattr(_thread_local, 'request_id', 'NO-REQ-ID')
+    return getattr(_thread_local, 'request_id', '-')
 
 
 def clear_request_id():
@@ -198,78 +228,53 @@ def clear_request_id():
         delattr(_thread_local, 'request_id')
 
 
-def log_function_call(logger=None, log_args=False):
+# ============================================================
+# 敏感信息脱敏
+# ============================================================
+SENSITIVE_KEYS = {'password', 'passwd', 'pwd', 'token', 'secret', 'api_key', 'apikey', 'authorization'}
+SENSITIVE_PATTERN = re.compile(r'(password|passwd|pwd|token|secret|api_key|apikey)[\s]*[=:]\s*["\']?([^"\'\s,}]+)', re.IGNORECASE)
+
+def mask_sensitive(data):
+    """脱敏敏感信息"""
+    if isinstance(data, dict):
+        return {
+            k: '***' if k.lower() in SENSITIVE_KEYS else mask_sensitive(v)
+            for k, v in data.items()
+        }
+    elif isinstance(data, str):
+        return SENSITIVE_PATTERN.sub(r'\1=***', data)
+    elif isinstance(data, list):
+        return [mask_sensitive(item) for item in data]
+    return data
+
+
+def summarize_data(data, max_len=100):
+    """摘要化数据，避免日志过长"""
+    if isinstance(data, dict):
+        keys = list(data.keys())
+        return f"{{keys={keys[:5]}{'...' if len(keys) > 5 else ''}, len={len(data)}}}"
+    elif isinstance(data, list):
+        return f"[len={len(data)}]"
+    elif isinstance(data, str) and len(data) > max_len:
+        return f"{data[:max_len]}...(len={len(data)})"
+    return data
+
+
+# ============================================================
+# 装饰器 - API请求日志
+# ============================================================
+def log_api_request(operation=None, slow_threshold=None):
     """
-    装饰器：记录函数调用的详细信息
+    装饰器：记录API请求（单行格式）
 
     Args:
-        logger: 自定义logger
-        log_args: 是否记录参数，默认False
+        operation: 操作描述（如"用户登录"）
+        slow_threshold: 慢API阈值（秒）
 
     用法:
-        @log_function_call()
-        def my_function(arg1, arg2):
-            ...
-    """
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            func_logger = logger or logging.getLogger(func.__module__)
-            func_name = f"{func.__module__}.{func.__name__}"
-
-            # 记录函数调用开始
-            if log_args:
-                func_logger.debug(f"→ Calling {func_name}")
-                func_logger.debug(f"  Args: {args}")
-                func_logger.debug(f"  Kwargs: {kwargs}")
-            else:
-                func_logger.debug(f"→ Calling {func_name}")
-
-            start_time = datetime.now()
-
-            try:
-                result = func(*args, **kwargs)
-
-                # 记录函数调用成功
-                elapsed = (datetime.now() - start_time).total_seconds()
-                func_logger.debug(f"← {func_name} completed in {elapsed:.3f}s")
-
-                # 记录慢查询
-                if elapsed > SLOW_QUERY_THRESHOLD:
-                    if hasattr(func_logger, 'slow_handler'):
-                        func_logger.addHandler(func_logger.slow_handler)
-                        func_logger.warning(
-                            f"SLOW QUERY: {func_name} took {elapsed:.3f}s (threshold: {SLOW_QUERY_THRESHOLD}s)",
-                            extra={'operation': func_name, 'duration': elapsed}
-                        )
-                        func_logger.removeHandler(func_logger.slow_handler)
-
-                return result
-
-            except Exception as e:
-                # 记录函数调用失败
-                elapsed = (datetime.now() - start_time).total_seconds()
-                func_logger.error(f"✗ {func_name} failed after {elapsed:.3f}s")
-                func_logger.error(f"  Error: {type(e).__name__}: {str(e)}")
-                func_logger.debug(f"  Traceback:\n{traceback.format_exc()}")
-                raise
-
-        return wrapper
-    return decorator
-
-
-def log_api_request(operation_description=None, slow_threshold=None):
-    """
-    装饰器：记录API请求的详细信息（业务语义化）
-
-    Args:
-        operation_description: 操作描述
-        slow_threshold: 慢API阈值，默认使用SLOW_API_THRESHOLD
-
-    用法:
-        @app.route('/api/example')
-        @log_api_request("创建用户订单")
-        def example_api():
+        @app.route('/api/login')
+        @log_api_request("用户登录")
+        def login():
             ...
     """
     def decorator(func):
@@ -277,253 +282,190 @@ def log_api_request(operation_description=None, slow_threshold=None):
         def wrapper(*args, **kwargs):
             from flask import request, session as flask_session
 
-            func_logger = logging.getLogger(func.__module__)
+            # 获取或创建logger
+            logger = logging.getLogger(func.__module__)
+            if not logger.handlers:
+                logger = setup_logger(func.__module__)
 
-            # 生成请求ID并设置到线程本地存储
-            request_id = set_request_id()
+            # 生成请求ID
+            req_id = set_request_id()
 
-            # 获取用户信息
-            user_id = flask_session.get('user_id', 'anonymous')
-            username = flask_session.get('username', 'anonymous')
+            # 获取请求信息
+            method = request.method
+            path = request.path
+            user = flask_session.get('username', '-')
+            ip = request.headers.get('X-Real-IP') or request.headers.get('X-Forwarded-For') or request.remote_addr
 
-            # 获取客户端IP
-            client_ip = request.headers.get('X-Real-IP') or \
-                       request.headers.get('X-Forwarded-For') or \
-                       request.remote_addr
+            # 操作名称
+            op_name = operation or f"{method} {func.__name__}"
 
-            # 提取关键业务参数
-            business_params = {}
-            if request.is_json:
-                body = request.get_json() or {}
-                for key, value in body.items():
-                    if 'password' in key.lower() or 'token' in key.lower() or 'secret' in key.lower():
-                        business_params[key] = '***HIDDEN***'
-                    elif isinstance(value, (str, int, float, bool)):
-                        business_params[key] = value
-                    elif isinstance(value, dict):
-                        business_params[key] = f"<dict:{len(value)}>"
-                    elif isinstance(value, list):
-                        business_params[key] = f"<list:{len(value)}>"
-
-            # 获取路径参数
-            path_params = {k: v for k, v in kwargs.items() if not k.startswith('_')}
-
-            # 获取查询参数
-            query_params = dict(request.args)
-
-            # 构建操作描述
-            operation = operation_description or f"{request.method} {func.__name__}"
-
-            # ====== 请求开始日志 ======
-            func_logger.info("╔" + "═" * 100 + "╗")
-            func_logger.info(f"║ 【API请求】{operation}")
-            func_logger.info(f"║ RequestID: {request_id} | User: {username}(ID:{user_id}) | IP: {client_ip}")
-            func_logger.info(f"║ Endpoint: {request.method} {request.path}")
-            func_logger.info(f"║ User-Agent: {request.headers.get('User-Agent', 'Unknown')[:80]}")
-
-            if path_params:
-                func_logger.info(f"║ 路径参数: {json.dumps(path_params, ensure_ascii=False)}")
-            if query_params:
-                func_logger.info(f"║ 查询参数: {json.dumps(query_params, ensure_ascii=False)}")
-            if business_params:
-                func_logger.info(f"║ 请求数据: {json.dumps(business_params, ensure_ascii=False)}")
+            # 记录请求开始（单行）
+            logger.info(
+                f">>> {op_name} | {method} {path} | user={user} ip={ip}",
+                extra={'user': user, 'method': method, 'path': path, 'ip': ip}
+            )
 
             start_time = datetime.now()
 
             try:
                 # 执行业务逻辑
-                func_logger.info("║ ▶ 开始执行业务逻辑...")
                 response = func(*args, **kwargs)
 
-                # 解析响应
-                elapsed = (datetime.now() - start_time).total_seconds()
-                status = getattr(response, 'status_code', 200) if hasattr(response, 'status_code') else 200
+                # 计算耗时
+                duration = (datetime.now() - start_time).total_seconds()
 
-                # 提取响应关键信息
-                response_info = ""
-                business_success = True
+                # 获取响应状态
+                status = getattr(response, 'status_code', 200)
+
+                # 判断是否成功
+                success = True
+                msg = ""
                 if hasattr(response, 'get_json'):
                     try:
                         resp_data = response.get_json()
                         if isinstance(resp_data, dict):
-                            if 'success' in resp_data:
-                                business_success = resp_data.get('success', True)
-                                response_info = f"success={business_success}"
-                            if 'data' in resp_data and isinstance(resp_data['data'], dict):
-                                response_info += f", data_keys={list(resp_data['data'].keys())}"
-                            elif 'data' in resp_data and isinstance(resp_data['data'], list):
-                                response_info += f", data_count={len(resp_data['data'])}"
+                            success = resp_data.get('success', True)
                             if 'error' in resp_data:
-                                response_info += f", error={resp_data.get('error')}"
-                            if 'message' in resp_data:
-                                response_info += f", message={resp_data.get('message')}"
+                                msg = f" error={resp_data['error']}"
+                            elif 'message' in resp_data:
+                                msg = f" msg={resp_data['message'][:50]}"
                     except:
                         pass
 
-                # ====== 请求完成日志 ======
-                func_logger.info(f"║ ⏱ 执行完成: {elapsed:.3f}s | HTTP {status}")
-                if response_info:
-                    func_logger.info(f"║ 📤 响应: {response_info}")
+                # 记录请求完成（单行）
+                status_icon = "OK" if status < 400 and success else "FAIL"
+                log_msg = f"<<< {op_name} | {status_icon} {status} | {duration:.3f}s{msg}"
 
-                # 根据业务成功状态显示不同的图标
-                if status >= 400 or not business_success:
-                    func_logger.warning("║ ⚠ 请求失败")
-                    func_logger.info("╚" + "═" * 100 + "╝")
-                    func_logger.warning(f"[{operation}] 执行失败 (ReqID: {request_id})")
+                if status >= 400 or not success:
+                    logger.warning(log_msg, extra={'status': status, 'duration': duration})
+                elif duration > (slow_threshold or SLOW_API_THRESHOLD):
+                    logger.warning(f"<<< {op_name} | SLOW {status} | {duration:.3f}s (>{slow_threshold or SLOW_API_THRESHOLD}s){msg}",
+                                 extra={'status': status, 'duration': duration})
                 else:
-                    func_logger.info("║ ✓ 请求成功")
-                    func_logger.info("╚" + "═" * 100 + "╝")
-                    func_logger.info(f"[{operation}] 成功完成 (ReqID: {request_id})")
+                    logger.info(log_msg, extra={'status': status, 'duration': duration})
 
-                # 记录性能数据
-                if hasattr(func_logger, 'perf_handler'):
-                    func_logger.addHandler(func_logger.perf_handler)
-                    perf_msg = f"User={username} | Status={status} | Success={business_success}"
-                    func_logger.info(
-                        perf_msg,
-                        extra={
-                            'operation': operation,
-                            'duration': elapsed,
-                            'user_id': user_id
-                        }
-                    )
-                    func_logger.removeHandler(func_logger.perf_handler)
-
-                # 记录慢API
-                threshold = slow_threshold or SLOW_API_THRESHOLD
-                if elapsed > threshold:
-                    if hasattr(func_logger, 'slow_handler'):
-                        func_logger.addHandler(func_logger.slow_handler)
-                        func_logger.warning(
-                            f"🐌 SLOW API: {operation} took {elapsed:.3f}s (threshold: {threshold}s)",
-                            extra={'operation': operation, 'duration': elapsed}
-                        )
-                        func_logger.removeHandler(func_logger.slow_handler)
-
-                # 清除请求ID
                 clear_request_id()
-
                 return response
 
             except Exception as e:
-                # ====== 请求失败日志 ======
-                elapsed = (datetime.now() - start_time).total_seconds()
-                func_logger.error(f"║ ✗ 执行异常: {elapsed:.3f}s")
-                func_logger.error("╚" + "═" * 100 + "╝")
-                func_logger.error(f"[{operation}] 执行异常 (ReqID: {request_id})")
-                func_logger.error(f"异常类型: {type(e).__name__}")
-                func_logger.error(f"异常信息: {str(e)}")
-                func_logger.error(f"异常堆栈:\n{traceback.format_exc()}")
-
-                # 清除请求ID
+                duration = (datetime.now() - start_time).total_seconds()
+                logger.error(
+                    f"<<< {op_name} | ERROR | {duration:.3f}s | {type(e).__name__}: {str(e)[:100]}",
+                    extra={'status': 500, 'duration': duration}
+                )
+                logger.debug(f"Traceback:\n{traceback.format_exc()}")
                 clear_request_id()
-
                 raise
 
         return wrapper
     return decorator
 
 
-def log_service_call(operation_name, log_args=False):
+# ============================================================
+# 装饰器 - 服务层日志
+# ============================================================
+def log_service_call(operation, log_args=False):
     """
-    装饰器：记录服务层操作
+    装饰器：记录服务层调用
 
     Args:
-        operation_name: 操作名称
+        operation: 操作名称
         log_args: 是否记录参数
-
-    用法:
-        @log_service_call("分析公司信息")
-        def analyze_company(company_name):
-            ...
     """
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            func_logger = logging.getLogger(func.__module__)
+            logger = logging.getLogger(func.__module__)
+            if not logger.handlers:
+                logger = setup_logger(func.__module__)
 
-            # 记录操作开始
             req_id = get_request_id()
-            func_logger.info(f"┌─ [Service] {operation_name} - 开始 (ReqID: {req_id})")
 
-            if log_args:
-                func_logger.debug(f"│  Function: {func.__name__}")
-                # 只记录前3个参数，避免日志过长
-                if args:
-                    func_logger.debug(f"│  Args: {str(args)[:200]}")
-                if kwargs:
-                    func_logger.debug(f"│  Kwargs: {str(kwargs)[:200]}")
+            # 记录开始
+            if log_args and kwargs:
+                params = summarize_data(mask_sensitive(kwargs))
+                logger.debug(f"[SVC] {operation} start | params={params}")
+            else:
+                logger.debug(f"[SVC] {operation} start")
 
             start_time = datetime.now()
 
             try:
                 result = func(*args, **kwargs)
+                duration = (datetime.now() - start_time).total_seconds()
 
-                # 记录操作成功
-                elapsed = (datetime.now() - start_time).total_seconds()
-                func_logger.info(f"└─ [Service] {operation_name} - ✓ 完成 ({elapsed:.3f}s)")
-
-                # 记录慢服务
-                if elapsed > SLOW_QUERY_THRESHOLD:
-                    if hasattr(func_logger, 'slow_handler'):
-                        func_logger.addHandler(func_logger.slow_handler)
-                        func_logger.warning(
-                            f"SLOW SERVICE: {operation_name} took {elapsed:.3f}s",
-                            extra={'operation': operation_name, 'duration': elapsed}
-                        )
-                        func_logger.removeHandler(func_logger.slow_handler)
+                if duration > SLOW_QUERY_THRESHOLD:
+                    logger.warning(f"[SVC] {operation} done | {duration:.3f}s (SLOW)")
+                else:
+                    logger.debug(f"[SVC] {operation} done | {duration:.3f}s")
 
                 return result
 
             except Exception as e:
-                # 记录操作失败
-                elapsed = (datetime.now() - start_time).total_seconds()
-                func_logger.error(f"└─ [Service] {operation_name} - ✗ 失败 ({elapsed:.3f}s)")
-                func_logger.error(f"   Error: {type(e).__name__}: {str(e)}")
-                func_logger.debug(f"   Traceback:\n{traceback.format_exc()}")
+                duration = (datetime.now() - start_time).total_seconds()
+                logger.error(f"[SVC] {operation} fail | {duration:.3f}s | {type(e).__name__}: {str(e)[:80]}")
                 raise
 
         return wrapper
     return decorator
 
 
-def log_database_query(query_description):
-    """
-    装饰器：记录数据库查询
-
-    用法:
-        @log_database_query("查询用户列表")
-        def get_users():
-            ...
-    """
+# ============================================================
+# 装饰器 - 数据库查询日志
+# ============================================================
+def log_database_query(description):
+    """装饰器：记录数据库查询"""
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            func_logger = logging.getLogger(func.__module__)
+            logger = logging.getLogger(func.__module__)
+            if not logger.handlers:
+                logger = setup_logger(func.__module__)
 
             start_time = datetime.now()
 
             try:
                 result = func(*args, **kwargs)
-                elapsed = (datetime.now() - start_time).total_seconds()
+                duration = (datetime.now() - start_time).total_seconds()
 
-                func_logger.debug(f"[DB] {query_description} - {elapsed:.3f}s")
-
-                # 记录慢查询
-                if elapsed > 1.0:  # 数据库查询超过1秒
-                    if hasattr(func_logger, 'slow_handler'):
-                        func_logger.addHandler(func_logger.slow_handler)
-                        func_logger.warning(
-                            f"SLOW DB QUERY: {query_description} took {elapsed:.3f}s",
-                            extra={'operation': query_description, 'duration': elapsed}
-                        )
-                        func_logger.removeHandler(func_logger.slow_handler)
+                if duration > 1.0:
+                    logger.warning(f"[DB] {description} | {duration:.3f}s (SLOW)")
+                else:
+                    logger.debug(f"[DB] {description} | {duration:.3f}s")
 
                 return result
 
             except Exception as e:
-                elapsed = (datetime.now() - start_time).total_seconds()
-                func_logger.error(f"[DB] {query_description} - FAILED ({elapsed:.3f}s): {str(e)}")
+                duration = (datetime.now() - start_time).total_seconds()
+                logger.error(f"[DB] {description} | FAIL {duration:.3f}s | {type(e).__name__}")
+                raise
+
+        return wrapper
+    return decorator
+
+
+# ============================================================
+# 便捷函数
+# ============================================================
+def log_function_call(logger=None, log_args=False):
+    """装饰器：记录函数调用（用于调试）"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            func_logger = logger or logging.getLogger(func.__module__)
+            func_name = f"{func.__module__}.{func.__name__}"
+
+            func_logger.debug(f"-> {func_name}")
+            start = datetime.now()
+
+            try:
+                result = func(*args, **kwargs)
+                elapsed = (datetime.now() - start).total_seconds()
+                func_logger.debug(f"<- {func_name} | {elapsed:.3f}s")
+                return result
+            except Exception as e:
+                elapsed = (datetime.now() - start).total_seconds()
+                func_logger.error(f"<- {func_name} | FAIL {elapsed:.3f}s | {e}")
                 raise
 
         return wrapper
@@ -531,18 +473,19 @@ def log_database_query(query_description):
 
 
 # 默认logger
-default_logger = setup_logger('topn_platform')
+default_logger = setup_logger('topn')
 
 
-# 导出常用函数
+# 导出
 __all__ = [
     'setup_logger',
-    'log_function_call',
     'log_api_request',
     'log_service_call',
     'log_database_query',
+    'log_function_call',
     'set_request_id',
     'get_request_id',
     'clear_request_id',
+    'mask_sensitive',
     'default_logger'
 ]
