@@ -22,21 +22,59 @@ def remove_markdown_and_ai_traces(text):
     # 移除Markdown标题
     text = re.sub(r'#{1,6}\s+', '', text)
 
-    # 移除Markdown粗体和斜体
+    # 移除Markdown粗体和斜体，保留内容
     text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
     text = re.sub(r'\*([^*]+)\*', r'\1', text)
+    text = re.sub(r'__([^_]+)__', r'\1', text)
+    text = re.sub(r'_([^_]+)_', r'\1', text)
 
     # 移除Markdown列表符号
     text = re.sub(r'^\s*[-*+]\s+', '', text, flags=re.MULTILINE)
     text = re.sub(r'^\s*\d+\.\s+', '', text, flags=re.MULTILINE)
 
-    # 移除AI生成常用套话
+    # 移除Markdown链接，保留链接文字
+    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
+    text = re.sub(r'!\[([^\]]*)\]\([^)]+\)', '', text)
+
+    # 移除Markdown代码块
+    text = re.sub(r'```[\s\S]*?```', '', text)
+    text = re.sub(r'`([^`]+)`', r'\1', text)
+
+    # 移除Markdown引用和分割线
+    text = re.sub(r'^\s*>\s+', '', text, flags=re.MULTILINE)
+    text = re.sub(r'^[-*_]{3,}\s*$', '', text, flags=re.MULTILINE)
+
+    # 移除AI生成常用套话和模式
     ai_phrases = [
-        '综上所述', '总的来说', '值得一提的是', '需要指出的是',
-        '首先，', '其次，', '最后，', '另外，', '因此，'
+        # 开头套话
+        '综上所述', '总的来说', '总而言之', '总结起来',
+        '值得一提的是', '需要指出的是', '需要注意的是', '值得注意的是',
+        '众所周知', '不言而喻', '显而易见',
+        # 过渡词
+        '首先，', '其次，', '再次，', '最后，', '此外，', '另外，',
+        '因此，', '所以，', '然而，', '但是，', '不过，',
+        '与此同时，', '同时，', '进一步地，', '更重要的是，',
+        # AI常用表达
+        '让我们', '我们可以看到', '我们需要', '我们应该',
+        '在这个过程中', '在这种情况下', '在此基础上',
+        '从某种程度上说', '从本质上讲', '归根结底',
+        '毫无疑问', '毋庸置疑', '不可否认',
+        '换句话说', '也就是说', '具体来说',
+        # 结尾套话
+        '希望本文对您有所帮助', '希望这篇文章能够帮助到你',
+        '以上就是', '如有疑问，欢迎',
+        '感谢阅读', '欢迎在评论区留言', '欢迎留言讨论',
     ]
     for phrase in ai_phrases:
         text = text.replace(phrase, '')
+
+    # 移除连续多个换行符
+    text = re.sub(r'\n{3,}', '\n\n', text)
+
+    # 移除行首行尾多余空格
+    text_lines = text.split('\n')
+    text_lines = [line.strip() for line in text_lines]
+    text = '\n'.join(text_lines)
 
     return text.strip()
 
@@ -181,27 +219,35 @@ class AIService:
         """
         try:
             prompt = f'''
-基于以下分析结果，为"{company_name}"撰写一篇推广文章。
+为"{company_name}"撰写一篇推广文章，文章角度：{angle}
+
 分析结果：
 {analysis}
-要求：
-1. 重点突出：{angle}
-2. 篇幅适中（800-1500字）
-3. 标题吸引人且自然，避免过度营销
-4. 内容专业且易懂
-5. **重要**：使用真实的网络发帖风格，模仿人类写作习惯：
-   - 不要使用Markdown格式（如#标题、**粗体**、列表符号等）
-   - 避免过于工整的结构和AI常用套话
-   - 语言要口语化、自然流畅
-   - 可以有适当的个人观点和情感表达
-   - 适合在知乎、CSDN等平台直接发布
-请直接返回标题和正文，格式如下：
+
+【写作规范 - 务必遵守】
+
+1. 篇幅：800-1500字
+
+2. 【严禁使用】：
+   - Markdown格式：不要用#标题、**粗体**、*斜体*、列表符号(-)、代码块
+   - AI套话：不要用"综上所述"、"总的来说"、"值得一提的是"、"首先/其次/最后"
+   - 书面腔：不要用"毫无疑问"、"不可否认"、"显而易见"
+
+3. 【必须采用】：
+   - 像真人发帖：带个人视角和真实感受
+   - 语言口语化：像和朋友聊天，接地气
+   - 段落自然：不要过于工整的结构
+   - 融入观点：增加可信度和真实感
+
+4. 标题：吸引眼球但不夸张，像真人发的帖子
+
+直接返回标题和正文：
 标题：[这里是标题]
 正文：
 [这里是正文内容]
 '''
             messages = [
-                {'role': 'system', 'content': '你是一个专业的内容创作者，擅长撰写技术和商业推广文章。'},
+                {'role': 'system', 'content': '你是资深互联网内容创作者。你的文章读起来像真人博客，不像AI生成。你从不用Markdown格式，也不用AI套话。写作风格口语化、接地气。'},
                 {'role': 'user', 'content': prompt}
             ]
             logger.info(f'Generating article {index+1}/{total} ({angle}) for {company_name}')
