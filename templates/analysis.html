@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>分析生成 - TOP_N 推广平台</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/css/design-system.css">
+    <link rel="stylesheet" href="/static/css/page-header.css">
+    <!-- Quill 富文本编辑器 -->
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/article-editor.css">
     <style>
         /* 用户信息显示样式 */
         #user-info-display {
@@ -127,7 +132,62 @@
             <!-- 分析结果 -->
             <section id="analysis-section" class="section active">
                 <h2>📊 智能分析结果</h2>
-                <div id="analysis-result" class="result-box"></div>
+
+                <!-- 分析结果显示区域 -->
+                <div class="analysis-card" id="analysis-card">
+                    <div class="analysis-header">
+                        <span class="analysis-label">AI分析报告</span>
+                        <button class="btn-icon btn-edit" id="edit-analysis-btn" title="编辑分析结果">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- 显示模式 -->
+                    <div id="analysis-display" class="result-box"></div>
+
+                    <!-- 编辑模式 -->
+                    <div id="analysis-editor-container" class="editor-container" style="display: none;">
+                        <div id="analysis-toolbar">
+                            <span class="ql-formats">
+                                <select class="ql-header">
+                                    <option value="1">标题1</option>
+                                    <option value="2">标题2</option>
+                                    <option value="3">标题3</option>
+                                    <option selected>正文</option>
+                                </select>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-bold"></button>
+                                <button class="ql-italic"></button>
+                                <button class="ql-underline"></button>
+                            </span>
+                            <span class="ql-formats">
+                                <select class="ql-color"></select>
+                                <select class="ql-background"></select>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-list" value="ordered"></button>
+                                <button class="ql-list" value="bullet"></button>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-blockquote"></button>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-clean"></button>
+                            </span>
+                        </div>
+                        <div id="analysis-editor"></div>
+                    </div>
+
+                    <!-- 编辑操作按钮 -->
+                    <div id="analysis-edit-actions" class="edit-actions" style="display: none;">
+                        <button class="btn btn-secondary btn-sm" id="cancel-analysis-edit">取消</button>
+                        <button class="btn btn-primary btn-sm" id="save-analysis-edit">保存修改</button>
+                    </div>
+                </div>
                 <div class="action-buttons">
                     <button class="btn btn-secondary" onclick="WorkflowNav.goToInput()">返回修改</button>
                     <div class="form-group" style="margin-bottom: 20px;">
@@ -154,6 +214,8 @@
     </div>
 
     <script src="/static/state.js"></script>
+    <script src="/static/js/common.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
     <script src="/static/analysis.js"></script>
     <script src="/static/user_display.js"></script>
 </body>

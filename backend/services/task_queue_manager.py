@@ -52,7 +52,7 @@ class TaskQueueManager:
 
     def get_user_queue(self, user_id: int) -> Queue:
         """
-        获取用户专属队列
+        获取用户队列（使用default队列以匹配RQ Worker配置）
 
         Args:
             user_id: 用户ID
@@ -60,8 +60,9 @@ class TaskQueueManager:
         Returns:
             RQ Queue实例
         """
-        queue_name = f'user:{user_id}'
-        return Queue(queue_name, connection=self.redis)
+        # 使用default队列，RQ Worker默认监听此队列
+        # 如需用户隔离，可以通过任务参数区分
+        return Queue('default', connection=self.redis)
 
 
     @log_service_call("创建发布任务")

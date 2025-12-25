@@ -4,15 +4,78 @@
 """
 import logging
 import time
+import sys
+import os
 from datetime import datetime
 from typing import Dict, Optional
 from sqlalchemy.exc import OperationalError, IntegrityError
 from contextlib import contextmanager
 
+# 添加backend目录到path以便导入logger_config
+BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, BACKEND_DIR)
+
 from models import PublishTask, PlatformAccount, PublishHistory, get_db_session
 from services.user_rate_limiter import get_rate_limiter
 
-logger = logging.getLogger(__name__)
+# RQ Worker日志配置 - 确保日志写入统一的日志文件
+def setup_worker_logger():
+    """为RQ Worker设置日志，确保日志写入到logs目录"""
+    from logging.handlers import RotatingFileHandler
+
+    worker_logger = logging.getLogger(__name__)
+
+    # 避免重复配置
+    if worker_logger.handlers:
+        return worker_logger
+
+    worker_logger.setLevel(logging.INFO)
+    worker_logger.propagate = False
+
+    # 日志目录
+    log_dir = os.path.join(BACKEND_DIR, '..', 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+
+    # 日志格式
+    formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)-5s | WORKER   | %(name)-20s | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+    # 写入all.log
+    all_log_file = os.path.join(log_dir, 'all.log')
+    all_handler = RotatingFileHandler(
+        all_log_file,
+        maxBytes=10*1024*1024,  # 10MB
+        backupCount=5,
+        encoding='utf-8'
+    )
+    all_handler.setLevel(logging.DEBUG)
+    all_handler.setFormatter(formatter)
+    worker_logger.addHandler(all_handler)
+
+    # 写入worker专属日志
+    worker_log_file = os.path.join(log_dir, 'worker.log')
+    worker_handler = RotatingFileHandler(
+        worker_log_file,
+        maxBytes=10*1024*1024,
+        backupCount=5,
+        encoding='utf-8'
+    )
+    worker_handler.setLevel(logging.DEBUG)
+    worker_handler.setFormatter(formatter)
+    worker_logger.addHandler(worker_handler)
+
+    # 同时输出到控制台（方便调试）
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+    worker_logger.addHandler(console_handler)
+
+    return worker_logger
+
+# 初始化logger
+logger = setup_worker_logger()
 
 
 class TaskLogger:
@@ -196,13 +259,22 @@ def get_platform_account(user_id: int, platform: str, task_log: TaskLogger) -> O
     Returns:
         账号信息字典
     """
-    task_log.log(f"获取{platform}账号 (User={user_id})")
+    # 平台名称映射：兼容英文和中文平台名
+    platform_mapping = {
+        'zhihu': '知乎',
+        'csdn': 'CSDN',
+        'jianshu': '简书'
+    }
+    # 如果传入的是英文名，转换为中文名进行查询
+    platform_query = platform_mapping.get(platform.lower(), platform) if platform else platform
+
+    task_log.log(f"获取{platform_query}账号 (User={user_id})")
 
     try:
         with get_db_with_retry(task_log) as db:
             account = db.query(PlatformAccount).filter_by(
                 user_id=user_id,
-                platform=platform,
+                platform=platform_query,
                 status='active'
             ).first()
 

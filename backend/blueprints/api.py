@@ -16,6 +16,7 @@ from models import PlatformAccount, PublishHistory, Article, Workflow, get_db_se
 from encryption import decrypt_password
 from datetime import datetime
 import json
+import time
 
 # 初始化配置
 config = get_config()
@@ -1056,7 +1057,7 @@ def check_zhihu_cookie():
 @login_required
 @log_api_request("开始知乎二维码登录")
 def start_zhihu_qr_login():
-    """开始知乎二维码登录流程"""
+    """开始知乎二维码登录流程 - 返回二维码和token给前端"""
     from zhihu_auth.zhihu_qr_login import ZhihuQRLogin
 
     user = get_current_user()
@@ -1066,17 +1067,25 @@ def start_zhihu_qr_login():
         success, qr_base64, message = qr_login.get_qr_code()
 
         if success:
-            # 将登录会话存储(简单实现,生产环境需要更安全的方式)
-            session_id = f"zhihu_login_{user.id}"
-            # 存储QR登录会话到全局变量(后续可以改为Redis)
-            if not hasattr(api_bp, 'qr_login_sessions'):
-                api_bp.qr_login_sessions = {}
-            api_bp.qr_login_sessions[session_id] = qr_login
+            logger.info(f'QR login started for user: {user.username}, token: {qr_login.qr_token}')
+
+            # 保存会话数据到文件（用于多进程环境）
+            session_data = qr_login.get_session_data()
+            session_file = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                'cookies',
+                f'qr_session_{user.username}.json'
+            )
+            os.makedirs(os.path.dirname(session_file), exist_ok=True)
+            with open(session_file, 'w', encoding='utf-8') as f:
+                json.dump(session_data, f, ensure_ascii=False)
+            logger.info(f'会话数据已保存: {session_file}')
 
             return jsonify({
                 'success': True,
                 'qr_code': f'data:image/png;base64,{qr_base64}',
-                'session_id': session_id,
+                'qr_token': qr_login.qr_token,
+                'xsrf_token': qr_login.xsrf_token,
                 'message': '请使用知乎APP扫码登录'
             })
         else:
@@ -1092,51 +1101,204 @@ def start_zhihu_qr_login():
 
 @api_bp.route('/zhihu/qr_login/check', methods=['POST'])
 @login_required
-@log_api_request("检查知乎二维码登录状态")
-def check_zhihu_qr_login():
-    """检查二维码登录状态"""
-    user = get_current_user()
-    data = request.json
-    session_id = data.get('session_id')
+def check_zhihu_qr_login_status():
+    """
+    检查知乎二维码登录状态 - 前端轮询调用
+    从保存的会话文件恢复会话，检查扫码状态
+    """
+    from zhihu_auth.zhihu_qr_login import ZhihuQRLogin
 
-    if not session_id:
-        return jsonify({'success': False, 'error': '缺少session_id'}), 400
+    user = get_current_user()
 
     try:
-        # 获取QR登录会话
-        if not hasattr(api_bp, 'qr_login_sessions') or session_id not in api_bp.qr_login_sessions:
-            return jsonify({'success': False, 'error': '登录会话不存在或已过期'}), 404
+        # 从文件读取会话数据
+        session_file = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'cookies',
+            f'qr_session_{user.username}.json'
+        )
 
-        qr_login = api_bp.qr_login_sessions[session_id]
+        if not os.path.exists(session_file):
+            return jsonify({
+                'success': False,
+                'status': -1,
+                'message': '登录会话已过期，请重新获取二维码'
+            }), 400
 
-        # 检查登录状态(非阻塞,快速检查)
-        import time
-        current_url = qr_login.driver.url if qr_login.driver else ''
+        with open(session_file, 'r', encoding='utf-8') as f:
+            session_data = json.load(f)
 
-        # 检查是否已经登录成功
-        if 'zhihu.com' in current_url and '/signin' not in current_url:
-            # 登录成功,保存Cookie
-            qr_login.save_cookies(user.username)
+        # 创建新的QRLogin实例并恢复会话
+        qr_login = ZhihuQRLogin()
+        qr_login.restore_session(session_data)
 
-            # 清理会话
-            qr_login.close()
-            del api_bp.qr_login_sessions[session_id]
+        # 检查登录状态
+        status_code, message, cookies = qr_login.check_login_status()
+
+        if status_code == 2 and cookies:
+            # 登录成功，保存Cookie
+            cookies_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cookies')
+            cookie_file = os.path.join(cookies_dir, f'zhihu_{user.username}.json')
+
+            with open(cookie_file, 'w', encoding='utf-8') as f:
+                json.dump(cookies, f, ensure_ascii=False, indent=2)
+
+            logger.info(f'✓ 知乎扫码登录成功: {cookie_file}, 共{len(cookies)}个cookie')
+
+            # 删除临时会话文件
+            try:
+                os.remove(session_file)
+            except:
+                pass
 
             return jsonify({
                 'success': True,
-                'logged_in': True,
-                'message': '登录成功'
+                'status': 2,
+                'message': '登录成功',
+                'cookies_count': len(cookies)
+            })
+        elif status_code == -403:
+            # IP被封禁
+            return jsonify({
+                'success': False,
+                'status': -403,
+                'message': 'IP被知乎风控限制',
+                'ip_blocked': True
             })
         else:
-            # 还在等待扫码
             return jsonify({
-                'success': True,
-                'logged_in': False,
-                'message': '等待扫码中...'
+                'success': False,
+                'status': status_code,
+                'message': message
             })
 
     except Exception as e:
-        logger.error(f'Check QR login failed: {e}', exc_info=True)
+        logger.error(f'Check QR login status failed: {e}', exc_info=True)
+        return jsonify({
+            'success': False,
+            'status': -1,
+            'message': str(e)
+        }), 500
+
+
+@api_bp.route('/zhihu/qr_login/save_cookies', methods=['POST'])
+@login_required
+@log_api_request("保存知乎登录Cookie")
+def save_zhihu_cookies():
+    """
+    保存知乎登录Cookie
+    前端在用户扫码确认后，调用知乎API获取cookie，然后发送给后端保存
+    """
+    user = get_current_user()
+    data = request.json or {}
+    cookies = data.get('cookies', [])
+
+    if not cookies:
+        return jsonify({'success': False, 'error': '缺少cookies数据'}), 400
+
+    try:
+        # 保存Cookie到文件
+        cookies_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cookies')
+        os.makedirs(cookies_dir, exist_ok=True)
+        cookie_file = os.path.join(cookies_dir, f'zhihu_{user.username}.json')
+
+        # 确保cookie格式正确
+        cookies_list = []
+        for cookie in cookies:
+            cookies_list.append({
+                'name': cookie.get('name'),
+                'value': cookie.get('value'),
+                'domain': cookie.get('domain', '.zhihu.com'),
+                'path': cookie.get('path', '/')
+            })
+
+        with open(cookie_file, 'w', encoding='utf-8') as f:
+            json.dump(cookies_list, f, ensure_ascii=False, indent=2)
+
+        logger.info(f'✓ 知乎Cookie已保存: {cookie_file}, 共{len(cookies_list)}个cookie')
+
+        return jsonify({
+            'success': True,
+            'message': '登录成功，Cookie已保存'
+        })
+
+    except Exception as e:
+        logger.error(f'Save cookies failed: {e}', exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@api_bp.route('/zhihu/qr_login/complete', methods=['POST'])
+@login_required
+@log_api_request("完成知乎二维码登录")
+def complete_zhihu_qr_login():
+    """
+    完成知乎二维码登录 - 用户手动点击确认后调用
+    从保存的会话文件恢复会话，然后调用知乎API完成登录
+    """
+    from zhihu_auth.zhihu_qr_login import ZhihuQRLogin
+
+    user = get_current_user()
+
+    try:
+        # 从文件读取会话数据
+        session_file = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'cookies',
+            f'qr_session_{user.username}.json'
+        )
+
+        if not os.path.exists(session_file):
+            logger.error(f'会话文件不存在: {session_file}')
+            return jsonify({'success': False, 'error': '登录会话已过期，请重新获取二维码'}), 400
+
+        with open(session_file, 'r', encoding='utf-8') as f:
+            session_data = json.load(f)
+
+        logger.info(f'从文件恢复会话: {session_file}')
+
+        # 创建新的QRLogin实例并恢复会话
+        qr_login = ZhihuQRLogin()
+        qr_login.restore_session(session_data)
+
+        # 完成登录
+        success, message, cookies = qr_login.complete_login()
+
+        if success and cookies:
+            # 保存Cookie到文件
+            cookies_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cookies')
+            cookie_file = os.path.join(cookies_dir, f'zhihu_{user.username}.json')
+
+            with open(cookie_file, 'w', encoding='utf-8') as f:
+                json.dump(cookies, f, ensure_ascii=False, indent=2)
+
+            logger.info(f'✓ 知乎登录成功并保存Cookie: {cookie_file}, 共{len(cookies)}个cookie')
+
+            # 删除临时会话文件
+            try:
+                os.remove(session_file)
+            except:
+                pass
+
+            return jsonify({
+                'success': True,
+                'message': '登录成功',
+                'cookies_count': len(cookies)
+            })
+        else:
+            logger.warning(f'知乎登录失败: {message}')
+            if message == 'IP_BLOCKED':
+                return jsonify({
+                    'success': False,
+                    'error': '服务器IP被知乎限制，请使用手动Cookie方式登录',
+                    'ip_blocked': True
+                }), 403
+            return jsonify({
+                'success': False,
+                'error': message
+            }), 400
+
+    except Exception as e:
+        logger.error(f'Complete QR login failed: {e}', exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
 
 

@@ -9,8 +9,67 @@ import logging
 import json
 import os
 import sys
+from logging.handlers import RotatingFileHandler
 
-logger = logging.getLogger(__name__)
+# 添加backend目录到path以便导入logger_config
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, BACKEND_DIR)
+
+def setup_zhihu_logger():
+    """为知乎模块设置日志，确保日志写入到logs目录"""
+    zhihu_logger = logging.getLogger(__name__)
+
+    # 避免重复配置
+    if zhihu_logger.handlers:
+        return zhihu_logger
+
+    zhihu_logger.setLevel(logging.INFO)
+    zhihu_logger.propagate = False
+
+    # 日志目录
+    log_dir = os.path.join(BACKEND_DIR, '..', 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+
+    # 日志格式
+    formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)-5s | ZHIHU    | %(name)-20s | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+    # 写入all.log
+    all_log_file = os.path.join(log_dir, 'all.log')
+    all_handler = RotatingFileHandler(
+        all_log_file,
+        maxBytes=10*1024*1024,  # 10MB
+        backupCount=5,
+        encoding='utf-8'
+    )
+    all_handler.setLevel(logging.DEBUG)
+    all_handler.setFormatter(formatter)
+    zhihu_logger.addHandler(all_handler)
+
+    # 写入zhihu专属日志
+    zhihu_log_file = os.path.join(log_dir, 'zhihu.log')
+    zhihu_handler = RotatingFileHandler(
+        zhihu_log_file,
+        maxBytes=10*1024*1024,
+        backupCount=5,
+        encoding='utf-8'
+    )
+    zhihu_handler.setLevel(logging.DEBUG)
+    zhihu_handler.setFormatter(formatter)
+    zhihu_logger.addHandler(zhihu_handler)
+
+    # 同时输出到控制台
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+    zhihu_logger.addHandler(console_handler)
+
+    return zhihu_logger
+
+# 初始化logger
+logger = setup_zhihu_logger()
 
 class ZhihuAutoPost:
     """知乎自动发帖"""
@@ -21,9 +80,10 @@ class ZhihuAutoPost:
         self.is_logged_in = False
 
     def init_browser(self):
-        """初始化浏览器"""
+        """初始化浏览器（增强反检测版本）"""
         try:
             from DrissionPage import ChromiumPage, ChromiumOptions
+            import random
             co = ChromiumOptions()
 
             # 服务器环境检测：如果没有显示器则使用headless模式
@@ -35,23 +95,206 @@ class ZhihuAutoPost:
             co.set_browser_path(chrome_path)
             logger.info(f"使用Chrome路径: {chrome_path}")
 
+            # ========== 核心反检测配置 ==========
+            # 1. 禁用自动化标识
+            co.set_argument('--disable-blink-features=AutomationControlled')
+            co.set_argument('--disable-automation')
+            co.set_argument('--disable-infobars')
+
+            # 2. 禁用WebDriver标识
+            co.set_argument('--disable-web-security')
+            co.set_argument('--allow-running-insecure-content')
+
+            # 3. 随机化User-Agent（模拟真实浏览器）
+            user_agents = [
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            ]
+            selected_ua = random.choice(user_agents)
+            co.set_user_agent(selected_ua)
+            logger.info(f"使用User-Agent: {selected_ua[:60]}...")
+
+            # 4. 设置真实的窗口大小（避免被检测为无头模式）
+            window_sizes = [(1920, 1080), (1366, 768), (1536, 864), (1440, 900)]
+            width, height = random.choice(window_sizes)
+            co.set_argument(f'--window-size={width},{height}')
+
+            # 5. 禁用可能暴露自动化的特性
+            co.set_argument('--disable-extensions')
+            co.set_argument('--disable-plugins-discovery')
+            co.set_argument('--disable-popup-blocking')
+            co.set_argument('--ignore-certificate-errors')
+            co.set_argument('--disable-default-apps')
+
+            # 6. 设置语言和时区（模拟中国用户）
+            co.set_argument('--lang=zh-CN')
+            co.set_argument('--accept-lang=zh-CN,zh;q=0.9,en;q=0.8')
+
+            # 7. 禁用一些可能导致检测的功能
+            co.set_argument('--disable-background-networking')
+            co.set_argument('--disable-sync')
+            co.set_argument('--disable-translate')
+            co.set_argument('--metrics-recording-only')
+            co.set_argument('--no-first-run')
+            co.set_argument('--safebrowsing-disable-auto-update')
+
             if is_server:
-                logger.info("检测到服务器环境，使用headless模式")
-                co.headless(True)
+                logger.info("检测到服务器环境，使用新版headless模式")
+                # 使用新版headless模式，更难被检测
+                co.set_argument('--headless=new')
                 co.set_argument('--no-sandbox')
                 co.set_argument('--disable-dev-shm-usage')
                 co.set_argument('--disable-gpu')
+                # 设置虚拟显示尺寸
+                co.set_argument('--window-position=0,0')
             else:
                 co.headless(False)  # 可见模式,方便调试
 
-            co.set_argument('--disable-blink-features=AutomationControlled')
-            co.set_user_agent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
             self.page = ChromiumPage(addr_or_opts=co)
-            logger.info("✓ 浏览器初始化成功")
+
+            # ========== 注入反检测JavaScript ==========
+            self._apply_stealth_js()
+
+            logger.info("✓ 浏览器初始化成功（反检测模式）")
             return True
         except Exception as e:
             logger.error(f"✗ 浏览器初始化失败: {e}", exc_info=True)
             return False
+
+    def _apply_stealth_js(self):
+        """注入反检测JavaScript，隐藏自动化特征"""
+        stealth_js = """
+        // 1. 隐藏webdriver标识
+        Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined,
+            configurable: true
+        });
+
+        // 2. 模拟真实的plugins
+        Object.defineProperty(navigator, 'plugins', {
+            get: () => {
+                const plugins = [
+                    {name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', description: 'Portable Document Format'},
+                    {name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: ''},
+                    {name: 'Native Client', filename: 'internal-nacl-plugin', description: ''}
+                ];
+                plugins.length = 3;
+                return plugins;
+            },
+            configurable: true
+        });
+
+        // 3. 模拟真实的mimeTypes
+        Object.defineProperty(navigator, 'mimeTypes', {
+            get: () => {
+                const mimes = [
+                    {type: 'application/pdf', suffixes: 'pdf', description: 'Portable Document Format'},
+                    {type: 'application/x-google-chrome-pdf', suffixes: 'pdf', description: 'Portable Document Format'}
+                ];
+                mimes.length = 2;
+                return mimes;
+            },
+            configurable: true
+        });
+
+        // 4. 模拟真实的languages
+        Object.defineProperty(navigator, 'languages', {
+            get: () => ['zh-CN', 'zh', 'en-US', 'en'],
+            configurable: true
+        });
+
+        // 5. 设置真实的platform
+        Object.defineProperty(navigator, 'platform', {
+            get: () => 'Win32',
+            configurable: true
+        });
+
+        // 6. 设置真实的硬件并发数
+        Object.defineProperty(navigator, 'hardwareConcurrency', {
+            get: () => 8,
+            configurable: true
+        });
+
+        // 7. 设置真实的设备内存
+        Object.defineProperty(navigator, 'deviceMemory', {
+            get: () => 8,
+            configurable: true
+        });
+
+        // 8. 模拟Chrome运行时对象
+        window.chrome = {
+            runtime: {
+                id: undefined,
+                connect: () => {},
+                sendMessage: () => {},
+                onMessage: { addListener: () => {} }
+            },
+            loadTimes: () => {},
+            csi: () => {},
+            app: {}
+        };
+
+        // 9. 覆盖权限查询
+        const originalQuery = window.navigator.permissions.query;
+        window.navigator.permissions.query = (parameters) => (
+            parameters.name === 'notifications' ?
+                Promise.resolve({ state: Notification.permission }) :
+                originalQuery(parameters)
+        );
+
+        // 10. 隐藏Headless特征
+        Object.defineProperty(navigator, 'userAgent', {
+            get: () => navigator.userAgent.replace('HeadlessChrome', 'Chrome'),
+            configurable: true
+        });
+
+        // 11. 模拟真实的屏幕属性
+        Object.defineProperty(screen, 'width', { get: () => 1920 });
+        Object.defineProperty(screen, 'height', { get: () => 1080 });
+        Object.defineProperty(screen, 'availWidth', { get: () => 1920 });
+        Object.defineProperty(screen, 'availHeight', { get: () => 1040 });
+        Object.defineProperty(screen, 'colorDepth', { get: () => 24 });
+        Object.defineProperty(screen, 'pixelDepth', { get: () => 24 });
+
+        // 12. 覆盖WebGL渲染器信息
+        const getParameterProxyHandler = {
+            apply: function(target, thisArg, argumentsList) {
+                const param = argumentsList[0];
+                const gl = thisArg;
+                // UNMASKED_VENDOR_WEBGL
+                if (param === 37445) {
+                    return 'Intel Inc.';
+                }
+                // UNMASKED_RENDERER_WEBGL
+                if (param === 37446) {
+                    return 'Intel Iris OpenGL Engine';
+                }
+                return Reflect.apply(target, thisArg, argumentsList);
+            }
+        };
+
+        try {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (gl) {
+                gl.getParameter = new Proxy(gl.getParameter.bind(gl), getParameterProxyHandler);
+            }
+        } catch(e) {}
+
+        // 13. 移除自动化相关的属性
+        delete window.cdc_adoQpoasnfa76pfcZLmcfl_Array;
+        delete window.cdc_adoQpoasnfa76pfcZLmcfl_Promise;
+        delete window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
+
+        console.log('Stealth mode activated');
+        """
+        try:
+            self.page.run_js(stealth_js)
+            logger.debug("✓ 反检测JavaScript已注入")
+        except Exception as e:
+            logger.warning(f"⚠ 反检测JavaScript注入失败: {e}")
 
     def load_cookies(self, username):
         """加载已保存的Cookie"""
@@ -70,6 +313,9 @@ class ZhihuAutoPost:
             # 先访问知乎主页
             self.page.get('https://www.zhihu.com')
             time.sleep(1)
+
+            # 每次页面加载后注入反检测JS
+            self._apply_stealth_js()
 
             # 加载Cookie
             for cookie in cookies:
@@ -93,6 +339,7 @@ class ZhihuAutoPost:
     def auto_login_with_password(self, username, password):
         """
         使用密码自动登录（当Cookie不存在或失效时的fallback）
+        使用新的ZhihuPasswordLogin模块，支持验证码自动识别
 
         Args:
             username: 知乎账号
@@ -103,51 +350,40 @@ class ZhihuAutoPost:
         """
         try:
             logger.info("=" * 60)
-            logger.info("开始自动密码登录流程（Cookie失效，使用测试账号登录）")
+            logger.info("开始自动密码登录流程（支持验证码自动识别）")
             logger.info("=" * 60)
 
-            # 尝试导入login_tester模块
+            # 使用新的密码登录模块
             try:
-                # 添加backend目录到sys.path
-                backend_dir = os.path.dirname(__file__)
-                if backend_dir not in sys.path:
-                    sys.path.insert(0, backend_dir)
-
-                from login_tester import LoginTester
-                logger.info("✓ login_tester模块导入成功")
+                from zhihu_auth.zhihu_password_login import ZhihuPasswordLogin
+                logger.info("✓ ZhihuPasswordLogin模块导入成功")
             except ImportError as e:
-                logger.error(f"✗ 无法导入login_tester模块: {e}")
-                logger.error("自动登录功能需要login_tester.py模块支持")
+                logger.error(f"✗ 无法导入ZhihuPasswordLogin模块: {e}")
                 return False
 
-            # 创建登录测试器实例（使用headless模式）
-            tester = LoginTester(headless=True)
-
-            # 初始化WebDriver
-            if not tester.init_driver():
-                logger.error("✗ WebDriver初始化失败")
-                return False
+            # 创建密码登录实例
+            login_handler = ZhihuPasswordLogin()
 
             try:
-                # 执行知乎登录
-                logger.info(f"正在使用测试账号登录: {username}")
-                result = tester.test_zhihu_login(username, password, use_cookie=False)
+                # 执行密码登录（带验证码自动识别）
+                logger.info(f"正在使用账号密码登录: {username}")
+                success, message, cookies = login_handler.login(username, password)
 
-                if result.get('success'):
-                    logger.info("✓✓ 测试账号自动登录成功！")
+                if success:
+                    logger.info("✓✓ 密码登录成功！")
 
                     # 保存Cookie
                     logger.info("正在保存登录Cookie...")
-                    if tester.save_cookies('知乎', username):
+                    if login_handler.save_cookies(username):
                         logger.info("✓ Cookie已保存，下次可以直接使用Cookie登录")
                     else:
                         logger.warning("⚠ Cookie保存失败，下次仍需要密码登录")
 
-                    # 关闭测试用的driver
-                    tester.close_driver()
+                    # 关闭登录浏览器
+                    login_handler.close()
 
-                    # 重新加载Cookie到DrissionPage
-                    logger.info("正在将Cookie加载到DrissionPage...")
+                    # 重新加载Cookie到DrissionPage发布浏览器
+                    logger.info("正在将Cookie加载到发布浏览器...")
                     if self.load_cookies(username):
                         logger.info("✓ Cookie已加载到发布浏览器")
                         return True
@@ -155,12 +391,12 @@ class ZhihuAutoPost:
                         logger.error("✗ Cookie加载到发布浏览器失败")
                         return False
                 else:
-                    logger.error(f"✗ 自动登录失败: {result.get('message', '未知错误')}")
+                    logger.error(f"✗ 密码登录失败: {message}")
                     return False
 
             finally:
-                # 确保关闭driver
-                tester.close_driver()
+                # 确保关闭登录浏览器
+                login_handler.close()
 
         except Exception as e:
             logger.error(f"✗ 自动登录过程中发生异常: {e}", exc_info=True)
@@ -205,7 +441,11 @@ class ZhihuAutoPost:
             # 访问创作页面
             logger.info("正在进入创作页面...")
             self.page.get('https://zhuanlan.zhihu.com/write')
-            time.sleep(3)
+            time.sleep(2)
+
+            # 每次页面加载后注入反检测JS
+            self._apply_stealth_js()
+            time.sleep(1)
 
             # 等待编辑器加载
             logger.info("等待编辑器加载...")
@@ -446,21 +686,51 @@ class ZhihuAutoPost:
                             logger.info(f"成功指标数量: {len(success_indicators)}")
                             logger.info(f"成功指标: {success_indicators}")
 
-                            # 关键判断:URL不能包含/edit
-                            if '/edit' not in current_url:
+                            # 关键判断:
+                            # 1. URL不能包含/edit (编辑模式)
+                            # 2. URL必须包含/p/ (已发布文章的标志)
+                            # 3. URL不能是write页面
+                            is_not_edit = '/edit' not in current_url
+                            is_published_url = '/p/' in current_url
+                            is_not_write = 'write' not in current_url
+
+                            if is_not_edit and is_published_url and is_not_write:
                                 logger.info(f"✓ 发布验证成功(第{retry_count + 1}次尝试)")
+                                logger.info(f"  - URL不包含/edit: {is_not_edit}")
+                                logger.info(f"  - URL包含/p/: {is_published_url}")
+                                logger.info(f"  - URL不是write页面: {is_not_write}")
                                 publish_success = True
                                 break
                             else:
+                                # 详细记录失败原因
+                                fail_reasons = []
+                                if not is_not_edit:
+                                    fail_reasons.append("URL仍包含/edit")
+                                if not is_published_url:
+                                    fail_reasons.append("URL不包含/p/(非已发布文章)")
+                                if not is_not_write:
+                                    fail_reasons.append("URL仍在write页面")
+
                                 if retry_count < max_retries - 1:
-                                    logger.warning(f"⚠ 第{retry_count + 1}次验证失败,URL仍包含/edit,将进行重试...")
+                                    logger.warning(f"⚠ 第{retry_count + 1}次验证失败: {', '.join(fail_reasons)}")
+                                    logger.warning("将进行重试...")
                                 else:
-                                    logger.error("✗ 所有重试均失败,文章未真正发布")
+                                    logger.error(f"✗ 所有重试均失败,文章未真正发布: {', '.join(fail_reasons)}")
 
                         # 最终判断
                         if not publish_success:
-                            error_msg = "文章未真正发布，仍在编辑状态"
+                            # 更详细的错误消息
+                            if '/edit' in current_url:
+                                error_msg = "文章未真正发布，仍在编辑状态（URL包含/edit）"
+                            elif '/p/' not in current_url:
+                                error_msg = "文章未真正发布，URL不是已发布文章格式（应包含/p/）"
+                            elif 'write' in current_url:
+                                error_msg = "文章未真正发布，仍在写作页面"
+                            else:
+                                error_msg = "文章未真正发布，URL格式不符合预期"
+
                             logger.error(f"✗ {error_msg}")
+                            logger.error(f"✗ 当前URL: {current_url}")
                             return {
                                 'success': False,
                                 'message': error_msg,
@@ -533,38 +803,41 @@ def post_article_to_zhihu(username, title, content, password=None, topics=None, 
 
         logger.info("[发布流程-发布器] ✓ 浏览器初始化成功")
 
-        # 尝试加载Cookie登录
+        # 优先使用Cookie登录，失败则使用密码登录
+        login_success = False
+
+        # 步骤2.1: 尝试Cookie登录
         logger.info("=" * 60)
-        logger.info("[发布流程-发布器] 步骤2: 尝试使用Cookie登录")
+        logger.info("[发布流程-发布器] 步骤2: 尝试Cookie登录")
         logger.info("=" * 60)
 
-        cookie_login_success = poster.load_cookies(username)
-
-        if not cookie_login_success:
-            # Cookie登录失败，尝试使用密码自动登录
-            logger.warning("[发布流程-发布器] Cookie登录失败或Cookie不存在")
+        if poster.load_cookies(username):
+            logger.info("[发布流程-发布器] ✓ Cookie登录成功")
+            login_success = True
+        else:
+            # Cookie登录失败，尝试密码登录
+            logger.warning("[发布流程-发布器] Cookie登录失败或不存在")
 
             if password:
                 logger.info("=" * 60)
-                logger.info("[发布流程-发布器] 步骤2.1: Cookie失效，尝试使用测试账号自动登录")
+                logger.info("[发布流程-发布器] 步骤2.1: 使用账号密码登录（支持验证码自动识别）")
                 logger.info("=" * 60)
 
-                if not poster.auto_login_with_password(username, password):
-                    logger.error("[发布流程-发布器] 自动登录失败")
+                if poster.auto_login_with_password(username, password):
+                    logger.info("[发布流程-发布器] ✓✓ 密码登录成功")
+                    login_success = True
+                else:
+                    logger.error("[发布流程-发布器] 密码登录也失败")
                     return {
                         'success': False,
-                        'message': 'Cookie登录失败，且测试账号自动登录也失败。请检查账号密码是否正确。'
+                        'message': '登录失败。Cookie无效且密码登录失败，请检查账号密码是否正确。'
                     }
-                else:
-                    logger.info("[发布流程-发布器] ✓✓ 自动登录成功，继续发布流程")
             else:
-                logger.error("[发布流程-发布器] Cookie不存在且未提供密码")
+                logger.error("[发布流程-发布器] Cookie无效且未配置密码")
                 return {
                     'success': False,
-                    'message': 'Cookie不存在且未提供密码，无法登录。请先在账号管理中配置知乎账号密码。'
+                    'message': 'Cookie无效且未配置密码，无法登录。请在账号管理中配置知乎账号密码。'
                 }
-        else:
-            logger.info("[发布流程-发布器] ✓ Cookie登录成功")
 
         # 登录成功，发布文章
         logger.info("=" * 60)

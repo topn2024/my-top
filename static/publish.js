@@ -83,8 +83,21 @@ async function checkZhihuCookie() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            credentials: 'include'
+            credentials: 'include',
+            body: JSON.stringify({})
         });
+
+        // 检查HTTP响应状态
+        if (!response.ok) {
+            console.warn('[发布流程] Cookie检查API返回错误:', response.status);
+            // 如果API返回错误，仍然返回需要QR登录
+            return {
+                success: false,
+                cookie_valid: false,
+                requireQRLogin: true,
+                message: `Cookie检查失败(HTTP ${response.status})，建议扫码登录`
+            };
+        }
 
         const data = await response.json();
         console.log('[发布流程] Cookie检查结果:', data);
@@ -142,31 +155,11 @@ async function startPublish() {
 
     // 目前只支持知乎
     if (selectedPlatforms.includes('知乎')) {
-        console.log('[发布流程] 准备发布到知乎，先检查登录状态...');
-
-        // 先检查Cookie是否有效
-        showLoading('正在检查登录状态...');
-        const cookieCheck = await checkZhihuCookie();
-        hideLoading();
-
-        if (cookieCheck.requireQRLogin) {
-            // Cookie无效，需要扫码登录
-            console.log('[发布流程] Cookie无效，需要扫码登录');
-
-            // 显示提示并开始扫码登录
-            const confirmLogin = confirm(`${cookieCheck.message}\n\n是否现在扫码登录？`);
-            if (!confirmLogin) {
-                console.log('[发布流程] 用户取消扫码登录');
-                return;
-            }
-
-            // 开始二维码登录流程，登录成功后继续发布
-            await handleQRLoginAndPublish(selectedArticles);
-        } else {
-            // Cookie有效，直接发布
-            console.log('[发布流程] Cookie有效，开始批量发布');
-            await publishBatchToZhihu(selectedArticles);
-        }
+        console.log('[发布流程] 准备发布到知乎');
+        // 直接发布，让后端处理登录逻辑（Cookie优先，失败则使用密码登录）
+        // 后端会在需要时返回requireQRLogin标记
+        console.log('[发布流程] 开始批量发布（后端自动处理登录）');
+        await publishBatchToZhihu(selectedArticles);
 
         console.log('[发布流程] ========== 发布流程结束 ==========');
     } else {
@@ -186,8 +179,16 @@ async function handleQRLoginAndPublish(articles) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            credentials: 'include'
+            credentials: 'include',
+            body: JSON.stringify({})
         });
+
+        if (!response.ok) {
+            hideLoading();
+            console.error('[发布流程] 获取二维码API返回错误:', response.status);
+            alert(`获取二维码失败：服务器错误(${response.status})`);
+            return;
+        }
 
         const data = await response.json();
 
@@ -198,7 +199,8 @@ async function handleQRLoginAndPublish(articles) {
         }
 
         // 显示二维码弹窗，登录成功后发布文章
-        showQRCodeModalForPublish(data.qr_code, data.session_id, articles);
+        // 传递qr_token和xsrf_token给前端，让前端直接调用知乎API检查状态
+        showQRCodeModalForPublish(data.qr_code, data.qr_token, data.xsrf_token, articles);
 
     } catch (error) {
         hideLoading();
@@ -207,7 +209,7 @@ async function handleQRLoginAndPublish(articles) {
 }
 
 // 显示二维码弹窗（发布专用版本）
-function showQRCodeModalForPublish(qrCodeDataUrl, sessionId, articles) {
+function showQRCodeModalForPublish(qrCodeDataUrl, qrToken, xsrfToken, articles) {
     hideLoading();
 
     // 创建模态框
@@ -232,25 +234,133 @@ function showQRCodeModalForPublish(qrCodeDataUrl, sessionId, articles) {
             <img src="${qrCodeDataUrl}" alt="登录二维码" style="width: 250px; height: 250px; margin: 20px auto; display: block; border: 1px solid #ddd; border-radius: 8px;">
             <p style="color: #666; margin: 15px 0;">请使用<strong>知乎APP</strong>扫描二维码登录</p>
             <p id="qr-login-status-publish" style="color: #3b82f6; font-weight: bold;">⏳ 等待扫码中...</p>
-            <p style="color: #999; font-size: 12px; margin-top: 10px;">登录成功后将自动开始发布</p>
-            <button id="qr-cancel-btn-publish" style="margin-top: 20px; padding: 10px 30px; background: #ef4444; color: white; border: none; border-radius: 5px; cursor: pointer;">取消</button>
+            <p style="color: #999; font-size: 12px; margin-top: 10px;">扫码后系统将自动检测登录状态</p>
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button id="qr-cancel-btn-publish" style="padding: 10px 30px; background: #ef4444; color: white; border: none; border-radius: 5px; cursor: pointer;">取消</button>
+            </div>
         </div>
     `;
 
     document.body.appendChild(modal);
 
+    // 开始自动轮询检查登录状态
+    startAutoQRLoginPolling(articles, modal);
+
     // 取消按钮
     document.getElementById('qr-cancel-btn-publish').addEventListener('click', () => {
-        stopQRLoginPolling();
-        document.body.removeChild(modal);
+        if (modal && modal.parentNode) {
+            document.body.removeChild(modal);
+        }
+        stopAutoQRLoginPolling();
     });
-
-    // 开始轮询检查登录状态
-    startQRLoginPollingForPublish(sessionId, articles, modal);
 }
 
-// 轮询检查登录状态（发布专用版本）
-function startQRLoginPollingForPublish(sessionId, articles, modal) {
+// 自动轮询检查登录状态
+let autoQRLoginPollingInterval = null;
+
+function stopAutoQRLoginPolling() {
+    if (autoQRLoginPollingInterval) {
+        clearInterval(autoQRLoginPollingInterval);
+        autoQRLoginPollingInterval = null;
+    }
+}
+
+function startAutoQRLoginPolling(articles, modal) {
+    let pollCount = 0;
+    const maxPolls = 60; // 最多轮询60次 (2分钟)
+    const pollInterval = 2000; // 每2秒检查一次
+
+    stopAutoQRLoginPolling(); // 确保之前的轮询已停止
+
+    autoQRLoginPollingInterval = setInterval(async () => {
+        pollCount++;
+        const statusEl = document.getElementById('qr-login-status-publish');
+
+        if (pollCount > maxPolls) {
+            stopAutoQRLoginPolling();
+            if (statusEl) {
+                statusEl.textContent = '❌ 登录超时，请重试';
+                statusEl.style.color = '#ef4444';
+            }
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/zhihu/qr_login/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({})
+            });
+
+            const data = await response.json();
+            console.log(`[扫码检查 ${pollCount}] 状态:`, data);
+
+            // 根据状态更新UI
+            if (data.success && data.status === 2) {
+                // 登录成功
+                stopAutoQRLoginPolling();
+                if (statusEl) {
+                    statusEl.textContent = '✅ 登录成功！正在发布...';
+                    statusEl.style.color = '#10b981';
+                }
+
+                setTimeout(async () => {
+                    if (modal && modal.parentNode) {
+                        document.body.removeChild(modal);
+                    }
+                    console.log('[发布流程] 扫码登录成功，开始批量发布');
+                    await publishBatchToZhihu(articles);
+                }, 1000);
+
+            } else if (data.ip_blocked || data.status === -403) {
+                // IP被封禁，提示用户
+                stopAutoQRLoginPolling();
+                if (statusEl) {
+                    statusEl.textContent = '❌ 服务器IP被限制，请稍后重试或配置账号密码登录';
+                    statusEl.style.color = '#ef4444';
+                }
+
+            } else if (data.status === 0) {
+                // 等待扫码
+                if (statusEl) {
+                    statusEl.textContent = '⏳ 等待扫码中...';
+                    statusEl.style.color = '#3b82f6';
+                }
+
+            } else if (data.status === 1) {
+                // 已扫码，等待确认
+                if (statusEl) {
+                    statusEl.textContent = '📱 已扫码，请在手机上确认登录';
+                    statusEl.style.color = '#f59e0b';
+                }
+
+            } else if (data.status === 3) {
+                // 已取消
+                stopAutoQRLoginPolling();
+                if (statusEl) {
+                    statusEl.textContent = '❌ 登录已取消';
+                    statusEl.style.color = '#ef4444';
+                }
+
+            } else if (data.status === 4) {
+                // 已过期
+                stopAutoQRLoginPolling();
+                if (statusEl) {
+                    statusEl.textContent = '❌ 二维码已过期，请关闭后重试';
+                    statusEl.style.color = '#ef4444';
+                }
+            }
+
+        } catch (error) {
+            console.error('[扫码检查] 请求失败:', error);
+            // 网络错误不停止轮询，继续重试
+        }
+    }, pollInterval);
+}
+
+// 轮询检查登录状态（发布专用版本 - 直接调用知乎API）
+function startQRLoginPollingForPublish(qrToken, xsrfToken, articles, modal) {
     let pollCount = 0;
     const maxPolls = 60; // 最多轮询60次 (2分钟)
 
@@ -268,38 +378,117 @@ function startQRLoginPollingForPublish(sessionId, articles, modal) {
         }
 
         try {
-            const response = await fetch('/api/zhihu/qr_login/check', {
-                method: 'POST',
+            // 直接调用知乎API检查扫码状态（避免服务器IP被封禁）
+            const checkUrl = `https://www.zhihu.com/api/v3/account/api/login/qrcode/${qrToken}/scan_info`;
+            const response = await fetch(checkUrl, {
+                method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'x-xsrftoken': xsrfToken
                 },
-                credentials: 'include',
-                body: JSON.stringify({ session_id: sessionId })
+                credentials: 'include'
             });
 
-            const data = await response.json();
+            if (!response.ok) {
+                console.log('[扫码检查] 等待扫码中...');
+                return;
+            }
 
-            if (data.success && data.logged_in) {
-                // 登录成功
-                stopQRLoginPolling();
-                const statusEl = document.getElementById('qr-login-status-publish');
+            const data = await response.json();
+            const status = data.status;
+            const statusEl = document.getElementById('qr-login-status-publish');
+
+            // status: 0=等待扫码, 1=已扫码待确认, 2=已确认登录, 3=已取消, 4=已过期
+            if (status === 0) {
+                if (statusEl) statusEl.textContent = '⏳ 等待扫码中...';
+            } else if (status === 1) {
                 if (statusEl) {
-                    statusEl.textContent = '✅ 登录成功！正在发布...';
+                    statusEl.textContent = '📱 已扫码，请在手机上确认登录';
+                    statusEl.style.color = '#f59e0b';
+                }
+            } else if (status === 2) {
+                // 登录成功，调用知乎login API完成登录
+                stopQRLoginPolling();
+                if (statusEl) {
+                    statusEl.textContent = '✅ 登录成功！正在保存...';
                     statusEl.style.color = '#10b981';
                 }
 
-                // 等待1秒后关闭弹窗并开始发布
-                setTimeout(async () => {
-                    if (modal && modal.parentNode) {
-                        document.body.removeChild(modal);
+                // 调用知乎login API获取cookie
+                const loginUrl = `https://www.zhihu.com/api/v3/account/api/login/qrcode/${qrToken}/login`;
+                const loginResp = await fetch(loginUrl, {
+                    method: 'POST',
+                    headers: {
+                        'x-xsrftoken': xsrfToken,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({})
+                });
+
+                if (loginResp.ok) {
+                    // 获取当前所有cookie并发送给后端保存
+                    // 注意：由于跨域限制，前端无法直接读取知乎的cookie
+                    // 这里需要用另一种方式：让用户手动刷新页面，或使用代理
+                    console.log('[扫码登录] 登录成功，但由于跨域限制无法直接获取cookie');
+
+                    // 通知后端尝试验证登录状态
+                    await fetch('/api/zhihu/qr_login/save_cookies', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            cookies: [
+                                // 前端无法获取httpOnly的cookie，但登录已成功
+                                // 后端需要用其他方式获取
+                            ],
+                            login_success: true,
+                            qr_token: qrToken
+                        })
+                    });
+
+                    if (statusEl) {
+                        statusEl.textContent = '✅ 登录成功！正在发布...';
                     }
-                    console.log('[发布流程] 二维码登录成功，开始批量发布');
-                    await publishBatchToZhihu(articles);
-                }, 1000);
+
+                    // 等待1秒后关闭弹窗并开始发布
+                    setTimeout(async () => {
+                        if (modal && modal.parentNode) {
+                            document.body.removeChild(modal);
+                        }
+                        console.log('[发布流程] 二维码登录成功，开始批量发布');
+                        await publishBatchToZhihu(articles);
+                    }, 1000);
+                } else {
+                    if (statusEl) {
+                        statusEl.textContent = '❌ 完成登录失败，请重试';
+                        statusEl.style.color = '#ef4444';
+                    }
+                }
+            } else if (status === 3) {
+                stopQRLoginPolling();
+                if (statusEl) {
+                    statusEl.textContent = '❌ 登录已取消';
+                    statusEl.style.color = '#ef4444';
+                }
+            } else if (status === 4) {
+                stopQRLoginPolling();
+                if (statusEl) {
+                    statusEl.textContent = '❌ 二维码已过期，请重新获取';
+                    statusEl.style.color = '#ef4444';
+                }
             }
 
         } catch (error) {
-            console.error('检查登录状态失败:', error);
+            // 跨域错误是正常的，知乎API不允许跨域访问
+            console.log('[扫码检查] 跨域限制，使用备用方案...');
+
+            // 备用方案：提示用户手动确认
+            const statusEl = document.getElementById('qr-login-status-publish');
+            if (statusEl && pollCount === 1) {
+                statusEl.innerHTML = '⏳ 请扫码后在手机上确认<br><small style="color:#666;">扫码成功后点击下方按钮</small>';
+            }
         }
 
     }, 2000); // 每2秒检查一次
@@ -365,39 +554,60 @@ async function publishBatchToZhihu(articles) {
         const data = await response.json();
         console.log('[发布流程] 后端返回数据:', data);
         hideLoading();
+
         if (data.success || data.success_count > 0) {
-            console.log(`[发布流程] 发布完成！成功: ${data.success_count}, 失败: ${data.failed_count}`);
-            console.log('[发布流程] 发布结果详情:', data.results);
+            console.log(`[发布流程] 任务创建完成！成功: ${data.success_count}, 失败: ${data.failed_count}`);
 
-            // 构建结果消息
-            let message = `批量发布完成！
+            // 任务已创建，开始轮询任务状态
+            const taskIds = data.results
+                .filter(r => r.result && r.result.task_id)
+                .map(r => r.result.task_id);
 
-` +
-                          `成功: ${data.success_count} 篇
-` +
-                          `失败: ${data.failed_count} 篇
+            if (taskIds.length > 0) {
+                // 显示等待提示
+                showLoading('发布任务已创建，正在执行中...');
 
-`;
-            
-            // 显示详细结果
-            if (data.results && data.results.length > 0) {
-                message += '详细结果：\n';
-                data.results.forEach((item, index) => {
-                    // 适配后端返回格式：{article_title: '', result: {success: bool, ...}}
-                    const result = item.result || item;
-                    let title = item.article_title || item.title || '未知标题';
-                    // 确保title是字符串
-                    title = String(title || '未知标题');
-                    const status = result.success ? '✓' : '✗';
-                    const displayTitle = title.length > 30 ? title.substring(0, 30) + '...' : title;
-                    message += `${status} ${displayTitle}\n`;
-                    if (!result.success && (result.message || result.error)) {
-                        message += `   错误: ${result.message || result.error}\n`;
+                // 轮询等待任务完成
+                const results = await waitForTasksCompletion(taskIds, 120000); // 最长等待2分钟
+                hideLoading();
+
+                // 统计结果
+                let successCount = 0;
+                let failedCount = 0;
+                let message = '';
+
+                results.forEach(task => {
+                    const title = task.article_title || '未知标题';
+                    const displayTitle = String(title).length > 30 ? String(title).substring(0, 30) + '...' : title;
+
+                    if (task.status === 'success') {
+                        successCount++;
+                        message += `✓ ${displayTitle}\n`;
+                        if (task.result_url) {
+                            message += `   链接: ${task.result_url}\n`;
+                        }
+                    } else if (task.status === 'failed') {
+                        failedCount++;
+                        message += `✗ ${displayTitle}\n`;
+                        if (task.error_message) {
+                            message += `   错误: ${task.error_message}\n`;
+                        }
+                    } else {
+                        // 仍在执行中
+                        message += `⏳ ${displayTitle} (${task.status})\n`;
                     }
                 });
-            }
 
-            alert(message);
+                const header = successCount > 0 && failedCount === 0
+                    ? `发布成功！\n\n成功: ${successCount} 篇\n\n`
+                    : failedCount > 0 && successCount === 0
+                    ? `发布失败！\n\n失败: ${failedCount} 篇\n\n`
+                    : `发布完成\n\n成功: ${successCount} 篇，失败: ${failedCount} 篇\n\n`;
+
+                alert(header + message);
+            } else {
+                alert(`任务创建失败：${data.error || '未知错误'}`);
+            }
 
             // 刷新发布历史
             if (typeof publishHistoryManager !== 'undefined') {
@@ -406,8 +616,8 @@ async function publishBatchToZhihu(articles) {
             }
 
         } else {
-            console.error('[发布流程] 发布失败:', data.error);
-            alert(`发布失败：${data.error || '未知错误'}`);
+            console.error('[发布流程] 任务创建失败:', data.error);
+            alert(`任务创建失败：${data.error || '未知错误'}`);
         }
 
     } catch (error) {
@@ -574,8 +784,18 @@ async function handleQRLoginWithCallback(article, callback) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            credentials: 'include',
+            body: JSON.stringify({})
         });
+
+        if (!response.ok) {
+            hideLoading();
+            const errorMsg = `获取二维码失败：服务器错误(${response.status})`;
+            alert(errorMsg);
+            if (callback) callback(false, errorMsg);
+            return;
+        }
 
         const data = await response.json();
 
@@ -843,6 +1063,71 @@ async function refreshTaskMonitor() {
     } catch (error) {
         taskList.innerHTML = `<div style="color: #ef4444;">刷新失败: ${error.message}</div>`;
     }
+}
+
+// 等待任务完成
+async function waitForTasksCompletion(taskIds, timeout = 300000) {
+    // 默认超时5分钟（知乎登录验证可能需要较长时间）
+    const startTime = Date.now();
+    const pollInterval = 3000; // 每3秒轮询一次
+    const results = [];
+
+    console.log(`[发布流程] 开始轮询 ${taskIds.length} 个任务状态，超时: ${timeout/1000}秒`);
+
+    while (Date.now() - startTime < timeout) {
+        let allCompleted = true;
+        results.length = 0; // 清空之前的结果
+
+        for (const taskId of taskIds) {
+            try {
+                const response = await fetch(`/api/publish_task/${taskId}`, {
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.task) {
+                        results.push(data.task);
+
+                        // 检查是否完成
+                        if (!['success', 'failed'].includes(data.task.status)) {
+                            allCompleted = false;
+                        }
+                    } else {
+                        results.push({ task_id: taskId, status: 'unknown', error_message: '获取状态失败' });
+                    }
+                } else {
+                    results.push({ task_id: taskId, status: 'unknown', error_message: `HTTP ${response.status}` });
+                }
+            } catch (error) {
+                console.error(`[发布流程] 获取任务 ${taskId} 状态失败:`, error);
+                results.push({ task_id: taskId, status: 'unknown', error_message: error.message });
+            }
+        }
+
+        // 更新loading提示，显示已用时间
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const completed = results.filter(r => ['success', 'failed'].includes(r.status)).length;
+        const loadingText = document.getElementById('loading-text');
+        if (loadingText) {
+            loadingText.textContent = `发布中... (${completed}/${taskIds.length} 已完成，已用时${elapsed}秒)`;
+        }
+
+        if (allCompleted) {
+            console.log('[发布流程] 所有任务已完成');
+            break;
+        }
+
+        // 等待后继续轮询
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+    }
+
+    // 超时时记录日志
+    if (Date.now() - startTime >= timeout) {
+        console.warn('[发布流程] 轮询超时，返回当前状态');
+    }
+
+    return results;
 }
 
 // 加载动画

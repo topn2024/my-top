@@ -90,7 +90,15 @@
       "Bash(timeout /t 3 /nobreak)",
       "Bash(\"D:\\\\Python3.13.1\\\\python.exe\" backend/app.py)",
       "Bash(wc:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(\"D:\\\\Python3.13.1\\\\python.exe\" -c \"\nimport sys\nsys.path.insert\\(0, ''backend''\\)\nsys.path.insert\\(0, ''backend/services''\\)\n\n# Test log_service import\nfrom services.log_service import LogService, get_log_service\nprint\\(''[OK] log_service imported successfully''\\)\n\n# Test log service functions\nlog_service = get_log_service\\(\\)\nprint\\(f''[OK] Log directory: {log_service.log_dir}''\\)\n\n# Test getting log files\nfiles = log_service.get_log_files\\(\\)\nprint\\(f''[OK] Found {len\\(files\\)} log files''\\)\nfor f in files:\n    print\\(f''  - {f[\"\"name\"\"]}: {f[\"\"size_formatted\"\"]}, {f[\"\"lines\"\"]} lines''\\)\n\n# Test getting log tail\nresult = log_service.tail_logs\\(''all.log'', 10\\)\nprint\\(f''[OK] Log tail: {len\\(result.get\\(\"\"logs\"\", []\\)\\)} entries''\\)\n\n# Test error stats\nerror_stats = log_service.get_error_stats\\(24\\)\nprint\\(f''[OK] Error stats: {error_stats.get\\(\"\"total_errors\"\", 0\\)} errors''\\)\n\n# Test performance stats\nperf_stats = log_service.get_performance_stats\\(24\\)\nprint\\(f''[OK] Performance stats: {perf_stats.get\\(\"\"total_requests\"\", 0\\)} requests''\\)\n\nprint\\(\\)\nprint\\(''All tests passed!''\\)\n\")",
+      "Bash(\"D:\\\\Python3.13.1\\\\python.exe\" -m py_compile:*)",
+      "Bash(\"D:\\\\Python3.13.1\\\\python.exe\" -c:*)",
+      "Bash(\"D:\\\\Python3.13.1\\\\python.exe\" -c \"\nimport sys\nsys.path.insert\\(0, ''D:/code/TOP_N/backend''\\)\nfrom app_factory import app\nroutes = sorted\\([rule.rule for rule in app.url_map.iter_rules\\(\\) if not rule.rule.startswith\\(''/static''\\)]\\)\nfor r in routes[:50]:\n    print\\(r\\)\n\")",
+      "Bash(\"D:\\\\Python3.13.1\\\\python.exe\" \"D:\\\\code\\\\TOP_N\\\\tests\\\\run_complete_tests.py\" --quick)",
+      "Bash(\"D:\\\\Python3.13.1\\\\python.exe\" backend/tests/test_captcha_service.py)",
+      "Bash(cmd /c \"chcp 65001 && set PYTHONIOENCODING=utf-8 && D:\\\\Python3.13.1\\\\python.exe backend/tests/test_captcha_service.py\")",
+      "Bash(\"D:\\\\Python3.13.1\\\\python.exe\" -c \"\nimport sys\nsys.path.insert\\(0, ''.''\\)\n\n# 直接导入密码登录模块\nfrom zhihu_auth.zhihu_password_login import ZhihuPasswordLogin\nprint\\(''✓ ZhihuPasswordLogin 导入成功''\\)\n\n# 检查验证码服务\nlogin = ZhihuPasswordLogin\\(\\)\nif login.captcha_service:\n    print\\(f''✓ 验证码服务已初始化''\\)\nelse:\n    print\\(''⚠ 验证码服务未初始化（需要配置API密钥）''\\)\n\nprint\\(\\)\nprint\\(''密码登录模块功能:''\\)\nprint\\(''- login\\(username, password\\) - 执行登录''\\)\nprint\\(''- 自动检测验证码类型（图片/滑块/点选）''\\)\nprint\\(''- 调用云码API自动识别验证码''\\)\nprint\\(''- 验证码识别失败自动重试''\\)\nprint\\(''- 登录成功后保存Cookie''\\)\n\")"
     ],
     "deny": [],
     "ask": []

@@ -65,41 +65,8 @@ async function loadAvailableTemplates() {
     }
 }
 
-// 加载可用AI模型
-async function loadAvailableModels() {
-    const modelSelect = document.getElementById('ai-model-select');
-    if (!modelSelect) return;
-
-    try {
-        const response = await fetch('/api/models');
-        const data = await response.json();
-
-        if (data.success && data.models) {
-            modelSelect.innerHTML = '';
-
-            data.models.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model.id;
-                option.textContent = `${model.name} - ${model.description}`;
-
-                // 设置默认选项
-                if (model.id === data.default) {
-                    option.selected = true;
-                }
-
-                modelSelect.appendChild(option);
-            });
-
-            console.log('AI models loaded successfully');
-        } else {
-            console.error('Failed to load AI models:', data);
-            modelSelect.innerHTML = '<option value="">加载失败，使用默认模型</option>';
-        }
-    } catch (error) {
-        console.error('Error loading AI models:', error);
-        modelSelect.innerHTML = '<option value="">加载失败，使用默认模型</option>';
-    }
-}
+// 加载可用AI模型 - 使用公共模块中的 loadAvailableModels()
+// 注意：需要在HTML中引入 /static/js/common.js
 
 // 显示模板信息
 function showTemplateInfo(templateId) {
@@ -362,14 +329,19 @@ document.getElementById('company-form').addEventListener('submit', async (e) => 
     }
 });
 
-// 加载动画
-function showLoading(text = '处理中...') {
-    document.getElementById('loading-text').textContent = text;
-    document.getElementById('loading').style.display = 'flex';
+// 加载动画 - 使用公共模块中的 showLoading() 和 hideLoading()
+// 如果公共模块未加载，提供回退实现
+if (typeof showLoading === 'undefined') {
+    function showLoading(text = '处理中...') {
+        document.getElementById('loading-text').textContent = text;
+        document.getElementById('loading').style.display = 'flex';
+    }
 }
 
-function hideLoading() {
-    document.getElementById('loading').style.display = 'none';
+if (typeof hideLoading === 'undefined') {
+    function hideLoading() {
+        document.getElementById('loading').style.display = 'none';
+    }
 }
 
 // ========== 三模块提示词选择功能 ==========

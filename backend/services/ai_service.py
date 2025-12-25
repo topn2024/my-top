@@ -53,8 +53,8 @@ class AIService:
         """
         # 保存config引用以便动态切换provider
         self.config = config
-        # 获取默认 AI 服务商
-        self.provider = getattr(config, 'DEFAULT_AI_PROVIDER', 'zhipu')
+        # 获取默认 AI 服务商（与 config.py 保持一致，默认为 qianwen）
+        self.provider = getattr(config, 'DEFAULT_AI_PROVIDER', 'qianwen')
         if self.provider == 'zhipu':
             # 使用智谱 AI
             self.api_key = config.ZHIPU_API_KEY
