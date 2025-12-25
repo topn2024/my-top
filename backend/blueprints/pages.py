@@ -2,7 +2,7 @@
 页面路由蓝图
 处理页面渲染
 """
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, make_response
 from auth import login_required, admin_required
 import logging
 
@@ -12,10 +12,20 @@ logger = logging.getLogger(__name__)
 pages_bp = Blueprint('pages', __name__)
 
 
+@pages_bp.after_request
+def add_no_cache_headers(response):
+    """添加缓存控制头，防止浏览器缓存页面"""
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+
 @pages_bp.route('/')
 def home():
-    """首页 - 公开访问"""
-    return render_template('home.html')
+    """首页 - 重定向到登录页"""
+    from flask import redirect, url_for
+    return redirect(url_for('pages.login_page'))
 
 
 @pages_bp.route('/platform')

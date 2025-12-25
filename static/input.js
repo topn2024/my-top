@@ -65,8 +65,35 @@ async function loadAvailableTemplates() {
     }
 }
 
-// 加载可用AI模型 - 使用公共模块中的 loadAvailableModels()
-// 注意：需要在HTML中引入 /static/js/common.js
+// 加载可用AI模型
+async function loadAvailableModels() {
+    const modelSelect = document.getElementById('ai-model-select');
+    if (!modelSelect) return;
+
+    try {
+        const response = await fetch('/api/models');
+        const data = await response.json();
+
+        if (data.success && data.models) {
+            modelSelect.innerHTML = '';
+            data.models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                option.textContent = model.name;
+                option.title = model.description || '';
+                if (model.id === data.default) {
+                    option.selected = true;
+                }
+                modelSelect.appendChild(option);
+            });
+        } else {
+            modelSelect.innerHTML = '<option value="">加载失败</option>';
+        }
+    } catch (error) {
+        console.error('Failed to load models:', error);
+        modelSelect.innerHTML = '<option value="">加载失败</option>';
+    }
+}
 
 // 显示模板信息
 function showTemplateInfo(templateId) {

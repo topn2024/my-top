@@ -362,7 +362,9 @@ def get_audit_logs(template_id):
 def get_stats():
     """获取统计信息"""
     try:
-        from models_prompt_template import PromptTemplate, PromptTemplateCategory
+        from models_prompt_template import PromptTemplate, PromptTemplateCategory, PromptTemplateUsageLog
+        from datetime import datetime
+        from sqlalchemy import func
 
         session = SessionLocal()
         try:
@@ -371,13 +373,24 @@ def get_stats():
             total_categories = session.query(PromptTemplateCategory).count()
             total_examples = session.query(PromptExampleLibrary).count()
 
+            # 计算今日使用次数
+            today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            today_usage = session.query(func.count(PromptTemplateUsageLog.id)).filter(
+                PromptTemplateUsageLog.used_at >= today_start
+            ).scalar() or 0
+
+            # 计算总使用次数
+            total_usage = session.query(func.sum(PromptTemplate.usage_count)).scalar() or 0
+
             return jsonify({
                 'success': True,
                 'data': {
                     'total_templates': total_templates,
                     'active_templates': active_templates,
                     'total_categories': total_categories,
-                    'total_examples': total_examples
+                    'total_examples': total_examples,
+                    'today_usage': today_usage,
+                    'total_usage': total_usage
                 }
             })
 

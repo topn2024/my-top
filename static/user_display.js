@@ -86,7 +86,7 @@ class UserDisplay {
                         </div>
                         <div class="user-menu-divider"></div>
                         <a href="/" class="user-menu-item">
-                            <span>🏠</span> 月栖首页
+                            <span>🏠</span> 首页
                         </a>
                         <a href="/platform" class="user-menu-item">
                             <span>🚀</span> 推广平台
@@ -145,7 +145,7 @@ class UserDisplay {
                 // 更新显示
                 this.updateDisplay();
 
-                // 跳转到月栖公司首页
+                // 跳转到首页
                 window.location.href = '/';
             } else {
                 alert('退出登录失败，请重试');

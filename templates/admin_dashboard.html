@@ -2530,40 +2530,51 @@
 
             if (loading) loading.style.display = 'flex';
 
-            // 模拟API调用
-            setTimeout(() => {
-                const mockTemplatesData = {
-                    totalTemplates: 12,
-                    activeTemplates: 8,
-                    todayTemplateUsage: 156,
-                    recentActivity: [
-                        { name: '科技公司模板', type: '创建', operator: 'admin', time: '2025-12-15 10:30', status: 'success' },
-                        { name: '金融行业模板', type: '编辑', operator: 'admin', time: '2025-12-15 09:15', status: 'success' },
-                        { name: '教育行业模板', type: '使用', operator: 'user1', time: '2025-12-15 08:45', status: 'success' }
-                    ]
-                };
+            try {
+                // 调用真实API获取模板统计数据
+                const statsResponse = await fetch('/api/prompt-templates/stats');
+                const statsData = await statsResponse.json();
+
+                // 获取最近使用的模板列表
+                const templatesResponse = await fetch('/api/prompt-templates/templates?limit=10');
+                const templatesData = await templatesResponse.json();
 
                 // 更新统计卡片
-                updateStatCard('totalTemplates', mockTemplatesData.totalTemplates);
-                updateStatCard('activeTemplates', mockTemplatesData.activeTemplates);
-                updateStatCard('todayTemplateUsage', mockTemplatesData.todayTemplateUsage);
+                if (statsData.success && statsData.data) {
+                    updateStatCard('totalTemplates', statsData.data.total_templates || 0);
+                    updateStatCard('activeTemplates', statsData.data.active_templates || 0);
+                    updateStatCard('todayTemplateUsage', statsData.data.today_usage || 0);
+                }
 
                 // 更新活动表格
                 if (loading) loading.style.display = 'none';
                 if (content) {
                     content.style.display = 'block';
                     const tbody = document.getElementById('templateActivityTableBody');
-                    tbody.innerHTML = mockTemplatesData.recentActivity.map(activity => `
-                        <tr>
-                            <td>${activity.name}</td>
-                            <td><span class="admin-status-badge admin-status-online">${activity.type}</span></td>
-                            <td>${activity.operator}</td>
-                            <td>${activity.time}</td>
-                            <td><span class="admin-status-badge admin-status-success">${activity.status}</span></td>
-                        </tr>
-                    `).join('');
+
+                    if (templatesData.success && templatesData.data && templatesData.data.length > 0) {
+                        tbody.innerHTML = templatesData.data.slice(0, 5).map(template => `
+                            <tr>
+                                <td>${template.name || '-'}</td>
+                                <td><span class="admin-status-badge admin-status-online">${template.category_name || '未分类'}</span></td>
+                                <td>${template.usage_count || 0} 次</td>
+                                <td>${template.updated_at ? new Date(template.updated_at).toLocaleString('zh-CN') : '-'}</td>
+                                <td><span class="admin-status-badge ${template.is_active ? 'admin-status-success' : 'admin-status-offline'}">${template.is_active ? '启用' : '禁用'}</span></td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">暂无模板数据</td></tr>';
+                    }
                 }
-            }, 800);
+            } catch (error) {
+                console.error('Failed to load templates data:', error);
+                if (loading) loading.style.display = 'none';
+                if (content) {
+                    content.style.display = 'block';
+                    const tbody = document.getElementById('templateActivityTableBody');
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#f56c6c;">加载失败，请刷新重试</td></tr>';
+                }
+            }
         }
 
         function refreshTemplatesData() {
@@ -3869,22 +3880,7 @@
             loadWorkflowsData();
         }
 
-        // 加载模板数据
-        async function loadTemplatesData() {
-            const loading = document.getElementById('templatesLoading');
-            const content = document.getElementById('templatesContent');
-
-            if (loading) loading.style.display = 'flex';
-
-            // 模拟API调用
-            setTimeout(() => {
-                if (loading) loading.style.display = 'none';
-                if (content) {
-                    content.style.display = 'block';
-                    content.innerHTML = '<p>模板管理功能已集成到 <a href="/templates" target="_blank">模板管理页面</a></p>';
-                }
-            }, 800);
-        }
+        // 模板数据加载函数已在上方定义(loadTemplatesData)
 
         // 更新系统运行时间
         function updateSystemUptime() {

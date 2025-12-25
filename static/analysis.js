@@ -15,6 +15,9 @@ window.addEventListener('load', () => {
         return;
     }
 
+    // 显示输入信息摘要
+    displayInputSummary(state);
+
     // 显示分析结果
     displayAnalysis(state.analysis);
 
@@ -24,6 +27,30 @@ window.addEventListener('load', () => {
     // 初始化编辑功能
     initAnalysisEditor();
 });
+
+// 显示输入信息摘要
+function displayInputSummary(state) {
+    const companyNameEl = document.getElementById('summary-company-name');
+    const companyDescEl = document.getElementById('summary-company-desc');
+    const extraInfoRow = document.getElementById('summary-extra-info-row');
+    const extraInfoEl = document.getElementById('summary-extra-info');
+
+    if (companyNameEl && state.companyName) {
+        companyNameEl.textContent = state.companyName;
+    }
+
+    if (companyDescEl && state.companyDesc) {
+        companyDescEl.textContent = state.companyDesc;
+    }
+
+    // 显示补充资料（如果有上传的文档内容）
+    if (extraInfoEl && state.uploadedText) {
+        extraInfoRow.style.display = 'block';
+        // 截取前500字符显示，避免太长
+        const text = state.uploadedText;
+        extraInfoEl.textContent = text.length > 500 ? text.substring(0, 500) + '...' : text;
+    }
+}
 
 // 初始化编辑功能
 function initAnalysisEditor() {

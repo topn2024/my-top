@@ -568,10 +568,11 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    showSuccess('登录成功!正在跳转...');
+                    showSuccess('登录成功!正在跳转到推广平台...');
+                    console.log('Login success, redirecting to /platform');
                     setTimeout(() => {
-                        window.location.href = '/';
-                    }, 1000);
+                        window.location.replace('/platform');
+                    }, 500);
                 } else {
                     showError(data.error || '登录失败,请检查用户名和密码');
                 }
@@ -670,7 +671,7 @@
                 if (data.success) {
                     showSuccess('注册成功!正在跳转...');
                     setTimeout(() => {
-                        window.location.href = '/';
+                        window.location.href = '/platform';
                     }, 1500);
                 } else {
                     showError(data.error || '注册失败,请稍后重试');

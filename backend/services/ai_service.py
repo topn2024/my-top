@@ -372,17 +372,26 @@ class AIService:
             渲染后的提示词
         """
         import re
+        from datetime import datetime
         result = template_str
+        # 添加常用默认变量
+        variables = {"year": str(datetime.now().year), "current_year": str(datetime.now().year), **variables}
         for key, value in variables.items():
             # 支持 {{variable}} 格式
             result = result.replace(f'{{{{{key}}}}}', str(value or ''))
+            # 支持 {variable} 单大括号格式
+            result = result.replace(f'{{{key}}}', str(value or ''))
             # 支持 {% if variable %} 简单条件
             if_pattern = f'{{%\s*if\s+{key}\s*%}}(.*?){{%\s*endif\s*%}}'
             if value:
                 result = re.sub(if_pattern, r'\1', result, flags=re.DOTALL)
             else:
                 result = re.sub(if_pattern, '', result, flags=re.DOTALL)
-        return result
+
+        # 清理剩余未定义的占位符
+        result = re.sub(r'\{\{[a-zA-Z_][a-zA-Z0-9_]*\}\}', '', result)
+        result = re.sub(r'\{[a-zA-Z_][a-zA-Z0-9_]*\}', '', result)
+        return result.strip()
     @log_service_call("使用模板分析公司")
     def analyze_company_with_template(self, company_info: Dict, template: Dict, model: Optional[str] = None) -> str:
         """
