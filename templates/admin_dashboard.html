@@ -1553,20 +1553,20 @@
                         <div class="quick-actions">
                             <div class="quick-action-card" onclick="window.open('/templates', '_blank')">
                                 <div class="quick-action-icon">📝</div>
-                                <div class="quick-action-title">创建模板</div>
-                                <div class="quick-action-desc">添加新的提示词模板</div>
+                                <div class="quick-action-title">模板管理</div>
+                                <div class="quick-action-desc">创建和管理提示词模板</div>
                             </div>
-                            <div class="quick-action-card" onclick="window.open('/templates', '_blank')">
-                                <div class="quick-action-icon">📂</div>
-                                <div class="quick-action-title">导入模板</div>
-                                <div class="quick-action-desc">批量导入模板数据</div>
+                            <div class="quick-action-card" onclick="window.open('/prompts-v2', '_blank')">
+                                <div class="quick-action-icon">🔧</div>
+                                <div class="quick-action-title">提示词管理V2</div>
+                                <div class="quick-action-desc">高级提示词编辑系统</div>
                             </div>
-                            <div class="quick-action-card" onclick="window.open('/prompt_guide.html', '_blank')">
+                            <div class="quick-action-card" onclick="window.open('/template-guide', '_blank')">
                                 <div class="quick-action-icon">📖</div>
                                 <div class="quick-action-title">使用指南</div>
                                 <div class="quick-action-desc">查看模板使用文档</div>
                             </div>
-                            <div class="quick-action-card" onclick="exportTemplates()">
+                            <div class="quick-action-card" onclick="exportAllTemplates()">
                                 <div class="quick-action-icon">📤</div>
                                 <div class="quick-action-title">导出模板</div>
                                 <div class="quick-action-desc">导出所有模板数据</div>
@@ -3963,6 +3963,37 @@
 
         function importTemplates() {
             showNotification('模板导入功能开发中...', 'info');
+        }
+
+        async function exportAllTemplates() {
+            try {
+                showNotification('正在导出模板数据...', 'info');
+                const response = await fetch('/api/prompt-templates');
+                if (!response.ok) {
+                    throw new Error('获取模板数据失败');
+                }
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || '获取模板数据失败');
+                }
+
+                // 创建下载
+                const dataStr = JSON.stringify(result.data, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `prompt_templates_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                showNotification('模板导出成功', 'success');
+            } catch (error) {
+                console.error('导出模板失败:', error);
+                showNotification('导出模板失败: ' + error.message, 'error');
+            }
         }
 
         async function refreshSystemStatus() {

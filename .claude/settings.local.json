@@ -118,7 +118,8 @@
       "Bash(D:/code/TOP_N/backend/services/publish_service.py )",
       "Bash(D:/code/TOP_N/backend/services/ai_service.py )",
       "Bash(D:/code/TOP_N/backend/blueprints/pages.py )",
-      "Bash(D:/code/TOP_N/backend/blueprints/prompt_template_api.py )"
+      "Bash(D:/code/TOP_N/backend/blueprints/prompt_template_api.py )",
+      "Bash(\"D:\\\\Python3.13.1\\\\python.exe\" D:/code/TOP_N/fix_ai_service.py)"
     ],
     "deny": [],
     "ask": []
